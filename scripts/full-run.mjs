@@ -10,6 +10,11 @@ page.on('pageerror', (e) => errors.push(e.message));
 
 await page.clock.install();
 await page.goto(BASE + '/jouer');
+// première visite : popup de pseudo
+if (await page.locator('.pseudo-modal input').count()) {
+  await page.fill('.pseudo-modal input', 'Testeur');
+  await page.click('.pseudo-modal button');
+}
 await page.click('button.btn-primary'); // « Lancer le chrono »
 
 /* Avance l'horloge par pas de 1 s pour laisser React re-planifier ses timers. */
@@ -74,6 +79,13 @@ console.log(`Solutions affichées : ${nbSolutions} carte(s)`);
 await page.screenshot({ path: '/tmp/results-solutions.png', fullPage: true });
 console.log(`\nRésultats affichés : total ${total?.trim()}, ${lignes} lignes, sauvegarde ${saved ? 'OK' : 'ABSENTE'}`);
 if (errors.length) console.log('Erreurs page :', errors.join(' | '));
+
+// Le profil doit afficher les stats du run
+await page.goto(BASE + '/profil');
+await page.waitForSelector('.stat-tile', { timeout: 5000 });
+const tuiles = await page.locator('.stat-tile').count();
+const runsVal = await page.locator('.stat-tile:has-text("Runs") .valeur').first().textContent();
+console.log(`Profil : ${tuiles} tuiles de stats, Runs = ${runsVal?.trim()}`);
 
 // L'accueil doit maintenant afficher le temps du jour
 await page.goto(BASE + '/');

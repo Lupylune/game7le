@@ -6,11 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Game7le — an unofficial French adaptation of [gauntle.com](https://gauntle.com): a daily challenge
 of **7 mini-games drawn at random each day out of a pool of 13**, chained under a single stopwatch.
-The draw and puzzles are identical for every player on a given day (seeded PRNG, no backend).
-Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as possible.
+The draw and puzzles are identical for every player on a given day (seeded PRNG, no required
+backend). Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as
+possible.
 
-100% frontend (Vite + React 19 + TypeScript), no server. Language of the UI, code comments, and
-commit-worthy content is **French** — keep new user-facing strings in French.
+Vite + React 19 + TypeScript, statically hosted. Language of the UI, code comments, and
+commit-worthy content is **French** — keep new user-facing strings in French. An optional Supabase
+backend (see below) mirrors local runs for a real global leaderboard, but the app is fully
+functional offline/without it (localStorage only).
 
 ## Commands
 
@@ -87,6 +90,22 @@ Notable mechanics:
   URL date instead of today.
 - Results are persisted via `saveRun()` (`src/lib/storage.ts`, localStorage key `game7le:runs`),
   keeping only the best time per day.
+
+### Optional Supabase backend (`src/lib/supabase.ts`, `src/lib/sync.ts`, `supabase/schema.sql`)
+
+Two tables, `comptes(pseudo)` and `runs(pseudo, date, total_ms, lines)`, defined and RLS-locked in
+`supabase/schema.sql` (run once in the Supabase SQL editor). There's no auth (pseudo is chosen
+freely client-side, same as local storage), so direct table writes are denied by RLS — all writes
+go through the `submit_run()` `SECURITY DEFINER` RPC, which upserts the `comptes` row and only
+overwrites a day's `runs` row if the new time is better. Reads are public (needed for a global
+leaderboard).
+
+`src/lib/supabase.ts` builds the client from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (see
+`.env.example`); both are `undefined` unless set locally, so `supabase` is `null` and
+`src/lib/sync.ts`'s `syncRun()` is a silent no-op — the app never depends on the backend being
+configured or reachable. `RunPage.tsx` calls `syncRun()` right after `saveRun()` (fire-and-forget,
+not awaited by the UI). `src/lib/classement.ts`'s leaderboard is still the seeded fake one described
+above — wiring it to read real `runs` rows is a separate follow-up, not yet done.
 
 ### Content pipelines (generated, not hand-authored)
 

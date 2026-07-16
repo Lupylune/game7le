@@ -1,4 +1,5 @@
 import { seededRng, randInt, shuffle } from './rng';
+import { supabase } from './supabase';
 
 export interface Entry {
   pseudo: string;
@@ -6,6 +7,48 @@ export interface Entry {
   badge?: string;
   flawless?: boolean;
   me?: boolean;
+}
+
+export interface Board {
+  entries: Entry[];
+  avgMs: number;
+  runs: number;
+  /** `true` si `entries` vient de vrais runs Supabase, `false` si c'est le peloton simulé de secours. */
+  reel: boolean;
+}
+
+interface RunReel {
+  pseudo: string;
+  total_ms: number;
+  flawless: boolean;
+}
+
+async function fetchRunsReels(date: string): Promise<RunReel[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('runs')
+    .select('pseudo, total_ms, flawless')
+    .eq('date', date)
+    .order('total_ms', { ascending: true });
+  if (error || !data) return null;
+  return data as RunReel[];
+}
+
+/**
+ * Classement réel du jour (Supabase) tronqué à `n` entrées, avec repli sur le
+ * peloton simulé si le backend est absent, injoignable, ou vide pour ce jour.
+ */
+export async function classementJour(date: string, n = 15): Promise<Board> {
+  const reel = await fetchRunsReels(date);
+  if (reel && reel.length > 0) {
+    return {
+      entries: reel.slice(0, n).map((r) => ({ pseudo: r.pseudo, ms: r.total_ms, flawless: r.flawless })),
+      avgMs: reel.reduce((s, r) => s + r.total_ms, 0) / reel.length,
+      runs: reel.length,
+      reel: true,
+    };
+  }
+  return { ...classementSimule(date, n), reel: false };
 }
 
 const PSEUDOS = [
@@ -18,6 +61,18 @@ const PSEUDOS = [
  * Classement fictif mais déterministe par jour (démo hors-ligne, pas de serveur).
  * Tout le monde voit le même faux top du jour.
  */
+/**
+ * Rang estimé d'un temps dans le peloton simulé du jour : exact dans le top 5,
+ * puis interpolation monotone entre le 5e temps et la moyenne du jour.
+ */
+export function rangEstime(date: string, ms: number): number {
+  const { entries, avgMs, runs } = classementSimule(date, 5);
+  const idx = entries.findIndex((e) => ms <= e.ms);
+  if (idx !== -1) return idx + 1;
+  const p = ms / (ms + avgMs); // 0 → 0, moyenne → 0,5, lent → 1
+  return Math.max(6, Math.min(runs, Math.round(p * runs)));
+}
+
 export function classementSimule(date: string, n = 5): { entries: Entry[]; avgMs: number; runs: number } {
   const rng = seededRng(`game7le:${date}:classement`);
   const noms = shuffle(rng, PSEUDOS).slice(0, n);

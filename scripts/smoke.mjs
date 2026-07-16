@@ -30,12 +30,25 @@ async function check(path, selector, label) {
   }
 }
 
+// première visite : la popup de pseudo doit apparaître, on la remplit
+await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+try {
+  await page.waitForSelector('.pseudo-modal input', { timeout: 4000 });
+  await page.fill('.pseudo-modal input', 'Testeur');
+  await page.click('.pseudo-modal button');
+  console.log('✓ Popup pseudo (première visite)');
+} catch {
+  failures++;
+  console.log('✗ Popup pseudo absente à la première visite');
+}
+
 await check('/', '.lb .row', 'Accueil + top 5');
 await check('/comment-jouer', '.rule-card', 'Comment jouer');
 await check('/a-propos', '.prose h1', 'À propos');
 await check('/archives', '.archive-list li', 'Archives');
 await check('/classement', '.lb .row', 'Classement');
 await check('/parametres', '.settings-row', 'Paramètres');
+await check('/profil', '.prose h1', 'Profil');
 await check('/entrainement', '.game-card', 'Entraînement (liste)');
 
 const jeux = [

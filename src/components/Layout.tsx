@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
 import { loadSettings, saveSettings } from '../lib/storage';
+import PseudoModal from './PseudoModal';
 
 function toggleTheme() {
   const s = loadSettings();
@@ -10,11 +11,18 @@ function toggleTheme() {
 export default function Layout() {
   return (
     <div className="page">
+      <PseudoModal />
       <header className="top-bar">
         <Link to="/" style={{ fontFamily: 'var(--font-display)', textDecoration: 'none', color: 'var(--accent)', fontSize: '1.1rem' }}>
           G7
         </Link>
         <div className="top-right">
+          <Link to="/profil" className="icon-btn" aria-label="Mon profil" title="Mon profil">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4.5 20.5 C5.5 16.5 8.5 14.5 12 14.5 C15.5 14.5 18.5 16.5 19.5 20.5" />
+            </svg>
+          </Link>
           <button className="icon-btn" aria-label="Changer de thème" title="Changer de thème" onClick={toggleTheme}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
@@ -32,6 +40,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <footer className="footer">
+        <Link to="/profil">Profil</Link>
         <Link to="/a-propos">À propos</Link>
         <Link to="/comment-jouer">Comment jouer</Link>
         <Link to="/entrainement">Entraînement</Link>

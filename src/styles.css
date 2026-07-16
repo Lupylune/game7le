@@ -662,6 +662,87 @@ button.skip-pill.skip-ready:active {
   }
 }
 
+/* ===== Popup pseudo et profil ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000000a0;
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+}
+.pseudo-modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 48px var(--shadow);
+  padding: var(--sp-6);
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  animation: modal-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modal-in {
+  0% {
+    transform: scale(0.9) translateY(12px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+.pseudo-modal h2 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+}
+.pseudo-modal input {
+  text-align: center;
+  font-size: 1.1rem;
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+}
+.pseudo-modal input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+.stat-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.stat-tile .label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.stat-tile .valeur {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.stat-tile .sous {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
 /* ===== Solutions (écran de résultats) ===== */
 .solutions {
   display: flex;

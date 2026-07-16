@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
-import { classementSimule } from '../lib/classement';
+import { classementJour, classementSimule, type Board } from '../lib/classement';
 import { seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
 import { computeStreak, loadRuns } from '../lib/storage';
@@ -16,7 +17,15 @@ const TAGLINES = [
 
 export default function Home() {
   const date = todayStr();
-  const { entries, avgMs, runs } = classementSimule(date);
+  const [board, setBoard] = useState<Board | null>(null);
+  useEffect(() => {
+    let vivant = true;
+    classementJour(date, 5).then((b) => vivant && setBoard(b));
+    return () => {
+      vivant = false;
+    };
+  }, [date]);
+  const { entries, avgMs, runs } = board ?? { ...classementSimule(date, 5), reel: false };
   const myRun = loadRuns()[date];
   const streak = computeStreak(date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);

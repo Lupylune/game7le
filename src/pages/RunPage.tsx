@@ -5,6 +5,7 @@ import type { GameResult } from '../games/types';
 import { seededRng, todayStr } from '../lib/rng';
 import { formatAdjust, formatDateFr, formatMs } from '../lib/time';
 import { loadSettings, saveRun, type GameLine } from '../lib/storage';
+import { syncRun } from '../lib/sync';
 import GameIcon from '../components/GameIcon';
 import Solutions from '../components/Solutions';
 
@@ -101,7 +102,7 @@ function SkipControl({
           transform="rotate(-90 9 9)"
         />
       </svg>
-      passe dans <span className="skip-s">{Math.max(0, Math.ceil(skip.apresS - elapsedS))} s</span>
+      <span className="skip-s">{Math.max(0, Math.ceil(skip.apresS - elapsedS))} s</span>
     </span>
   );
 }
@@ -236,7 +237,9 @@ export default function RunPage() {
   useEffect(() => {
     if (phase === 'results' && !savedRef.current && lines.length === jeux.length) {
       savedRef.current = true;
-      saveRun({ date, totalMs, rawMs, flawless, lines, finishedAt: Date.now() });
+      const run = { date, totalMs, rawMs, flawless, lines, finishedAt: Date.now() };
+      saveRun(run);
+      syncRun(loadSettings().pseudo, run);
     }
   }, [phase, lines, jeux, date, totalMs, rawMs, flawless]);
 

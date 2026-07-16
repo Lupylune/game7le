@@ -1,19 +1,32 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { classementSimule, type Entry } from '../lib/classement';
+import { classementJour, classementSimule, type Board, type Entry } from '../lib/classement';
 import { todayStr } from '../lib/rng';
 import { formatMs } from '../lib/time';
 import { loadRuns, loadSettings } from '../lib/storage';
 
 export default function Classement() {
   const date = todayStr();
-  const { entries } = classementSimule(date, 15);
-  const myRun = loadRuns()[date];
   const pseudo = loadSettings().pseudo;
+  const myRun = loadRuns()[date];
+  const [board, setBoard] = useState<Board | null>(null);
 
-  const all: Entry[] = [...entries];
-  if (myRun) {
-    all.push({ pseudo, ms: myRun.totalMs, flawless: myRun.flawless, me: true });
-    all.sort((a, b) => a.ms - b.ms);
+  useEffect(() => {
+    let vivant = true;
+    classementJour(date, 100).then((b) => vivant && setBoard(b));
+    return () => {
+      vivant = false;
+    };
+  }, [date]);
+
+  const b = board ?? { ...classementSimule(date, 15), reel: false };
+  let all: Entry[] = b.entries.map((e) => ({ ...e, me: e.pseudo === pseudo }));
+  // En simulation (pas de backend, ou personne n'a encore couru aujourd'hui), le
+  // classement réel ne contient jamais l'utilisateur : on l'ajoute depuis le local.
+  if (!b.reel && myRun && !all.some((e) => e.me)) {
+    all = [...all, { pseudo, ms: myRun.totalMs, flawless: myRun.flawless, me: true }].sort(
+      (x, y) => x.ms - y.ms,
+    );
   }
 
   return (
@@ -38,8 +51,9 @@ export default function Classement() {
         ))}
       </ol>
       <p className="note">
-        Version démo hors-ligne : les autres joueurs sont simulés (déterministes par jour). Seul
-        votre temps est réel, stocké dans votre navigateur.
+        {b.reel
+          ? 'Classement basé sur les runs réels du jour.'
+          : "Version démo hors-ligne : les autres joueurs sont simulés (déterministes par jour). Seul votre temps est réel."}
       </p>
     </div>
   );

@@ -7,6 +7,7 @@ import CommentJouer from './pages/CommentJouer';
 import APropos from './pages/APropos';
 import Archives from './pages/Archives';
 import Parametres from './pages/Parametres';
+import Profil from './pages/Profil';
 import { EntrainementListe, EntrainementJeu } from './pages/Entrainement';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/entrainement" element={<EntrainementListe />} />
           <Route path="/entrainement/:id" element={<EntrainementJeu />} />
           <Route path="/parametres" element={<Parametres />} />
+          <Route path="/profil" element={<Profil />} />
           <Route path="*" element={<Home />} />
         </Route>
       </Routes>
