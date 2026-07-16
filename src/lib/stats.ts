@@ -1,5 +1,6 @@
 import type { GameLine } from './storage';
 import { rangEstime } from './classement';
+import { todayStr } from './rng';
 
 export interface StatsJoueur {
   runs: number;
@@ -18,6 +19,22 @@ export interface RunPourStats {
   totalMs: number;
   lines: GameLine[];
   flawless: boolean;
+  /** Horodatage de fin du run (ms epoch). Absent sur d'anciens runs → traité comme joué en direct. */
+  finishedAt?: number;
+}
+
+/**
+ * Dates jouées « en direct », c.-à-d. le jour même du puzzle (`finishedAt` tombe
+ * le même jour que `date`). Les archives — rejouées après coup — sont exclues :
+ * elles ne doivent pas alimenter la série. Un run sans `finishedAt` est compté
+ * comme en direct (rétro-compat avec les anciens enregistrements).
+ */
+export function joursEnDirect(runs: RunPourStats[]): Set<string> {
+  return new Set(
+    runs
+      .filter((r) => r.finishedAt == null || todayStr(new Date(r.finishedAt)) === r.date)
+      .map((r) => r.date),
+  );
 }
 
 /** Série de jours consécutifs joués (jusqu'à `today` ou hier). */
@@ -67,7 +84,7 @@ export function calculeStats(historique: RunPourStats[], today: string): StatsJo
   return {
     runs: n,
     flawless: runs.filter((r) => r.flawless).length,
-    streak: calculeStreak(new Set(runs.map((r) => r.date)), today),
+    streak: calculeStreak(joursEnDirect(runs), today),
     moyenneMs: totalMs / n,
     meilleur,
     meilleurRang,

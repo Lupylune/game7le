@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
-import { classementJour, classementSimule, type Board } from '../lib/classement';
+import { classementJour, type Board } from '../lib/classement';
 import { seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
 import { loadSettings } from '../lib/storage';
-import { calculeStreak } from '../lib/stats';
+import { calculeStreak, joursEnDirect } from '../lib/stats';
 import { useHistorique } from '../lib/useHistorique';
 
 const TAGLINES = [
@@ -27,10 +27,9 @@ export default function Home() {
       vivant = false;
     };
   }, [date]);
-  const { entries, avgMs, runs } = board ?? { ...classementSimule(date, 5), reel: false };
   const parDate = useHistorique(loadSettings().pseudo);
   const myRun = parDate[date];
-  const streak = calculeStreak(new Set(Object.keys(parDate)), date);
+  const streak = calculeStreak(joursEnDirect(Object.values(parDate)), date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);
 
   return (
@@ -61,24 +60,35 @@ export default function Home() {
 
       <section className="lb" aria-label="Top 5 du jour">
         <h2>Le top 5 du jour</h2>
-        <ol>
-          {entries.map((e, i) => (
-            <li className="row" key={e.pseudo}>
-              <span className="rank">{i + 1}</span>
-              <span className="name">
-                {e.pseudo} {e.badge}
-              </span>
-              <span className="time">{formatMs(e.ms)}</span>
-              <span>{e.flawless ? '✨' : ''}</span>
-            </li>
-          ))}
-        </ol>
-        <p className="global-avg">
-          Moyenne mondiale du jour : {formatLong(avgMs)} sur {runs.toLocaleString('fr-FR')} runs.
-        </p>
-        <Link to="/classement" className="see-more">
-          Voir le classement complet →
-        </Link>
+        {board ? (
+          <>
+            <ol>
+              {board.entries.map((e, i) => (
+                <li className="row" key={e.pseudo} style={{ '--i': i } as CSSProperties}>
+                  <span className="rank">{i + 1}</span>
+                  <span className="name">
+                    {e.pseudo} {e.badge}
+                  </span>
+                  <span className="time">{formatMs(e.ms)}</span>
+                  <span>{e.flawless ? '✨' : ''}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="global-avg">
+              Moyenne mondiale du jour : {formatLong(board.avgMs)} sur{' '}
+              {board.runs.toLocaleString('fr-FR')} runs.
+            </p>
+            <Link to="/classement" className="see-more">
+              Voir le classement complet →
+            </Link>
+          </>
+        ) : (
+          <ol aria-hidden className="lb-skeleton">
+            {Array.from({ length: 5 }, (_, i) => (
+              <li className="row" key={i} />
+            ))}
+          </ol>
+        )}
       </section>
     </div>
   );
