@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('game7le:theme') || 'dark';
+          var base =
+            t === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : t;
+          document.documentElement.dataset.theme = base;
+        } catch (_) {}
+      })();
+    </script>
+    <meta name="theme-color" content="#1c1e26" />
+    <meta
+      name="description"
+      content="Un nouveau défi de casse-têtes chaque jour : 7 épreuves tirées au sort parmi 13, un seul chrono. À quelle vitesse le boucleras-tu ?"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Chivo+Mono:wght@400..700&family=Lexend:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <title>Game7le — 7 épreuves, 1 chrono</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
