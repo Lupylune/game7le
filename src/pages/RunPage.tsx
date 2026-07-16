@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { jeuxDuJour, JEUX_PAR_JOUR } from '../games';
 import type { GameResult } from '../games/types';
@@ -11,6 +11,7 @@ import Solutions from '../components/Solutions';
 
 const FLAWLESS_MS = 5 * 60 * 1000;
 const COUNTDOWN_S = 3;
+const RECAP_MS = 2400; // durée de l'écran récap avant le compte à rebours
 
 interface Toast {
   id: number;
@@ -20,10 +21,17 @@ interface Toast {
 
 type Verdict = 'success' | 'skip' | 'fail';
 
-/** Transition de 3 s avant chaque épreuve : verdict de la précédente + compte à rebours. */
+/**
+ * Transition entre épreuves, en deux temps :
+ * `recap` — verdict de l'épreuve précédente (temps passé, gagné/perdu), puis
+ * `countdown` — compte à rebours avant l'épreuve suivante.
+ * Avant la toute première épreuve (verdict null) on passe directement au countdown.
+ */
 interface Transition {
   verdict: Verdict | null; // null avant la toute première épreuve
   line: GameLine | null;
+  dureeMs: number; // temps passé sur l'épreuve précédente
+  phase: 'recap' | 'countdown';
   count: number;
 }
 
@@ -124,6 +132,8 @@ export default function RunPage() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [trans, setTrans] = useState<Transition | null>(null);
   const [voirSolutions, setVoirSolutions] = useState(false);
+  // Progression (0→1) du versement des ajustements dans le total, à l'écran final
+  const [animP, setAnimP] = useState(0);
   const startRef = useRef(0);
   const gameStartRef = useRef(0);
   const adjustRef = useRef(0);
@@ -147,9 +157,13 @@ export default function RunPage() {
     return () => clearInterval(t);
   }, [phase, index, trans]);
 
-  // Compte à rebours de transition
+  // Transition : d'abord le récap, puis le compte à rebours
   useEffect(() => {
     if (!trans) return;
+    if (trans.phase === 'recap') {
+      const t = setTimeout(() => setTrans({ ...trans, phase: 'countdown' }), RECAP_MS);
+      return () => clearTimeout(t);
+    }
     const t = setTimeout(() => {
       if (trans.count > 1) {
         setTrans({ ...trans, count: trans.count - 1 });
@@ -163,9 +177,10 @@ export default function RunPage() {
     return () => clearTimeout(t);
   }, [trans]);
 
-  const beginTransition = (verdict: Verdict | null, line: GameLine | null) => {
+  const beginTransition = (verdict: Verdict | null, line: GameLine | null, dureeMs: number) => {
     pauseStartRef.current = performance.now();
-    setTrans({ verdict, line, count: COUNTDOWN_S });
+    // Pas de récap avant la première épreuve (aucun verdict à afficher)
+    setTrans({ verdict, line, dureeMs, phase: verdict ? 'recap' : 'countdown', count: COUNTDOWN_S });
   };
 
   const pushToast = useCallback((ms: number, label: string) => {
@@ -187,12 +202,14 @@ export default function RunPage() {
     startRef.current = performance.now();
     gameStartRef.current = performance.now();
     setPhase('playing');
-    beginTransition(null, null); // « Prêt ? » avant la première épreuve
+    beginTransition(null, null, 0); // « Prêt ? » avant la première épreuve
   };
 
   const nextGame = useCallback(
     (line: GameLine) => {
-      setRawMs(performance.now() - startRef.current - pausedRef.current);
+      const now = performance.now();
+      const dureeMs = now - gameStartRef.current;
+      setRawMs(now - startRef.current - pausedRef.current);
       let finished = false;
       setLines((prev) => {
         const nl = [...prev, line];
@@ -203,7 +220,7 @@ export default function RunPage() {
         return nl;
       });
       setIndex((i) => Math.min(i + 1, jeux.length - 1));
-      if (!finished) beginTransition(line.status, line);
+      if (!finished) beginTransition(line.status, line, dureeMs);
     },
     [jeux],
   );
@@ -243,6 +260,30 @@ export default function RunPage() {
     }
   }, [phase, lines, jeux, date, totalMs, rawMs, flawless]);
 
+  // À la fin, on verse les bonus/malus accumulés dans le total : la réserve se
+  // vide (→ 0) pendant que le total glisse de « temps brut » vers « temps final ».
+  useEffect(() => {
+    if (phase !== 'results') return;
+    const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (adjustMs === 0 || reduit) {
+      setAnimP(1);
+      return;
+    }
+    setAnimP(0);
+    const DELAI = 650; // pause avant de démarrer (on voit d'abord temps brut + réserve pleine)
+    const DUREE = 1700;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const e = now - t0 - DELAI;
+      const p = e <= 0 ? 0 : Math.min(1, e / DUREE);
+      setAnimP(1 - Math.pow(1 - p, 3)); // ease-out cubique
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, adjustMs]);
+
   if (phase === 'intro') {
     return (
       <div className="interstitial">
@@ -266,18 +307,30 @@ export default function RunPage() {
     const partage = `Game7le ${date} — ${formatMs(totalMs)}${flawless ? ' ✨ SANS-FAUTE ✨' : ''}\n${lines
       .map((l) => (l.status === 'success' ? '🟩' : l.status === 'skip' ? '🟨' : '🟥'))
       .join('')}`;
+    // Valeurs animées : le total glisse de rawMs → totalMs, la réserve se vide → 0
+    const totalAffiche = Math.max(0, rawMs + adjustMs * animP);
+    const reserve = adjustMs * (1 - animP);
+    const reserveVidee = Math.abs(reserve) < 500; // formatAdjust arrondit à la seconde
     return (
       <div className="results">
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-h2)' }}>Terminé !</h1>
-        <div className="total">{formatMs(totalMs)}</div>
+        <div className="total">{formatMs(totalAffiche)}</div>
+        {adjustMs !== 0 && (
+          <div
+            className={`total-reserve ${reserveVidee ? 'vide' : reserve < 0 ? 'bonus' : 'malus'}`}
+            aria-hidden
+          >
+            {reserveVidee ? 'ajustements appliqués' : formatAdjust(reserve)}
+          </div>
+        )}
         {flawless && <p className="flawless">✨ SANS-FAUTE ✨</p>}
         <p className="muted">
           {settings.pseudo} · temps brut {formatMs(rawMs)} · ajustements {formatAdjust(adjustMs)}
         </p>
         <table>
           <tbody>
-            {lines.map((l) => (
-              <tr key={l.id}>
+            {lines.map((l, i) => (
+              <tr key={l.id} style={{ '--i': i } as CSSProperties}>
                 <td>{l.nom}</td>
                 <td className="muted">{l.detail}</td>
                 <td className={`adj ${l.adjustMs < 0 ? 'bonus' : l.adjustMs > 0 ? 'malus' : ''}`}>
@@ -323,33 +376,47 @@ export default function RunPage() {
           </div>
         </div>
         <div className="timer">
-          {formatMs(totalMs)}
+          {formatMs(rawMs)}
           {adjustMs !== 0 && (
             <span className={`adj ${adjustMs < 0 ? 'bonus' : 'malus'}`}>{formatAdjust(adjustMs)}</span>
           )}
         </div>
         <SkipControl skip={jeu.skip} elapsedS={gameElapsedS} paused={!!trans} onSkip={onSkip} />
       </div>
-      {trans ? (
+      {trans && trans.phase === 'recap' && trans.verdict && trans.line ? (
+        <div className="transition recap">
+          <p className="verdict" style={{ color: VERDICTS[trans.verdict].color }}>
+            {VERDICTS[trans.verdict].label}
+          </p>
+          <p className="recap-jeu">
+            <GameIcon id={trans.line.id} /> {trans.line.nom}
+          </p>
+          {trans.line.detail && <p className="muted">{trans.line.detail}</p>}
+          <div className="recap-stats">
+            <div className="recap-stat">
+              <span className="recap-label">Temps sur l'épreuve</span>
+              <span className="recap-val">{formatMs(trans.dureeMs)}</span>
+            </div>
+            <div className="recap-stat">
+              <span className="recap-label">
+                {trans.line.adjustMs < 0
+                  ? 'Temps gagné'
+                  : trans.line.adjustMs > 0
+                    ? 'Temps perdu'
+                    : 'Ajustement'}
+              </span>
+              <span
+                className={`recap-val ${
+                  trans.line.adjustMs < 0 ? 'bonus' : trans.line.adjustMs > 0 ? 'malus' : ''
+                }`}
+              >
+                {trans.line.adjustMs === 0 ? '—' : formatAdjust(trans.line.adjustMs)}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : trans ? (
         <div className="transition">
-          {trans.verdict && (
-            <p className="verdict" style={{ color: VERDICTS[trans.verdict].color }}>
-              {VERDICTS[trans.verdict].label}
-            </p>
-          )}
-          {trans.line && (
-            <p className="muted">
-              {trans.line.nom} · {trans.line.detail}
-              {trans.line.adjustMs !== 0 && (
-                <>
-                  {' · '}
-                  <span className={trans.line.adjustMs < 0 ? 'bonus' : 'malus'}>
-                    {formatAdjust(trans.line.adjustMs)}
-                  </span>
-                </>
-              )}
-            </p>
-          )}
           {!trans.verdict && <p className="verdict">Prêt·e ?</p>}
           <p className="next-up">
             Épreuve {index + 1} / {jeux.length} : <GameIcon id={jeu.id} /> <strong>{jeu.nom}</strong>

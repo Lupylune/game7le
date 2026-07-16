@@ -47,7 +47,6 @@ export default function Layout() {
         <Link to="/archives">Archives</Link>
         <Link to="/classement">Classement</Link>
         <Link to="/parametres">Paramètres</Link>
-        <span className="made">Game7le — adaptation française non officielle inspirée de gauntle.com — Fait avec haine &lt;/3</span>
       </footer>
     </div>
   );

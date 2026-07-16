@@ -31,9 +31,15 @@ export async function fetchRunsParPseudo(pseudo: string): Promise<RunPourStats[]
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('runs')
-    .select('date, total_ms, lines, flawless')
+    .select('date, total_ms, lines, flawless, finished_at')
     .eq('pseudo', pseudo)
     .order('date', { ascending: true });
   if (error || !data) return null;
-  return data.map((r) => ({ date: r.date, totalMs: r.total_ms, lines: r.lines, flawless: r.flawless }));
+  return data.map((r) => ({
+    date: r.date,
+    totalMs: r.total_ms,
+    lines: r.lines,
+    flawless: r.flawless,
+    finishedAt: r.finished_at ? Date.parse(r.finished_at) : undefined,
+  }));
 }

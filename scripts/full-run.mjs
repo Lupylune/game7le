@@ -25,14 +25,14 @@ async function forward(totalMs) {
 }
 
 async function skip(afterS) {
-  // 3 s de compte à rebours avant l'épreuve + délai de skip + marge
-  await forward(3200 + afterS * 1000 + 1500);
+  // récap (~2,4 s) + compte à rebours (3 s) avant l'épreuve + délai de skip + marge
+  await forward(5700 + afterS * 1000 + 1500);
   await page.click('button:has-text("Passer")');
   await forward(1600);
 }
 
 async function dragAcross() {
-  await forward(3500); // compte à rebours avant l'épreuve
+  await forward(6000); // récap + compte à rebours avant l'épreuve
   await page.waitForSelector('.draw-svg', { timeout: 5000 });
   const box = await page.locator('.draw-svg').boundingBox();
   await page.mouse.move(box.x + 5, box.y + box.height / 2);

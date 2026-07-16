@@ -30,10 +30,7 @@ export default function PseudoModal() {
       <div className="pseudo-modal" role="dialog" aria-modal="true" aria-label="Choisir un pseudo">
         <Logo height={56} />
         <h2>Bienvenue !</h2>
-        <p className="muted">
-          Choisissez un pseudo pour suivre vos stats — sans compte ni mot de passe, tout reste dans
-          ce navigateur.
-        </p>
+
         <input
           type="text"
           value={pseudo}

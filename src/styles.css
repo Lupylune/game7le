@@ -365,12 +365,23 @@ main.content {
 
 /* ===== Run / GameShell ===== */
 .run-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: var(--sp-3);
   padding: var(--sp-3) 0;
-  flex-wrap: wrap;
+}
+/* Colonnes latérales de largeur égale → le compteur reste centré quelle que soit
+   la largeur du contrôle de passe à droite. */
+.run-header > :first-child {
+  justify-self: start;
+}
+.run-header .timer {
+  justify-self: center;
+  text-align: center;
+}
+.run-header > :last-child {
+  justify-self: end;
 }
 .run-header .game-name {
   font-weight: 700;
@@ -557,6 +568,48 @@ button.skip-pill.skip-ready:active {
   }
 }
 
+/* Écran récap de l'épreuve précédente (avant le compte à rebours) */
+.transition.recap {
+  animation: verdict-in 0.3s ease-out both;
+}
+.transition .recap-jeu {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+}
+.transition .recap-jeu .gicon {
+  color: var(--accent);
+}
+.recap-stats {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+.recap-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 9rem;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.recap-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.recap-val {
+  font-family: var(--font-mono);
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+.recap-val.bonus {
+  color: var(--success);
+}
+.recap-val.malus {
+  color: var(--error);
+}
+
 /* ===== Résultats ===== */
 .results {
   max-width: 560px;
@@ -567,7 +620,29 @@ button.skip-pill.skip-ready:active {
   font-family: var(--font-mono);
   font-size: var(--text-h1);
   font-weight: 700;
-  margin: var(--sp-3) 0;
+  margin: var(--sp-3) 0 var(--sp-1);
+  font-variant-numeric: tabular-nums;
+}
+/* Réserve d'ajustements qui se vide dans le total à l'arrivée */
+.total-reserve {
+  font-family: var(--font-mono);
+  font-size: var(--text-h3);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: var(--sp-3);
+  transition: opacity 0.4s ease;
+}
+.total-reserve.bonus {
+  color: var(--success);
+}
+.total-reserve.malus {
+  color: var(--error);
+}
+.total-reserve.vide {
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 400;
 }
 .results table {
   width: 100%;
@@ -587,6 +662,29 @@ button.skip-pill.skip-ready:active {
 .flawless {
   font-size: 1.2rem;
   margin: var(--sp-3) 0;
+}
+
+/* Entrée en translation depuis la gauche (classement + résultats), décalée ligne à ligne */
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.lb .row,
+.results tbody tr {
+  animation: slide-in-left 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.08s);
+}
+/* Squelette pendant le chargement du classement (évite le flash du peloton simulé) */
+.lb-skeleton .row {
+  height: 2.75rem;
+  animation: none;
+  opacity: 0.5;
 }
 
 /* Pictogrammes des jeux */
@@ -1444,6 +1542,22 @@ input[type='text'] {
   .cw-wrap {
     flex-direction: column;
     align-items: center;
+  }
+  /* Place étroite : nom + contrôle de passe sur une ligne, compteur centré en dessous
+     (évite que la pastille de passe chevauche le compteur). */
+  .run-header {
+    grid-template-columns: 1fr auto;
+  }
+  .run-header > :first-child {
+    grid-row: 1;
+  }
+  .run-header > :last-child {
+    grid-row: 1;
+  }
+  .run-header .timer {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-top: var(--sp-2);
   }
 }
 

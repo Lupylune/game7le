@@ -92,7 +92,7 @@ export const JEUX: GameDef[] = [
     nom: 'Chromal',
     regles: '10 niveaux : cliquez la case légèrement différente parmi les 6. Un mauvais clic = éliminé.',
     scoring: '10 niveaux : −15 s · éliminé : de +35 s (niveau 1) à −10 s (niveau 10)',
-    skip: { apresS: 30, penaliteS: 60 },
+    skip: { apresS: 10, penaliteS: 60 },
     Component: Chromal,
   },
   {
