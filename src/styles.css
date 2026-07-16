@@ -638,12 +638,6 @@ button.skip-pill.skip-ready:active {
 .total-reserve.malus {
   color: var(--error);
 }
-.total-reserve.vide {
-  color: var(--text-muted);
-  font-family: var(--font-body);
-  font-size: var(--text-sm);
-  font-weight: 400;
-}
 .results table {
   width: 100%;
   border-collapse: collapse;
@@ -1122,6 +1116,13 @@ button.skip-pill.skip-ready:active {
   font-weight: 700;
   cursor: pointer;
 }
+.numpad button.dispo {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.numpad button.deja {
+  opacity: 0.35;
+}
 
 /* Reines */
 .queens-grid .cell {
@@ -1194,6 +1195,10 @@ button.skip-pill.skip-ready:active {
   font-size: 0.7rem;
   color: var(--text-muted);
   padding-right: 4px;
+}
+.nono-wrap .clue span.done {
+  text-decoration: line-through;
+  opacity: 0.45;
 }
 .nono-grid {
   grid-column: 2;

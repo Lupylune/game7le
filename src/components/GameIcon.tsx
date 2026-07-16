@@ -36,6 +36,51 @@ export function SymDrapeau({ size = 16 }: { size?: number }) {
   );
 }
 
+/** Flamme (série de jours). Teintes braise du logotype. */
+export function SymFlamme({ size = 16 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden className="sym">
+      <path
+        d="M12 2.5 C12.5 6 16.5 8 17.5 11.5 C18.7 15.7 16 20.5 12 20.5 C8 20.5 5.3 15.7 6.5 11.5 C7.1 9.4 8.8 8 9.5 6 C10.3 7.2 10.6 8.3 10.4 9.8 C11.5 8 12.3 5.5 12 2.5 Z"
+        fill="#f29028"
+      />
+      <path
+        d="M12 20.5 C9.8 20.5 8.6 18.3 9.3 16.2 C9.9 14.5 11.3 13.7 12 12 C12.7 13.7 14.1 14.5 14.7 16.2 C15.4 18.3 14.2 20.5 12 20.5 Z"
+        fill="#fcd040"
+      />
+    </svg>
+  );
+}
+
+/** Étincelles (sans-faute). */
+export function SymEtincelle({ size = 16 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden className="sym">
+      <path
+        d="M10 3 C10.8 7 12 8.2 16 9 C12 9.8 10.8 11 10 15 C9.2 11 8 9.8 4 9 C8 8.2 9.2 7 10 3 Z"
+        fill="#fcd040"
+      />
+      <path
+        d="M17.5 12.5 C17.9 14.6 18.6 15.3 20.5 15.7 C18.6 16.1 17.9 16.8 17.5 19 C17.1 16.8 16.4 16.1 14.5 15.7 C16.4 15.3 17.1 14.6 17.5 12.5 Z"
+        fill="#f29028"
+      />
+      <circle cx="15.5" cy="4.8" r="1.2" fill="#fcd040" />
+    </svg>
+  );
+}
+
+/** Étoile (badge des joueurs simulés du classement). */
+export function SymEtoile({ size = 14 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden className="sym">
+      <path
+        d="M12 3 L14.23 8.93 L20.56 9.22 L15.61 13.17 L17.29 19.28 L12 15.8 L6.71 19.28 L8.39 13.17 L3.44 9.22 L9.77 8.93 Z"
+        fill="#fcd040"
+      />
+    </svg>
+  );
+}
+
 /** Pioche (mode creuser du démineur). */
 export function SymPioche({ size = 16 }: { size?: number }) {
   return (

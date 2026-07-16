@@ -1,12 +1,13 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
+import { SymEtincelle, SymEtoile, SymFlamme } from '../components/GameIcon';
 import { classementJour, type Board } from '../lib/classement';
 import { seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
-import { loadSettings } from '../lib/storage';
 import { calculeStreak, joursEnDirect } from '../lib/stats';
 import { useHistorique } from '../lib/useHistorique';
+import { usePseudo } from '../lib/usePseudo';
 
 const TAGLINES = [
   'Le Game7le nouveau est arrivé.',
@@ -27,7 +28,7 @@ export default function Home() {
       vivant = false;
     };
   }, [date]);
-  const parDate = useHistorique(loadSettings().pseudo);
+  const parDate = useHistorique(usePseudo());
   const myRun = parDate[date];
   const streak = calculeStreak(joursEnDirect(Object.values(parDate)), date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);
@@ -42,7 +43,7 @@ export default function Home() {
             <div className="done-card">
               <span className="muted">Votre temps du jour</span>
               <span className="time">
-                {formatMs(myRun.totalMs)} {myRun.flawless && '✨'}
+                {formatMs(myRun.totalMs)} {myRun.flawless && <SymEtincelle size={18} />}
               </span>
               <Link to="/classement">Voir le classement →</Link>
             </div>
@@ -53,7 +54,12 @@ export default function Home() {
           )}
           <span className="hero-date">
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
-            {streak > 0 && ` · 🔥 série de ${streak} jour${streak > 1 ? 's' : ''}`}
+            {streak > 0 && (
+              <>
+                {' · '}
+                <SymFlamme /> série de {streak} jour{streak > 1 ? 's' : ''}
+              </>
+            )}
           </span>
         </div>
       </section>
@@ -67,10 +73,10 @@ export default function Home() {
                 <li className="row" key={e.pseudo} style={{ '--i': i } as CSSProperties}>
                   <span className="rank">{i + 1}</span>
                   <span className="name">
-                    {e.pseudo} {e.badge}
+                    {e.pseudo} {e.badge && <SymEtoile />}
                   </span>
                   <span className="time">{formatMs(e.ms)}</span>
-                  <span>{e.flawless ? '✨' : ''}</span>
+                  <span>{e.flawless && <SymEtincelle />}</span>
                 </li>
               ))}
             </ol>

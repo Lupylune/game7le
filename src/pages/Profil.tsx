@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { loadSettings } from '../lib/storage';
 import { calculeStats, formatHeures, formatDateCourte } from '../lib/stats';
 import { useHistorique } from '../lib/useHistorique';
+import { usePseudo } from '../lib/usePseudo';
+import { SymFlamme } from '../components/GameIcon';
 import { formatMs } from '../lib/time';
 import { todayStr } from '../lib/rng';
 
@@ -16,7 +17,7 @@ function Tuile({ label, valeur, sous }: { label: string; valeur: React.ReactNode
 }
 
 export default function Profil() {
-  const { pseudo } = loadSettings();
+  const pseudo = usePseudo();
   const parDate = useHistorique(pseudo);
   const s = calculeStats(Object.values(parDate), todayStr());
 
@@ -38,7 +39,7 @@ export default function Profil() {
         <div className="stats-grid">
           <Tuile label="Runs" valeur={s.runs} />
           <Tuile label="Sans-faute" valeur={s.flawless} />
-          <Tuile label="Série" valeur={<>{s.streak} 🔥</>} />
+          <Tuile label="Série" valeur={<>{s.streak} <SymFlamme size={20} /></>} />
           <Tuile label="Run moyen" valeur={formatMs(s.moyenneMs)} />
           <Tuile
             label="Meilleur temps"

@@ -66,6 +66,18 @@ export default function Sudoku({ rng, onAdjust, onDone }: GameProps) {
   const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
 
+  // Valeurs déjà posées dans le bloc 2×3 de la case sélectionnée : on atténue
+  // ces chiffres sur le pavé et on met en avant ceux qui restent à placer.
+  const dansBloc = useMemo(() => {
+    const s = new Set<number>();
+    if (sel < 0) return s;
+    const b = blockOf(Math.floor(sel / N), sel % N);
+    grid.forEach((v, i) => {
+      if (v !== 0 && blockOf(Math.floor(i / N), i % N) === b) s.add(v);
+    });
+    return s;
+  }, [grid, sel]);
+
   function setVal(v: number) {
     if (sel < 0 || puzzle[sel] !== 0) return;
     setGrid((g) => {
@@ -143,7 +155,11 @@ export default function Sudoku({ rng, onAdjust, onDone }: GameProps) {
       </div>
       <div className="numpad">
         {[1, 2, 3, 4, 5, 6].map((v) => (
-          <button key={v} onClick={() => setVal(v)}>
+          <button
+            key={v}
+            className={sel >= 0 ? (dansBloc.has(v) ? 'deja' : 'dispo') : ''}
+            onClick={() => setVal(v)}
+          >
             {v}
           </button>
         ))}

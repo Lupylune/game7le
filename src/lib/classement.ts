@@ -81,7 +81,7 @@ export function classementSimule(date: string, n = 5): { entries: Entry[]; avgMs
     const e: Entry = {
       pseudo,
       ms,
-      badge: rng() < 0.3 ? '🌟' : undefined,
+      badge: rng() < 0.3 ? '★' : undefined, // rendu en SVG (SymEtoile) côté UI
       flawless: ms < 150000 && rng() < 0.25,
     };
     ms += randInt(rng, 4000, i < 2 ? 25000 : 45000);

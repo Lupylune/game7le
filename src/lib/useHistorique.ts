@@ -13,6 +13,7 @@ export function useHistorique(pseudo: string): Record<string, RunPourStats> {
 
   useEffect(() => {
     let vivant = true;
+    setDistant(null); // ne pas garder l'historique d'un pseudo précédent
     fetchRunsParPseudo(pseudo).then((r) => vivant && setDistant(r));
     return () => {
       vivant = false;

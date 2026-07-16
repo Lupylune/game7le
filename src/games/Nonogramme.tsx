@@ -92,6 +92,37 @@ export default function Nonogramme({ rng, onAdjust, onDone }: GameProps) {
   const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
 
+  // Indices barrés : un nombre est barré si, dans toutes les dispositions de la
+  // ligne compatibles avec les cases posées (remplies/croix), son segment est
+  // entièrement rempli par le joueur — il est donc acquis sans ambiguïté.
+  const barres = useMemo(() => {
+    const calc = (cells: number[], clue: number[]): boolean[] => {
+      if (clue.length === 1 && clue[0] === 0) return [false];
+      const cur = cells.map((i) => grid[i]);
+      const opts = placements(clue, N).filter((opt) =>
+        opt.every((v, k) => (cur[k] === 1 ? v === 1 : cur[k] === 2 ? v === 0 : true)),
+      );
+      if (opts.length === 0) return clue.map(() => false);
+      // segments (listes d'indices) de chaque disposition
+      const runs = opts.map((opt) => {
+        const out: number[][] = [];
+        let run: number[] | null = null;
+        opt.forEach((v, k) => {
+          if (v === 1) {
+            if (!run) out.push((run = []));
+            run.push(k);
+          } else run = null;
+        });
+        return out;
+      });
+      return clue.map((_, ci) => runs.every((r) => r[ci].every((k) => cur[k] === 1)));
+    };
+    return {
+      rows: rows.map((clue, r) => calc(Array.from({ length: N }, (_, c) => r * N + c), clue)),
+      cols: cols.map((clue, c) => calc(Array.from({ length: N }, (_, r) => r * N + c), clue)),
+    };
+  }, [grid, rows, cols]);
+
   useEffect(() => {
     if (doneRef.current) return;
     // victoire si les indices sont tous satisfaits (toute solution valide compte)
@@ -157,7 +188,9 @@ export default function Nonogramme({ rng, onAdjust, onDone }: GameProps) {
           {cols.map((clue, c) => (
             <div className="clue" key={c}>
               {clue.map((v, k) => (
-                <span key={k}>{v}</span>
+                <span key={k} className={barres.cols[c][k] ? 'done' : ''}>
+                  {v}
+                </span>
               ))}
             </div>
           ))}
@@ -165,7 +198,11 @@ export default function Nonogramme({ rng, onAdjust, onDone }: GameProps) {
         <div className="nono-rowclues" style={{ gridTemplateRows: `repeat(${N}, clamp(28px, 7vw, 36px))` }}>
           {rows.map((clue, r) => (
             <div className="clue" key={r}>
-              {clue.join(' ')}
+              {clue.map((v, k) => (
+                <span key={k} className={barres.rows[r][k] ? 'done' : ''}>
+                  {v}
+                </span>
+              ))}
             </div>
           ))}
         </div>

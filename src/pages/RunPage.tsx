@@ -6,7 +6,7 @@ import { seededRng, todayStr } from '../lib/rng';
 import { formatAdjust, formatDateFr, formatMs } from '../lib/time';
 import { loadSettings, saveRun, type GameLine } from '../lib/storage';
 import { syncRun } from '../lib/sync';
-import GameIcon from '../components/GameIcon';
+import GameIcon, { SymEtincelle } from '../components/GameIcon';
 import Solutions from '../components/Solutions';
 
 const FLAWLESS_MS = 5 * 60 * 1000;
@@ -33,6 +33,7 @@ interface Transition {
   dureeMs: number; // temps passé sur l'épreuve précédente
   phase: 'recap' | 'countdown';
   count: number;
+  final: boolean; // dernière épreuve : le récap débouche sur les résultats
 }
 
 export const VERDICTS: Record<Verdict, { label: string; color: string }> = {
@@ -161,7 +162,15 @@ export default function RunPage() {
   useEffect(() => {
     if (!trans) return;
     if (trans.phase === 'recap') {
-      const t = setTimeout(() => setTrans({ ...trans, phase: 'countdown' }), RECAP_MS);
+      const t = setTimeout(() => {
+        if (trans.final) {
+          // Dernière épreuve : après le verdict, place aux résultats
+          setTrans(null);
+          setPhase('results');
+        } else {
+          setTrans({ ...trans, phase: 'countdown' });
+        }
+      }, RECAP_MS);
       return () => clearTimeout(t);
     }
     const t = setTimeout(() => {
@@ -177,10 +186,15 @@ export default function RunPage() {
     return () => clearTimeout(t);
   }, [trans]);
 
-  const beginTransition = (verdict: Verdict | null, line: GameLine | null, dureeMs: number) => {
+  const beginTransition = (
+    verdict: Verdict | null,
+    line: GameLine | null,
+    dureeMs: number,
+    final = false,
+  ) => {
     pauseStartRef.current = performance.now();
     // Pas de récap avant la première épreuve (aucun verdict à afficher)
-    setTrans({ verdict, line, dureeMs, phase: verdict ? 'recap' : 'countdown', count: COUNTDOWN_S });
+    setTrans({ verdict, line, dureeMs, phase: verdict ? 'recap' : 'countdown', count: COUNTDOWN_S, final });
   };
 
   const pushToast = useCallback((ms: number, label: string) => {
@@ -210,19 +224,13 @@ export default function RunPage() {
       const now = performance.now();
       const dureeMs = now - gameStartRef.current;
       setRawMs(now - startRef.current - pausedRef.current);
-      let finished = false;
-      setLines((prev) => {
-        const nl = [...prev, line];
-        if (nl.length === jeux.length) {
-          finished = true;
-          setPhase('results');
-        }
-        return nl;
-      });
+      const finished = lines.length + 1 === jeux.length;
+      setLines((prev) => [...prev, line]);
       setIndex((i) => Math.min(i + 1, jeux.length - 1));
-      if (!finished) beginTransition(line.status, line, dureeMs);
+      // Même récap pour la dernière épreuve : les résultats suivent au lieu du décompte
+      beginTransition(line.status, line, dureeMs, finished);
     },
-    [jeux],
+    [jeux, lines],
   );
 
   const onDone = useCallback(
@@ -315,17 +323,19 @@ export default function RunPage() {
       <div className="results">
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-h2)' }}>Terminé !</h1>
         <div className="total">{formatMs(totalAffiche)}</div>
-        {adjustMs !== 0 && (
-          <div
-            className={`total-reserve ${reserveVidee ? 'vide' : reserve < 0 ? 'bonus' : 'malus'}`}
-            aria-hidden
-          >
-            {reserveVidee ? 'ajustements appliqués' : formatAdjust(reserve)}
+        {adjustMs !== 0 && !reserveVidee && (
+          <div className={`total-reserve ${reserve < 0 ? 'bonus' : 'malus'}`} aria-hidden>
+            {formatAdjust(reserve)}
           </div>
         )}
-        {flawless && <p className="flawless">✨ SANS-FAUTE ✨</p>}
+        {flawless && (
+          <p className="flawless">
+            <SymEtincelle size={18} /> SANS-FAUTE <SymEtincelle size={18} />
+          </p>
+        )}
         <p className="muted">
-          {settings.pseudo} · temps brut {formatMs(rawMs)} · ajustements {formatAdjust(adjustMs)}
+          {settings.pseudo} · temps brut {formatMs(rawMs)}
+          {adjustMs !== 0 && <> · {formatAdjust(adjustMs)}</>}
         </p>
         <table>
           <tbody>
