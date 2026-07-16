@@ -1,6 +1,5 @@
-import { loadRuns, computeStreak } from './storage';
+import type { GameLine } from './storage';
 import { rangEstime } from './classement';
-import { todayStr } from './rng';
 
 export interface StatsJoueur {
   runs: number;
@@ -13,9 +12,33 @@ export interface StatsJoueur {
   totalMs: number;
 }
 
-/** Stats du profil, calculées depuis l'historique local des runs. */
-export function calculeStats(): StatsJoueur {
-  const runs = Object.values(loadRuns()).sort((a, b) => a.date.localeCompare(b.date));
+/** Sous-ensemble d'un run nécessaire au calcul des stats (local ou Supabase). */
+export interface RunPourStats {
+  date: string;
+  totalMs: number;
+  lines: GameLine[];
+  flawless: boolean;
+}
+
+/** Série de jours consécutifs joués (jusqu'à `today` ou hier). */
+function calculeStreak(dates: Set<string>, today: string): number {
+  let streak = 0;
+  const d = new Date(today);
+  if (!dates.has(today)) d.setDate(d.getDate() - 1); // la série tient encore si hier est joué
+  for (;;) {
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate(),
+    ).padStart(2, '0')}`;
+    if (!dates.has(key)) break;
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+/** Stats du profil, calculées depuis un historique de runs (local ou Supabase selon la source). */
+export function calculeStats(historique: RunPourStats[], today: string): StatsJoueur {
+  const runs = [...historique].sort((a, b) => a.date.localeCompare(b.date));
   const n = runs.length;
   if (n === 0) {
     return {
@@ -44,7 +67,7 @@ export function calculeStats(): StatsJoueur {
   return {
     runs: n,
     flawless: runs.filter((r) => r.flawless).length,
-    streak: computeStreak(todayStr()),
+    streak: calculeStreak(new Set(runs.map((r) => r.date)), today),
     moyenneMs: totalMs / n,
     meilleur,
     meilleurRang,

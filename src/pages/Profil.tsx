@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { loadSettings } from '../lib/storage';
-import { calculeStats, formatHeures, formatDateCourte } from '../lib/stats';
+import { loadRuns, loadSettings } from '../lib/storage';
+import { calculeStats, formatHeures, formatDateCourte, type RunPourStats } from '../lib/stats';
+import { fetchRunsParPseudo } from '../lib/sync';
 import { formatMs } from '../lib/time';
+import { todayStr } from '../lib/rng';
 
 function Tuile({ label, valeur, sous }: { label: string; valeur: React.ReactNode; sous?: string }) {
   return (
@@ -15,14 +18,26 @@ function Tuile({ label, valeur, sous }: { label: string; valeur: React.ReactNode
 
 export default function Profil() {
   const { pseudo } = loadSettings();
-  const s = calculeStats();
+  const [historique, setHistorique] = useState<RunPourStats[] | null>(null);
+
+  useEffect(() => {
+    let vivant = true;
+    fetchRunsParPseudo(pseudo).then((r) => vivant && setHistorique(r));
+    return () => {
+      vivant = false;
+    };
+  }, [pseudo]);
+
+  // Repli sur l'historique local si le backend est absent, injoignable, ou en cours de chargement.
+  const source = historique ?? Object.values(loadRuns());
+  const s = calculeStats(source, todayStr());
 
   return (
     <div className="prose" style={{ maxWidth: 640 }}>
       <h1>{pseudo}</h1>
       <p className="muted">
-        Compte local sans mot de passe — les stats sont calculées depuis vos runs enregistrés dans
-        ce navigateur.
+        Compte sans mot de passe, identifié par pseudo — les stats sont synchronisées depuis vos
+        runs enregistrés sous ce pseudo (ou depuis ce navigateur si le backend est indisponible).
       </p>
       {s.runs === 0 ? (
         <div className="center mt-6">

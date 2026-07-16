@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { RunRecord } from './storage';
+import type { RunPourStats } from './stats';
 
 /**
  * Envoie un run au classement global Supabase (best-effort, non-bloquant).
@@ -19,4 +20,20 @@ export async function syncRun(pseudo: string, run: RunRecord): Promise<void> {
   } catch {
     // silencieux : pas de retry, le run est déjà enregistré en local
   }
+}
+
+/**
+ * Historique des runs d'un pseudo, tous appareils confondus (Supabase).
+ * `null` si le backend est absent/injoignable : l'appelant retombe alors sur
+ * l'historique local du navigateur.
+ */
+export async function fetchRunsParPseudo(pseudo: string): Promise<RunPourStats[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('runs')
+    .select('date, total_ms, lines, flawless')
+    .eq('pseudo', pseudo)
+    .order('date', { ascending: true });
+  if (error || !data) return null;
+  return data.map((r) => ({ date: r.date, totalMs: r.total_ms, lines: r.lines, flawless: r.flawless }));
 }
