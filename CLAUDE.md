@@ -101,11 +101,20 @@ overwrites a day's `runs` row if the new time is better. Reads are public (neede
 leaderboard).
 
 `src/lib/supabase.ts` builds the client from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (see
-`.env.example`); both are `undefined` unless set locally, so `supabase` is `null` and
-`src/lib/sync.ts`'s `syncRun()` is a silent no-op — the app never depends on the backend being
-configured or reachable. `RunPage.tsx` calls `syncRun()` right after `saveRun()` (fire-and-forget,
-not awaited by the UI). `src/lib/classement.ts`'s leaderboard is still the seeded fake one described
-above — wiring it to read real `runs` rows is a separate follow-up, not yet done.
+`.env.example`); both are `undefined` unless set locally, so `supabase` is `null` and every
+function in `src/lib/sync.ts` degrades to a no-op/`null` return — the app never depends on the
+backend being configured or reachable. `RunPage.tsx` calls `syncRun()` right after `saveRun()`
+(fire-and-forget, not awaited by the UI).
+
+`src/lib/classement.ts`'s `classementJour(date, n)` reads real `runs` rows for that day (public
+SELECT, no auth needed) and falls back to the seeded fake peloton (`classementSimule`) when the
+backend is absent or nobody has played yet that day — used by `Home.tsx` and `Classement.tsx`.
+`src/lib/stats.ts`'s `calculeStats(historique, today)` is a pure function over a
+`RunPourStats[]` history; `Profil.tsx` fetches that history by pseudo via
+`sync.ts`'s `fetchRunsParPseudo()` (so stats follow the pseudo across browsers/devices) and falls
+back to the local `loadRuns()` history when the backend is unavailable. `rangEstime()` (estimated
+rank shown in the profile) still compares against the simulated peloton only, by design — it's
+explicitly labeled as an estimate in the UI.
 
 ### Content pipelines (generated, not hand-authored)
 
