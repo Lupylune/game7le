@@ -3,7 +3,7 @@ import { pick } from '../lib/rng';
 import { SOL5, SOL6 } from '../data/lexique';
 import type { GameProps } from './types';
 
-const N_MOTS = 8;
+const N_MOTS = 12;
 
 export default function Dactylo({ rng, onDone }: GameProps) {
   const phrase = useMemo(() => {

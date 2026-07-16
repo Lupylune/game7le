@@ -74,8 +74,8 @@ export const JEUX: GameDef[] = [
   {
     id: 'ratiole',
     nom: 'Ratiole',
-    regles: 'Coupez la forme d’un trait droit pour atteindre le ratio cible.',
-    scoring: 'De −21 s (parfait) à +10 s (très raté) · une seule tentative',
+    regles: 'Coupez chaque forme d’un trait droit pour atteindre son ratio cible — 3 formes à la suite.',
+    scoring: 'Par coupe : de −7 s (parfait) à +15 s (très raté) · une seule tentative par forme',
     skip: null,
     Component: Ratiole,
   },
@@ -114,8 +114,8 @@ export const JEUX: GameDef[] = [
   {
     id: 'echecs',
     nom: 'Échecs',
-    regles: 'Un puzzle Lichess : l’adversaire vient de jouer, trouvez le meilleur coup.',
-    scoring: 'Coup trouvé : −15 s · mauvais coup : +10 s · révélation : +30 s',
+    regles: 'Un puzzle Lichess : l’adversaire vient de jouer, menez l’attaque jusqu’au mat.',
+    scoring: 'Mat trouvé : −15 s (davantage si plusieurs coups) · mauvais coup : +10 s · révélation : +30 s',
     skip: { apresS: 10, penaliteS: 90 },
     Component: Echecs,
   },

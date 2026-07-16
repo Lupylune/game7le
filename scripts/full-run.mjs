@@ -31,8 +31,7 @@ async function skip(afterS) {
   await forward(1600);
 }
 
-async function dragAcross() {
-  await forward(6000); // récap + compte à rebours avant l'épreuve
+async function dragOnce() {
   await page.waitForSelector('.draw-svg', { timeout: 5000 });
   const box = await page.locator('.draw-svg').boundingBox();
   await page.mouse.move(box.x + 5, box.y + box.height / 2);
@@ -40,7 +39,21 @@ async function dragAcross() {
   for (let i = 1; i <= 8; i++)
     await page.mouse.move(box.x + (box.width * i) / 8, box.y + box.height / 2 + (i % 2) * 4, { steps: 4 });
   await page.mouse.up();
+}
+
+async function dragAcross() {
+  await forward(6000); // récap + compte à rebours avant l'épreuve
+  await dragOnce();
   await forward(2500);
+}
+
+// Ratiole : trois formes à couper l'une après l'autre
+async function tripleCut() {
+  await forward(6000);
+  for (let c = 0; c < 3; c++) {
+    await dragOnce();
+    await forward(2500);
+  }
 }
 
 // 7 épreuves tirées au sort chaque jour : on lit le nom affiché et on agit
@@ -52,7 +65,7 @@ const actions = {
   Reines: () => skip(45),
   Démineur: () => skip(45),
   Nonogramme: () => skip(45),
-  Ratiole: dragAcross,
+  Ratiole: tripleCut,
   Mélimélo: () => skip(45),
   Chromal: () => skip(30),
   Tracé: dragAcross,

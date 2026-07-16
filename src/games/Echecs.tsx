@@ -56,32 +56,40 @@ const estBlanche = (p: string) => p !== '' && p === p.toUpperCase();
 /** Solution lisible du puzzle du jour (pour l'écran de résultats). */
 export function solutionEchecs(rng: () => number): string {
   const pz = PUZZLES[Math.floor(rng() * PUZZLES.length)];
-  const { board } = parseFen(pz.fen);
-  const apres = applyUci(board, pz.riposte);
-  const from = pz.solution.slice(0, 2);
-  const to = pz.solution.slice(2, 4);
-  const piece = apres[idx(from)];
-  return `${GLYPHES[piece?.toLowerCase()] ?? ''} ${from} → ${to}${pz.mat ? ' (mat)' : ''}`;
+  let { board } = parseFen(pz.fen);
+  board = applyUci(board, pz.coups[0]);
+  const parts: string[] = [];
+  for (let s = 1; s < pz.coups.length; s++) {
+    const mv = pz.coups[s];
+    if (s % 2 === 1) {
+      const piece = board[idx(mv.slice(0, 2))];
+      parts.push(`${GLYPHES[piece?.toLowerCase()] ?? ''} ${mv.slice(0, 2)} → ${mv.slice(2, 4)}`);
+    }
+    board = applyUci(board, mv);
+  }
+  return `${parts.join(' · ')} (mat)`;
 }
 
 export default function Echecs({ rng, onAdjust, onDone }: GameProps) {
   const puzzle = useMemo(() => PUZZLES[Math.floor(rng() * PUZZLES.length)], [rng]);
   const initial = useMemo(() => parseFen(puzzle.fen), [puzzle]);
   const joueurBlanc = initial.actif === 'b'; // l'adversaire joue la riposte, puis à nous
+  const nbAJouer = Math.floor(puzzle.coups.length / 2); // coups du joueur jusqu'au mat
 
   const [board, setBoard] = useState<Board>(initial.board);
+  const [step, setStep] = useState(0); // index du prochain coup attendu dans puzzle.coups
   const [lastMove, setLastMove] = useState<[number, number] | null>(null);
   const [sel, setSel] = useState<number | null>(null);
   const [flashSq, setFlashSq] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
-  const [revealed, setRevealed] = useState(false);
   const doneRef = useRef(false);
 
   // L'adversaire joue son coup après un court délai
   useEffect(() => {
     const t = setTimeout(() => {
-      setBoard((b) => applyUci(b, puzzle.riposte));
-      setLastMove([idx(puzzle.riposte.slice(0, 2)), idx(puzzle.riposte.slice(2, 4))]);
+      setBoard((b) => applyUci(b, puzzle.coups[0]));
+      setLastMove([idx(puzzle.coups[0].slice(0, 2)), idx(puzzle.coups[0].slice(2, 4))]);
+      setStep(1);
       setReady(true);
     }, 800);
     return () => clearTimeout(t);
@@ -98,18 +106,31 @@ export default function Echecs({ rng, onAdjust, onDone }: GameProps) {
   }
 
   function tenter(from: number, to: number) {
-    if (doneRef.current) return;
+    if (doneRef.current || !ready) return;
     const mine = board[to] && estBlanche(board[to]) === joueurBlanc;
     if (mine) {
       setSel(to); // re-sélection d'une autre de ses pièces
       return;
     }
     const tentative = sqName(from) + sqName(to);
-    if (tentative === puzzle.solution) {
-      setBoard((b) => applyUci(b, puzzle.solution));
+    if (tentative === puzzle.coups[step]) {
+      setBoard((b) => applyUci(b, tentative));
       setLastMove([from, to]);
       setSel(null);
-      finish(revealed ? 0 : -15000, puzzle.mat ? 'mat trouvé' : 'meilleur coup trouvé');
+      if (step + 1 >= puzzle.coups.length) {
+        // le mat : bonus majoré si le mat demandait plusieurs coups
+        finish(-15000 - 7000 * (nbAJouer - 1), 'mat trouvé');
+      } else {
+        // l'adversaire riposte, puis la main revient au joueur
+        setReady(false);
+        const riposte = puzzle.coups[step + 1];
+        setTimeout(() => {
+          setBoard((b) => applyUci(b, riposte));
+          setLastMove([idx(riposte.slice(0, 2)), idx(riposte.slice(2, 4))]);
+          setStep(step + 2);
+          setReady(true);
+        }, 600);
+      }
     } else {
       onAdjust(10000, 'Mauvais coup');
       setFlashSq(to);
@@ -172,8 +193,7 @@ export default function Echecs({ rng, onAdjust, onDone }: GameProps) {
   return (
     <div className="game-area">
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-        Trait aux {joueurBlanc ? 'Blancs' : 'Noirs'} ·{' '}
-        {puzzle.mat ? 'mat en 1 coup' : 'trouvez le meilleur coup'} · puzzle Lichess ~{puzzle.elo} Elo
+        Trait aux {joueurBlanc ? 'Blancs' : 'Noirs'} · puzzle Lichess ~{puzzle.elo} Elo
       </p>
       <div
         className="chess-board"
@@ -219,11 +239,21 @@ export default function Echecs({ rng, onAdjust, onDone }: GameProps) {
           className="btn btn-sm"
           disabled={!ready}
           onClick={() => {
+            if (doneRef.current) return;
             onAdjust(30000, 'Solution révélée');
-            setRevealed(true);
-            setBoard((b) => applyUci(b, puzzle.solution));
-            setLastMove([idx(puzzle.solution.slice(0, 2)), idx(puzzle.solution.slice(2, 4))]);
-            finish(0, 'solution révélée');
+            setReady(false);
+            setSel(null);
+            // Déroule tous les coups restants de la solution en cascade
+            let delai = 0;
+            for (let s = step; s < puzzle.coups.length; s++) {
+              const mv = puzzle.coups[s];
+              setTimeout(() => {
+                setBoard((b) => applyUci(b, mv));
+                setLastMove([idx(mv.slice(0, 2)), idx(mv.slice(2, 4))]);
+              }, delai);
+              delai += 700;
+            }
+            setTimeout(() => finish(0, 'solution révélée'), delai);
           }}
         >
           Révéler (+30 s)
