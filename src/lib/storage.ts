@@ -68,20 +68,3 @@ export function resetAll(): void {
   localStorage.removeItem(K_SETTINGS);
   localStorage.removeItem('game7le:theme');
 }
-
-/** Série de jours consécutifs joués (jusqu'à aujourd'hui ou hier). */
-export function computeStreak(today: string): number {
-  const runs = loadRuns();
-  let streak = 0;
-  const d = new Date(today);
-  if (!runs[today]) d.setDate(d.getDate() - 1); // la série tient encore si hier est joué
-  for (;;) {
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-      d.getDate(),
-    ).padStart(2, '0')}`;
-    if (!runs[key]) break;
-    streak++;
-    d.setDate(d.getDate() - 1);
-  }
-  return streak;
-}

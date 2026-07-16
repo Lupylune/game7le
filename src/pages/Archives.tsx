@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { todayStr } from '../lib/rng';
 import { formatDateFr, formatMs } from '../lib/time';
-import { loadRuns } from '../lib/storage';
+import { loadSettings } from '../lib/storage';
+import { useHistorique } from '../lib/useHistorique';
 
 /** Date de « lancement » de la réplique : les archives remontent jusque-là. */
 const LANCEMENT = '2026-07-01';
@@ -20,7 +21,7 @@ function listDates(): string[] {
 }
 
 export default function Archives() {
-  const runs = loadRuns();
+  const runs = useHistorique(loadSettings().pseudo);
   const today = todayStr();
 
   return (

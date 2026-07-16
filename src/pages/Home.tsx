@@ -4,7 +4,9 @@ import Logo from '../components/Logo';
 import { classementJour, classementSimule, type Board } from '../lib/classement';
 import { seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
-import { computeStreak, loadRuns } from '../lib/storage';
+import { loadSettings } from '../lib/storage';
+import { calculeStreak } from '../lib/stats';
+import { useHistorique } from '../lib/useHistorique';
 
 const TAGLINES = [
   'Le Game7le nouveau est arrivé.',
@@ -26,8 +28,9 @@ export default function Home() {
     };
   }, [date]);
   const { entries, avgMs, runs } = board ?? { ...classementSimule(date, 5), reel: false };
-  const myRun = loadRuns()[date];
-  const streak = computeStreak(date);
+  const parDate = useHistorique(loadSettings().pseudo);
+  const myRun = parDate[date];
+  const streak = calculeStreak(new Set(Object.keys(parDate)), date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);
 
   return (
