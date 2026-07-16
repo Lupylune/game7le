@@ -109,12 +109,15 @@ backend being configured or reachable. `RunPage.tsx` calls `syncRun()` right aft
 `src/lib/classement.ts`'s `classementJour(date, n)` reads real `runs` rows for that day (public
 SELECT, no auth needed) and falls back to the seeded fake peloton (`classementSimule`) when the
 backend is absent or nobody has played yet that day — used by `Home.tsx` and `Classement.tsx`.
-`src/lib/stats.ts`'s `calculeStats(historique, today)` is a pure function over a
-`RunPourStats[]` history; `Profil.tsx` fetches that history by pseudo via
-`sync.ts`'s `fetchRunsParPseudo()` (so stats follow the pseudo across browsers/devices) and falls
-back to the local `loadRuns()` history when the backend is unavailable. `rangEstime()` (estimated
-rank shown in the profile) still compares against the simulated peloton only, by design — it's
-explicitly labeled as an estimate in the UI.
+
+`src/lib/useHistorique.ts`'s `useHistorique(pseudo)` hook is the shared way pages read "my run
+history": it fetches by pseudo via `sync.ts`'s `fetchRunsParPseudo()` (so history follows the
+pseudo across browsers/devices) and falls back to the local `loadRuns()` history when the backend
+is unavailable, returning a `Record<date, RunPourStats>`. Used by `Home.tsx`/`Classement.tsx`
+("did I play today"), `Archives.tsx` (per-day archive list), and `Profil.tsx` (fed into
+`stats.ts`'s pure `calculeStats(historique, today)`). `rangEstime()` (estimated rank shown in the
+profile) still compares against the simulated peloton only, by design — it's explicitly labeled
+as an estimate in the UI.
 
 ### Content pipelines (generated, not hand-authored)
 
