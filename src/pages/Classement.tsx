@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { classementJour, classementSimule, type Board, type Entry } from '../lib/classement';
 import { todayStr } from '../lib/rng';
 import { formatMs } from '../lib/time';
-import { loadSettings } from '../lib/storage';
 import { useHistorique } from '../lib/useHistorique';
+import { usePseudo } from '../lib/usePseudo';
+import { SymEtincelle, SymEtoile } from '../components/GameIcon';
 
 export default function Classement() {
   const date = todayStr();
-  const pseudo = loadSettings().pseudo;
+  const pseudo = usePseudo();
   const myRun = useHistorique(pseudo)[date];
   const [board, setBoard] = useState<Board | null>(null);
 
@@ -43,11 +44,11 @@ export default function Classement() {
           <li className={`row${e.me ? ' me' : ''}`} key={`${e.pseudo}-${i}`}>
             <span className="rank">{i + 1}</span>
             <span className="name">
-              {e.pseudo} {e.badge}
+              {e.pseudo} {e.badge && <SymEtoile />}
               {e.me && ' (vous)'}
             </span>
             <span className="time">{formatMs(e.ms)}</span>
-            <span>{e.flawless ? '✨' : ''}</span>
+            <span>{e.flawless && <SymEtincelle />}</span>
           </li>
         ))}
       </ol>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Favicon « G7 » : dégradé braise du logotype sur fond sombre du site. -->
+  <defs>
+    <linearGradient id="braise" x1="0" y1="54" x2="0" y2="14" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9a1808"/>
+      <stop offset="28%" stop-color="#d44418"/>
+      <stop offset="58%" stop-color="#f29028"/>
+      <stop offset="85%" stop-color="#fcd040"/>
+      <stop offset="100%" stop-color="#fff5a0"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#1c1e26"/>
+  <text x="32" y="45" text-anchor="middle"
+    font-family="'Rubik Mono One', ui-monospace, Menlo, 'DejaVu Sans Mono', monospace"
+    font-weight="700" font-size="34" letter-spacing="-2" fill="url(#braise)">G7</text>
+</svg>

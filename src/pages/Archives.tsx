@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { todayStr } from '../lib/rng';
 import { formatDateFr, formatMs } from '../lib/time';
-import { loadSettings } from '../lib/storage';
 import { useHistorique } from '../lib/useHistorique';
+import { usePseudo } from '../lib/usePseudo';
+import { SymEtincelle } from '../components/GameIcon';
 
 /** Date de « lancement » de la réplique : les archives remontent jusque-là. */
 const LANCEMENT = '2026-07-01';
@@ -21,7 +22,7 @@ function listDates(): string[] {
 }
 
 export default function Archives() {
-  const runs = useHistorique(loadSettings().pseudo);
+  const runs = useHistorique(usePseudo());
   const today = todayStr();
 
   return (
@@ -44,7 +45,7 @@ export default function Archives() {
               {run ? (
                 <>
                   <span className="time">
-                    {formatMs(run.totalMs)} {run.flawless && '✨'}
+                    {formatMs(run.totalMs)} {run.flawless && <SymEtincelle size={14} />}
                   </span>
                   <Link className="btn btn-sm" to={`/jouer/${date}`}>
                     Rejouer

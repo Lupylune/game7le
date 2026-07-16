@@ -68,6 +68,7 @@ for (let step = 0; step < 7; step++) {
   await actions[nom]();
 }
 
+await forward(4000); // récap de la dernière épreuve avant l'écran de résultats
 await page.waitForSelector('.results', { timeout: 8000 });
 const total = await page.textContent('.results .total');
 const lignes = await page.locator('.results tbody tr').count();

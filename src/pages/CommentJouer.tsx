@@ -1,5 +1,5 @@
 import { JEUX } from '../games';
-import GameIcon from '../components/GameIcon';
+import GameIcon, { SymEtincelle } from '../components/GameIcon';
 
 export default function CommentJouer() {
   return (
@@ -44,7 +44,9 @@ export default function CommentJouer() {
         </div>
       ))}
 
-      <h2>✨ Mode SANS-FAUTE ✨</h2>
+      <h2>
+        <SymEtincelle size={20} /> Mode SANS-FAUTE <SymEtincelle size={20} />
+      </h2>
       <p>
         Bouclez l'intégralité du parcours en moins de 5 minutes, en réussissant chaque épreuve,
         sans pénalité ni révélation. Le badge s'affiche à côté de votre temps.

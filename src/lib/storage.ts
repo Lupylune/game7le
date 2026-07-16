@@ -51,6 +51,10 @@ export function loadSettings(): Settings {
   return { theme: s.theme ?? 'dark', pseudo: s.pseudo ?? 'Vous' };
 }
 
+/** Émis à chaque enregistrement des réglages, pour que les pages déjà montées
+ *  (ex. l'accueil derrière la popup pseudo) se mettent à jour sans rechargement. */
+export const EV_SETTINGS = 'game7le:settings-change';
+
 export function saveSettings(s: Settings): void {
   localStorage.setItem(K_SETTINGS, JSON.stringify(s));
   localStorage.setItem('game7le:theme', s.theme);
@@ -61,6 +65,7 @@ export function saveSettings(s: Settings): void {
         : 'light'
       : s.theme;
   document.documentElement.dataset.theme = base;
+  window.dispatchEvent(new Event(EV_SETTINGS));
 }
 
 export function resetAll(): void {
