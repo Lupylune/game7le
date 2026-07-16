@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { classementJour, classementSimule, type Board, type Entry } from '../lib/classement';
 import { todayStr } from '../lib/rng';
 import { formatMs } from '../lib/time';
-import { loadRuns, loadSettings } from '../lib/storage';
+import { loadSettings } from '../lib/storage';
+import { useHistorique } from '../lib/useHistorique';
 
 export default function Classement() {
   const date = todayStr();
   const pseudo = loadSettings().pseudo;
-  const myRun = loadRuns()[date];
+  const myRun = useHistorique(pseudo)[date];
   const [board, setBoard] = useState<Board | null>(null);
 
   useEffect(() => {

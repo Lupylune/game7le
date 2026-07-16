@@ -21,7 +21,7 @@ export interface RunPourStats {
 }
 
 /** Série de jours consécutifs joués (jusqu'à `today` ou hier). */
-function calculeStreak(dates: Set<string>, today: string): number {
+export function calculeStreak(dates: Set<string>, today: string): number {
   let streak = 0;
   const d = new Date(today);
   if (!dates.has(today)) d.setDate(d.getDate() - 1); // la série tient encore si hier est joué
