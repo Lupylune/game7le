@@ -34,25 +34,43 @@ function clip(poly: Pt[], n: Pt, d: number): Pt[] {
   return out;
 }
 
-export default function Ratiole({ rng, onDone }: GameProps) {
-  const { poly, target } = useMemo(() => {
-    const nPts = randInt(rng, 8, 11);
-    const cx = W / 2;
-    const cy = H / 2;
-    const poly: Pt[] = [];
-    for (let k = 0; k < nPts; k++) {
-      const ang = (k / nPts) * Math.PI * 2 + rng() * 0.3;
-      const rad = 80 + rng() * 55;
-      poly.push([cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad * 0.85]);
-    }
-    const target = randInt(rng, 20, 45) / 100;
-    return { poly, target };
+const N_FORMES = 3;
+
+/** Barème par coupe (÷3 environ par rapport à l'ancienne coupe unique). */
+function bareme(err: number): [number, string] {
+  if (err <= 0.01) return [-7000, 'coupe parfaite'];
+  if (err <= 0.03) return [-5000, 'excellente coupe'];
+  if (err <= 0.06) return [-3000, 'bonne coupe'];
+  if (err <= 0.1) return [0, 'coupe correcte'];
+  if (err <= 0.2) return [7000, 'coupe ratée'];
+  return [15000, 'coupe très ratée'];
+}
+
+export default function Ratiole({ rng, onAdjust, onDone }: GameProps) {
+  const formes = useMemo(() => {
+    return Array.from({ length: N_FORMES }, () => {
+      const nPts = randInt(rng, 8, 11);
+      const cx = W / 2;
+      const cy = H / 2;
+      const poly: Pt[] = [];
+      for (let k = 0; k < nPts; k++) {
+        const ang = (k / nPts) * Math.PI * 2 + rng() * 0.3;
+        const rad = 80 + rng() * 55;
+        poly.push([cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad * 0.85]);
+      }
+      const target = randInt(rng, 20, 45) / 100;
+      return { poly, target };
+    });
   }, [rng]);
 
   const svgRef = useRef<SVGSVGElement>(null);
+  const [etape, setEtape] = useState(0);
   const [drag, setDrag] = useState<{ a: Pt; b: Pt } | null>(null);
   const [result, setResult] = useState<{ p1: Pt[]; p2: Pt[]; frac: number } | null>(null);
+  const errsRef = useRef<number[]>([]);
   const doneRef = useRef(false);
+
+  const { poly, target } = formes[etape];
 
   function toLocal(e: React.PointerEvent): Pt {
     const rect = svgRef.current!.getBoundingClientRect();
@@ -60,7 +78,7 @@ export default function Ratiole({ rng, onDone }: GameProps) {
   }
 
   function finalize(a: Pt, b: Pt) {
-    if (doneRef.current) return;
+    if (doneRef.current || result) return;
     const dx = b[0] - a[0];
     const dy = b[1] - a[1];
     if (Math.hypot(dx, dy) < 10) {
@@ -81,33 +99,30 @@ export default function Ratiole({ rng, onDone }: GameProps) {
     }
     const frac = a1 / total;
     setResult({ p1, p2, frac });
-    doneRef.current = true;
     const err = Math.min(Math.abs(frac - target), Math.abs(frac - (1 - target)));
-    let adjustMs: number;
-    let detail: string;
-    if (err <= 0.01) {
-      adjustMs = -21000;
-      detail = 'coupe parfaite';
-    } else if (err <= 0.03) {
-      adjustMs = -15000;
-      detail = 'excellente coupe';
-    } else if (err <= 0.06) {
-      adjustMs = -8000;
-      detail = 'bonne coupe';
-    } else if (err <= 0.1) {
-      adjustMs = 0;
-      detail = 'coupe correcte';
-    } else if (err <= 0.2) {
-      adjustMs = 20000;
-      detail = 'coupe ratée';
+    errsRef.current.push(err);
+    const [adjustMs, detail] = bareme(err);
+    if (etape < N_FORMES - 1) {
+      // coupes intermédiaires : ajustement immédiat, puis forme suivante
+      if (adjustMs !== 0) onAdjust(adjustMs, detail.charAt(0).toUpperCase() + detail.slice(1));
+      setTimeout(() => {
+        setResult(null);
+        setEtape(etape + 1);
+      }, 1500);
     } else {
-      adjustMs = 45000;
-      detail = 'coupe très ratée';
+      // dernière coupe : son ajustement passe par onDone (pas de double compte)
+      doneRef.current = true;
+      const moy = errsRef.current.reduce((s, e) => s + e, 0) / N_FORMES;
+      setTimeout(
+        () =>
+          onDone({
+            adjustMs,
+            detail: `${N_FORMES} coupes · écart moyen ${(moy * 100).toFixed(1)} pts`,
+            status: moy <= 0.1 ? 'success' : 'fail',
+          }),
+        1800,
+      );
     }
-    setTimeout(
-      () => onDone({ adjustMs, detail: `${detail} (écart ${(err * 100).toFixed(1)} pts)`, status: adjustMs <= 0 ? 'success' : 'fail' }),
-      1800,
-    );
   }
 
   const pts = (p: Pt[]) => p.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
@@ -115,7 +130,8 @@ export default function Ratiole({ rng, onDone }: GameProps) {
   return (
     <div className="game-area">
       <p className="ratio-target">
-        Objectif : {Math.round(target * 100)} % / {Math.round((1 - target) * 100)} %
+        Forme {etape + 1}/{N_FORMES} · Objectif : {Math.round(target * 100)} % /{' '}
+        {Math.round((1 - target) * 100)} %
       </p>
       <svg
         ref={svgRef}
@@ -124,12 +140,12 @@ export default function Ratiole({ rng, onDone }: GameProps) {
         width={W}
         height={H}
         onPointerDown={(e) => {
-          if (doneRef.current) return;
+          if (doneRef.current || result) return;
           e.currentTarget.setPointerCapture(e.pointerId);
           const p = toLocal(e);
           setDrag({ a: p, b: p });
         }}
-        onPointerMove={(e) => drag && !doneRef.current && setDrag({ a: drag.a, b: toLocal(e) })}
+        onPointerMove={(e) => drag && !doneRef.current && !result && setDrag({ a: drag.a, b: toLocal(e) })}
         onPointerUp={() => {
           if (drag) finalize(drag.a, drag.b);
           setDrag(null);
@@ -158,7 +174,8 @@ export default function Ratiole({ rng, onDone }: GameProps) {
         )}
       </svg>
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-        Tracez une droite qui coupe la forme selon le ratio cible. Une seule tentative !
+        Tracez une droite qui coupe la forme selon le ratio cible — {N_FORMES} formes à la suite,
+        une seule tentative chacune !
       </p>
     </div>
   );

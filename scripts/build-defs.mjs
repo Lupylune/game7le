@@ -26,6 +26,12 @@ function cleanLine(line, convertTemplates) {
   return d;
 }
 
+// Définitions grammaticales (« Pluriel de… », « Première personne du… ») ou
+// résidus d'images (« Thumb|70 px|… ») : mauvais indices, on prend la suivante.
+const META =
+  /^(pluriel|variante|diminutif|abréviation)\b|^participe (passé|présent)|^(féminin|masculin) (singulier|pluriel|de|du|d’|d')|personne du (singulier|pluriel)|^forme (conjuguée|de conjugaison)/i;
+const RESIDU = /^thumb\b|\d+\s*px\b/i;
+
 function extractDef(wikitext) {
   const start = wikitext.indexOf('== {{langue|fr}} ==');
   if (start === -1) return null;
@@ -36,7 +42,7 @@ function extractDef(wikitext) {
   for (const convert of [false, true]) {
     for (const line of lines) {
       const d = cleanLine(line, convert);
-      if (d.length >= 12) return d;
+      if (d.length >= 12 && !META.test(d) && !RESIDU.test(d)) return d;
     }
   }
   return null;
@@ -80,14 +86,27 @@ for (let i = 0; i < missing.length; i += BATCH) {
 
 const strip = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
 
+// Vocabulaire exclu des grilles (insultes ethniques présentes dans Lexique).
+const EXCLUS = new Set(['NEGRO', 'RITAL', 'BOCHE', 'BICOT']);
+
 const out = {};
 for (const [word, accent] of pairs) {
   let def = cache[accent];
-  if (!def) continue;
-  // masque le mot (et ses dérivés proches) dans sa propre définition
-  const stem = accent.slice(0, 4);
-  const re = new RegExp(`\\b(${stem}|${strip(stem)})[a-zà-ÿ]*`, 'gi');
-  def = def.replace(re, '____');
+  if (!def || EXCLUS.has(word)) continue;
+  // Masque le mot et ses dérivés proches dans sa propre définition, token par
+  // token (`\b` échoue devant les lettres accentuées) : un mot de l'indice est
+  // masqué s'il contient la réponse entière, s'il partage sa racine (4
+  // premières lettres), ou s'il commence par la réponse privée de son initiale
+  // (« bord » pour ABORD).
+  const stem = strip(accent.slice(0, 4));
+  const queue = word.slice(1);
+  def = def.replace(/[a-zà-ÿA-ZÀ-Ÿœæ]+/g, (tok) => {
+    const t = strip(tok);
+    if (t.includes(word) || t.includes(stem)) return '____'; // « ébullition » pour BULLE
+    if (queue.length >= 4 && t.startsWith(queue)) return '____';
+    return tok;
+  });
+  def = def.replace(/_{4}( _{4})+/g, '____'); // fusionne les masques adjacents
   if (def.length > 110) def = def.slice(0, 110).replace(/\s+\S*$/, '') + '…';
   def = def.charAt(0).toUpperCase() + def.slice(1);
   // filtre qualité : assez de contenu non masqué, pas de résidu de template
@@ -96,6 +115,9 @@ for (const [word, accent] of pairs) {
   if (visible.length < 12) continue;
   if (/(^|\s)(fr|fro|frm|conv)(\s|$)/.test(visible)) continue;
   if (def.startsWith('____')) continue;
+  // au moins deux mots significatifs visibles, sinon l'indice ne dit plus rien
+  // (ex. « Action d'____ ou de s'____ »)
+  if ((visible.match(/[a-zà-ÿœæ]{4,}/gi) || []).length < 2) continue;
   out[word] = def;
 }
 
