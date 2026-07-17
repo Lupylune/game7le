@@ -1,4 +1,5 @@
 import { seededRng, randInt, shuffle } from './rng';
+import type { GameLine } from './storage';
 import { supabase } from './supabase';
 
 export interface Entry {
@@ -7,6 +8,8 @@ export interface Entry {
   badge?: string;
   flawless?: boolean;
   me?: boolean;
+  /** Splits par mini-jeu (runs réels uniquement — absent pour le peloton simulé). */
+  lines?: GameLine[];
 }
 
 export interface Board {
@@ -21,13 +24,14 @@ interface RunReel {
   pseudo: string;
   total_ms: number;
   flawless: boolean;
+  lines: GameLine[];
 }
 
 async function fetchRunsReels(date: string): Promise<RunReel[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('runs')
-    .select('pseudo, total_ms, flawless')
+    .select('pseudo, total_ms, flawless, lines')
     .eq('date', date)
     .order('total_ms', { ascending: true });
   if (error || !data) return null;
@@ -44,7 +48,9 @@ export async function classementJour(date: string, n = 15): Promise<Board> {
   const reel = await fetchRunsReels(date);
   if (reel) {
     return {
-      entries: reel.slice(0, n).map((r) => ({ pseudo: r.pseudo, ms: r.total_ms, flawless: r.flawless })),
+      entries: reel
+        .slice(0, n)
+        .map((r) => ({ pseudo: r.pseudo, ms: r.total_ms, flawless: r.flawless, lines: r.lines })),
       avgMs: reel.length > 0 ? reel.reduce((s, r) => s + r.total_ms, 0) / reel.length : 0,
       runs: reel.length,
       reel: true,

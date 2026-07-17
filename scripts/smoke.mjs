@@ -43,8 +43,8 @@ try {
 }
 
 // Le classement réel du jour peut être vide (personne n'a encore couru) :
-// on accepte des lignes ou le message d'état vide.
-const SEL_CLASSEMENT = '.lb .row, .lb p:has-text("Personne n\'a encore couru")';
+// on accepte des lignes ou l'état vide (balle de foin qui roule).
+const SEL_CLASSEMENT = '.lb .row, .lb .hay-scene';
 await check('/', SEL_CLASSEMENT, 'Accueil + top 5');
 await check('/comment-jouer', '.rule-card', 'Comment jouer');
 await check('/a-propos', '.prose h1', 'À propos');

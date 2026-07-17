@@ -1,7 +1,9 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
-import { SymEtincelle, SymEtoile, SymFlamme } from '../components/GameIcon';
+import { SymEtincelle, SymFlamme } from '../components/GameIcon';
+import BalleDeFoin from '../components/BalleDeFoin';
+import LigneClassement from '../components/LigneClassement';
 import { classementJour, type Board } from '../lib/classement';
 import { seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
@@ -10,12 +12,13 @@ import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
 
 const TAGLINES = [
-  'Le Game7le nouveau est arrivé.',
-  'Sept casse-têtes, zéro pitié.',
-  'Votre cerveau vous remerciera. Ou pas.',
-  'Plus rapide que la file à la boulangerie.',
-  'Chronométré, comme le métro. En mieux.',
-  'Aujourd’hui encore, personne ne vous a obligé·e.',
+  'Merci le C',
+  'ゲーム、セット、スタート。',
+  'Regardez 86.',
+  'Mieux que TFT (peut-être pas)',
+  'Le temps que le rer b arrive',
+  'Mieux que GD (peut-être pas)',
+  'SCS ?',
 ];
 
 export default function Home() {
@@ -67,25 +70,16 @@ export default function Home() {
       <section className="lb" aria-label="Top 5 du jour">
         <h2>Le top 5 du jour</h2>
         {board && board.entries.length === 0 ? (
-          <p className="global-avg">
-            Personne n'a encore couru aujourd'hui. Soyez la première ou le premier !
-          </p>
+          <BalleDeFoin />
         ) : board ? (
           <>
             <ol>
               {board.entries.map((e, i) => (
-                <li className="row" key={e.pseudo} style={{ '--i': i } as CSSProperties}>
-                  <span className="rank">{i + 1}</span>
-                  <span className="name">
-                    {e.pseudo} {e.badge && <SymEtoile />}
-                  </span>
-                  <span className="time">{formatMs(e.ms)}</span>
-                  <span>{e.flawless && <SymEtincelle />}</span>
-                </li>
+                <LigneClassement key={e.pseudo} e={e} rank={i + 1} />
               ))}
             </ol>
             <p className="global-avg">
-              Moyenne mondiale du jour : {formatLong(board.avgMs)} sur{' '}
+              Moyenne du jour : {formatLong(board.avgMs)} sur{' '}
               {board.runs.toLocaleString('fr-FR')} runs.
             </p>
             <Link to="/classement" className="see-more">
