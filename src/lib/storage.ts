@@ -64,6 +64,12 @@ export function loadRuns(): RunRecord[] {
   return Object.values(chargeRuns());
 }
 
+/** Y a-t-il déjà un run joué en direct pour cette date ? (Seule la première
+ *  tentative du jour compte en direct — les rejeux partent en archive.) */
+export function aRunEnDirect(date: string): boolean {
+  return chargeRuns()[date] != null;
+}
+
 export function saveRun(run: RunRecord): void {
   const runs = chargeRuns();
   // On garde le meilleur temps par jour et par type (direct / archive).

@@ -63,8 +63,15 @@ set search_path = public
 as $$
 declare
   -- Le flag client est plafonné côté serveur : un run ne peut être « en
-  -- direct » que soumis le jour même du puzzle (fuseau de référence du jeu).
-  v_direct boolean := p_en_direct and p_date = (now() at time zone 'Europe/Paris')::date;
+  -- direct » que soumis le jour même du puzzle (fuseau de référence du jeu),
+  -- et seule la première tentative du jour compte — tout rejeu, même le jour
+  -- même, bascule dans le créneau archive.
+  v_direct boolean := p_en_direct
+    and p_date = (now() at time zone 'Europe/Paris')::date
+    and not exists (
+      select 1 from runs
+      where pseudo = p_pseudo and date = p_date and en_direct
+    );
 begin
   insert into comptes (pseudo) values (p_pseudo)
     on conflict (pseudo) do nothing;

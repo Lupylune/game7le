@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { classementJour, type Board, type Entry } from '../lib/classement';
 import { todayStr } from '../lib/rng';
+import { estEnDirect } from '../lib/stats';
 import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
 import BalleDeFoin from '../components/BalleDeFoin';
@@ -10,7 +11,8 @@ import LigneClassement from '../components/LigneClassement';
 export default function Classement() {
   const date = todayStr();
   const pseudo = usePseudo();
-  const myRun = useHistorique(pseudo).find((r) => r.date === date);
+  // Seul le run en direct (première tentative du jour) compte au classement.
+  const myRun = useHistorique(pseudo).find((r) => r.date === date && estEnDirect(r));
   const [board, setBoard] = useState<Board | null>(null);
 
   useEffect(() => {

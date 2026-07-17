@@ -89,9 +89,10 @@ Notable mechanics:
 - `RunPage` also drives `/jouer/:date` (replay any past day) — same draw/seed logic keyed by the
   URL date instead of today.
 - Results are persisted via `saveRun()` (`src/lib/storage.ts`, localStorage key `game7le:runs`),
-  keeping the best time per day **and per type** (`enDirect`: played on the puzzle's day vs.
-  replayed from the archives) — an archive replay never overwrites a live run, so streak/rank/stats
-  (which only count live runs) survive later archive grinding.
+  keeping the best time per day **and per type** (`enDirect`). Live = the **first attempt on the
+  puzzle's day**; every replay — archives or same-day regrind — goes to the archive slot and never
+  overwrites the live run, so the daily leaderboard, streak and profile stats (live-only) reflect
+  first attempts.
 
 ### Optional Supabase backend (`src/lib/supabase.ts`, `src/lib/sync.ts`, `supabase/schema.sql`)
 
@@ -102,8 +103,9 @@ chosen freely client-side, same as local storage), so direct table writes are de
 writes go through the `submit_run()` `SECURITY DEFINER` RPC, which upserts the `comptes` row and
 only overwrites a `(pseudo, date, en_direct)` row if the new time is better — mirroring the local
 rule that live and archive runs never overwrite each other. The client-sent `p_en_direct` flag is
-capped server-side (a run can only be live if submitted on the puzzle's day, Europe/Paris).
-Reads are public (needed for a global leaderboard).
+capped server-side (live requires: submitted on the puzzle's day, Europe/Paris, and no live run
+already recorded for that pseudo/date — first attempt only). Reads are public (needed for a
+global leaderboard).
 
 `src/lib/supabase.ts` builds the client from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (see
 `.env.example`); both are `undefined` unless set locally, so `supabase` is `null` and every
