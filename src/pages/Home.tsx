@@ -4,7 +4,7 @@ import Logo from '../components/Logo';
 import { SymEtincelle, SymFlamme } from '../components/GameIcon';
 import BalleDeFoin from '../components/BalleDeFoin';
 import LigneClassement from '../components/LigneClassement';
-import { classementJour, type Board } from '../lib/classement';
+import { classementJour, classementSemaine, type Board } from '../lib/classement';
 import { seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
 import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
@@ -24,9 +24,11 @@ const TAGLINES = [
 export default function Home() {
   const date = todayStr();
   const [board, setBoard] = useState<Board | null>(null);
+  const [semaine, setSemaine] = useState<Board | null>(null);
   useEffect(() => {
     let vivant = true;
     classementJour(date, 5).then((b) => vivant && setBoard(b));
+    classementSemaine(date, 5).then((b) => vivant && setSemaine(b));
     return () => {
       vivant = false;
     };
@@ -87,6 +89,30 @@ export default function Home() {
             <Link to="/classement" className="see-more">
               Voir le classement complet →
             </Link>
+          </>
+        ) : (
+          <ol aria-hidden className="lb-skeleton">
+            {Array.from({ length: 5 }, (_, i) => (
+              <li className="row" key={i} />
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section className="lb" aria-label="Top 5 de la semaine">
+        <h2>Le top 5 de la semaine</h2>
+        {semaine && semaine.entries.length === 0 ? (
+          <BalleDeFoin />
+        ) : semaine ? (
+          <>
+            <ol>
+              {semaine.entries.map((e, i) => (
+                <LigneClassement key={e.pseudo} e={e} rank={i + 1} />
+              ))}
+            </ol>
+            <p className="global-avg">
+              Cumul des temps de la semaine (lundi→dimanche), classé par régularité.
+            </p>
           </>
         ) : (
           <ol aria-hidden className="lb-skeleton">

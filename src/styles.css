@@ -324,6 +324,11 @@ main.content {
 .lb .time {
   font-family: var(--font-mono);
 }
+.lb .jours {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
 .lb .note,
 .global-avg {
   text-align: center;
