@@ -42,11 +42,14 @@ try {
   console.log('✗ Popup pseudo absente à la première visite');
 }
 
-await check('/', '.lb .row', 'Accueil + top 5');
+// Le classement réel du jour peut être vide (personne n'a encore couru) :
+// on accepte des lignes ou le message d'état vide.
+const SEL_CLASSEMENT = '.lb .row, .lb p:has-text("Personne n\'a encore couru")';
+await check('/', SEL_CLASSEMENT, 'Accueil + top 5');
 await check('/comment-jouer', '.rule-card', 'Comment jouer');
 await check('/a-propos', '.prose h1', 'À propos');
 await check('/archives', '.archive-list li', 'Archives');
-await check('/classement', '.lb .row', 'Classement');
+await check('/classement', SEL_CLASSEMENT, 'Classement');
 await check('/parametres', '.settings-row', 'Paramètres');
 await check('/profil', '.prose h1', 'Profil');
 await check('/entrainement', '.game-card', 'Entraînement (liste)');
