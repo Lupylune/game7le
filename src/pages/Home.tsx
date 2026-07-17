@@ -7,7 +7,7 @@ import LigneClassement from '../components/LigneClassement';
 import { classementJour, type Board } from '../lib/classement';
 import { seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
-import { calculeStreak, joursEnDirect } from '../lib/stats';
+import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
 import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
 
@@ -32,8 +32,9 @@ export default function Home() {
     };
   }, [date]);
   const runs = useHistorique(usePseudo());
-  // Un run daté d'aujourd'hui est forcément joué en direct : au plus une entrée.
-  const myRun = runs.find((r) => r.date === date);
+  // Le temps « officiel » du jour est celui de la première tentative (en
+  // direct) — les rejeux du jour même sont des runs d'archive.
+  const myRun = runs.find((r) => r.date === date && estEnDirect(r));
   const streak = calculeStreak(joursEnDirect(runs), date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);
 

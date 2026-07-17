@@ -4,7 +4,7 @@ import { jeuxDuJour, JEUX_PAR_JOUR } from '../games';
 import type { GameResult } from '../games/types';
 import { seededRng, todayStr } from '../lib/rng';
 import { formatAdjust, formatDateFr, formatMs } from '../lib/time';
-import { loadSettings, saveRun, type GameLine } from '../lib/storage';
+import { aRunEnDirect, loadSettings, saveRun, type GameLine } from '../lib/storage';
 import { syncRun } from '../lib/sync';
 import GameIcon, { SymEtincelle } from '../components/GameIcon';
 import Solutions from '../components/Solutions';
@@ -271,7 +271,9 @@ export default function RunPage() {
         flawless,
         lines,
         finishedAt: Date.now(),
-        enDirect: date === todayStr(),
+        // En direct = première tentative du jour même ; tout rejeu (même le
+        // jour même) est un run d'archive et ne touche pas au temps officiel.
+        enDirect: date === todayStr() && !aRunEnDirect(date),
       };
       saveRun(run);
       syncRun(loadSettings().pseudo, run);

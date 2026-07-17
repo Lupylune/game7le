@@ -1172,6 +1172,17 @@ button.skip-pill.skip-ready:active {
   height: clamp(44px, 11vw, 54px);
   font-size: 1.4rem;
 }
+/* Le glyphe ● rend plus petit que ★ à taille de police égale : on l'agrandit
+   pour que les deux symboles aient la même taille visuelle. */
+.paire-sym {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.paire-sym.circle {
+  font-size: 1.2em;
+}
 .paire-mark {
   position: absolute;
   z-index: 2;

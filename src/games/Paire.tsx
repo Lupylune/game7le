@@ -159,9 +159,9 @@ export default function Paire({ rng, onAdjust, onDone }: GameProps) {
             >
               {v !== -1 &&
                 (givens.has(i) ? (
-                  SYM[v]
+                  <span className={`paire-sym ${v === 0 ? 'star' : 'circle'}`}>{SYM[v]}</span>
                 ) : (
-                  <span className="cell-pop" key={v}>
+                  <span className={`cell-pop paire-sym ${v === 0 ? 'star' : 'circle'}`} key={v}>
                     {SYM[v]}
                   </span>
                 ))}
