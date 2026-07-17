@@ -36,14 +36,16 @@ async function fetchRunsReels(date: string): Promise<RunReel[] | null> {
 
 /**
  * Classement réel du jour (Supabase) tronqué à `n` entrées, avec repli sur le
- * peloton simulé si le backend est absent, injoignable, ou vide pour ce jour.
+ * peloton simulé uniquement si le backend est absent ou injoignable. Un jour
+ * sans aucun run renvoie un classement réel vide (`reel: true`, `runs: 0`) :
+ * à l'UI d'afficher « personne n'a encore couru ».
  */
 export async function classementJour(date: string, n = 15): Promise<Board> {
   const reel = await fetchRunsReels(date);
-  if (reel && reel.length > 0) {
+  if (reel) {
     return {
       entries: reel.slice(0, n).map((r) => ({ pseudo: r.pseudo, ms: r.total_ms, flawless: r.flawless })),
-      avgMs: reel.reduce((s, r) => s + r.total_ms, 0) / reel.length,
+      avgMs: reel.length > 0 ? reel.reduce((s, r) => s + r.total_ms, 0) / reel.length : 0,
       runs: reel.length,
       reel: true,
     };

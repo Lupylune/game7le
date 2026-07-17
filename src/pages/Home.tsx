@@ -66,7 +66,11 @@ export default function Home() {
 
       <section className="lb" aria-label="Top 5 du jour">
         <h2>Le top 5 du jour</h2>
-        {board ? (
+        {board && board.entries.length === 0 ? (
+          <p className="global-avg">
+            Personne n'a encore couru aujourd'hui. Soyez la première ou le premier !
+          </p>
+        ) : board ? (
           <>
             <ol>
               {board.entries.map((e, i) => (
