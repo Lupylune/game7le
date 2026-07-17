@@ -11,13 +11,13 @@ const LANCEMENT = '2026-07-01';
 
 function listDates(): string[] {
   const out: string[] = [];
-  const today = todayStr();
-  const d = new Date(today);
+  // Arithmétique en UTC : indépendante du fuseau du navigateur.
+  const d = new Date(`${todayStr()}T00:00:00Z`);
   for (;;) {
-    const key = todayStr(d);
+    const key = d.toISOString().slice(0, 10);
     if (key < LANCEMENT) break;
     out.push(key);
-    d.setDate(d.getDate() - 1);
+    d.setUTCDate(d.getUTCDate() - 1);
   }
   return out;
 }

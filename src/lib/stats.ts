@@ -48,18 +48,19 @@ export function joursEnDirect(runs: RunPourStats[]): Set<string> {
   return new Set(runs.filter(estEnDirect).map((r) => r.date));
 }
 
-/** Série de jours consécutifs joués (jusqu'à `today` ou hier). */
+/**
+ * Série de jours consécutifs joués (jusqu'à `today` ou hier).
+ * Arithmétique en UTC : indépendante du fuseau du navigateur.
+ */
 export function calculeStreak(dates: Set<string>, today: string): number {
   let streak = 0;
-  const d = new Date(today);
-  if (!dates.has(today)) d.setDate(d.getDate() - 1); // la série tient encore si hier est joué
+  const d = new Date(`${today}T00:00:00Z`);
+  if (!dates.has(today)) d.setUTCDate(d.getUTCDate() - 1); // la série tient encore si hier est joué
   for (;;) {
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-      d.getDate(),
-    ).padStart(2, '0')}`;
+    const key = d.toISOString().slice(0, 10);
     if (!dates.has(key)) break;
     streak++;
-    d.setDate(d.getDate() - 1);
+    d.setUTCDate(d.getUTCDate() - 1);
   }
   return streak;
 }
