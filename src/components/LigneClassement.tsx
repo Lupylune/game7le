@@ -20,6 +20,11 @@ export default function LigneClassement({ e, rank }: { e: Entry; rank: number })
         {e.pseudo} {e.badge && <SymEtoile />}
         {e.me && ' (vous)'}
       </span>
+      {e.jours != null && (
+        <span className="jours">
+          {e.jours} j
+        </span>
+      )}
       <span className="time">{formatMs(e.ms)}</span>
       <span>{e.flawless && <SymEtincelle />}</span>
       {depliable && (

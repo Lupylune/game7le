@@ -1,4 +1,4 @@
-import { seededRng, randInt, shuffle } from './rng';
+import { seededRng, randInt, shuffle, todayStr } from './rng';
 import type { GameLine } from './storage';
 import { supabase } from './supabase';
 
@@ -8,6 +8,8 @@ export interface Entry {
   badge?: string;
   flawless?: boolean;
   me?: boolean;
+  /** Nombre de jours joués (classement hebdomadaire uniquement). */
+  jours?: number;
   /** Splits par mini-jeu (runs réels uniquement — absent pour le peloton simulé). */
   lines?: GameLine[];
 }
@@ -58,6 +60,95 @@ export async function classementJour(date: string, n = 15): Promise<Board> {
     };
   }
   return { ...classementSimule(date, n), reel: false };
+}
+
+/** Les 7 dates (AAAA-MM-JJ) de la semaine calendaire (lundi→dimanche) contenant `date`. */
+function datesSemaine(date: string): string[] {
+  const [y, m, d] = date.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const depuisLundi = (dt.getDay() + 6) % 7; // 0 = lundi … 6 = dimanche
+  const out: string[] = [];
+  for (let i = 0; i < 7; i++) out.push(todayStr(new Date(y, m - 1, d - depuisLundi + i)));
+  return out;
+}
+
+interface RunSemaine {
+  pseudo: string;
+  total_ms: number;
+  flawless: boolean;
+}
+
+/**
+ * Classement de la semaine calendaire (lundi→dimanche) contenant `date` : on
+ * cumule le temps des runs joués en direct de chaque pseudo, classés d'abord par
+ * nombre de jours joués (régularité), puis par temps cumulé croissant. Repli sur
+ * un peloton simulé si le backend est absent/injoignable.
+ */
+export async function classementSemaine(date: string, n = 5): Promise<Board> {
+  const dates = datesSemaine(date);
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('runs')
+      .select('pseudo, total_ms, flawless')
+      .eq('en_direct', true)
+      .in('date', dates);
+    if (!error && data) {
+      // en_direct est unique par (pseudo, date) : on peut cumuler sans dédoublonner.
+      const agg = new Map<string, { total: number; jours: number; flawless: number }>();
+      for (const r of data as RunSemaine[]) {
+        const a = agg.get(r.pseudo) ?? { total: 0, jours: 0, flawless: 0 };
+        a.total += r.total_ms;
+        a.jours += 1;
+        if (r.flawless) a.flawless += 1;
+        agg.set(r.pseudo, a);
+      }
+      const entries: Entry[] = [...agg.entries()]
+        .map(([pseudo, a]) => ({
+          pseudo,
+          ms: a.total,
+          jours: a.jours,
+          flawless: a.jours > 0 && a.flawless === a.jours,
+        }))
+        .sort((x, y) => (y.jours! - x.jours!) || (x.ms - y.ms))
+        .slice(0, n);
+      return {
+        entries,
+        avgMs: agg.size > 0 ? [...agg.values()].reduce((s, a) => s + a.total, 0) / agg.size : 0,
+        runs: data.length,
+        reel: true,
+      };
+    }
+  }
+  return { ...classementSemaineSimule(date, n), reel: false };
+}
+
+/**
+ * Peloton hebdomadaire fictif mais déterministe (démo hors-ligne, pas de serveur).
+ * Seed sur le lundi de la semaine : le faux top reste stable du lundi au dimanche.
+ */
+export function classementSemaineSimule(
+  date: string,
+  n = 5,
+): { entries: Entry[]; avgMs: number; runs: number } {
+  const rng = seededRng(`game7le:semaine:${datesSemaine(date)[0]}`);
+  const noms = shuffle(rng, PSEUDOS).slice(0, n);
+  let ms = randInt(rng, 7 * 85000, 7 * 105000);
+  const entries: Entry[] = noms.map((pseudo, i) => {
+    const e: Entry = {
+      pseudo,
+      ms,
+      jours: i < 3 ? 7 : 6,
+      badge: rng() < 0.3 ? '★' : undefined,
+      flawless: rng() < 0.12,
+    };
+    ms += randInt(rng, 15000, i < 2 ? 40000 : 70000);
+    return e;
+  });
+  return {
+    entries,
+    avgMs: randInt(rng, 55 * 60000, 80 * 60000),
+    runs: randInt(rng, 3000, 9000),
+  };
 }
 
 /**
