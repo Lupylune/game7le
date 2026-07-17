@@ -15,6 +15,11 @@ export function formatAdjust(ms: number): string {
   return `${ms < 0 ? '−' : '+'}${s} s`;
 }
 
+/** Formate une durée en secondes décimales : « 22,7 s ». */
+export function formatSec(ms: number): string {
+  return `${(ms / 1000).toFixed(1).replace('.', ',')} s`;
+}
+
 /** Formate une durée lisible : « 10 min 27 s ». */
 export function formatLong(ms: number): string {
   const totalS = Math.round(ms / 1000);

@@ -224,12 +224,13 @@ export default function RunPage() {
     (line: GameLine) => {
       const now = performance.now();
       const dureeMs = now - gameStartRef.current;
+      const ligne = { ...line, ms: Math.round(dureeMs) };
       setRawMs(now - startRef.current - pausedRef.current);
       const finished = lines.length + 1 === jeux.length;
-      setLines((prev) => [...prev, line]);
+      setLines((prev) => [...prev, ligne]);
       setIndex((i) => Math.min(i + 1, jeux.length - 1));
       // Même récap pour la dernière épreuve : les résultats suivent au lieu du décompte
-      beginTransition(line.status, line, dureeMs, finished);
+      beginTransition(ligne.status, ligne, dureeMs, finished);
     },
     [jeux, lines],
   );
