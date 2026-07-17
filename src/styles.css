@@ -279,16 +279,38 @@ main.content {
   gap: var(--sp-2);
 }
 .lb .row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: var(--sp-2) var(--sp-4);
 }
 .lb .row.me {
   border-color: var(--accent);
+}
+.lb .row-main {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-4);
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.lb button.row-main {
+  cursor: pointer;
+}
+.lb .chev {
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.lb .row.open .chev {
+  transform: rotate(180deg);
+}
+.lb .row .run-splits {
+  padding: 0 var(--sp-4) var(--sp-2);
 }
 .lb .rank {
   font-family: var(--font-mono);
@@ -313,6 +335,41 @@ main.content {
   display: block;
   text-align: center;
   margin-top: var(--sp-3);
+}
+
+/* État vide du classement : balle de foin qui roule (virevoltant) */
+.hay-scene {
+  position: relative;
+  height: 76px;
+  margin-top: var(--sp-4);
+  overflow: hidden;
+}
+.hay-ground {
+  position: absolute;
+  inset: auto 0 6px;
+  border-bottom: 2px dashed var(--border);
+}
+.hay-bale {
+  position: absolute;
+  bottom: 8px;
+  animation: hay-roll 7s linear infinite;
+}
+@keyframes hay-roll {
+  from {
+    left: -12%;
+    transform: rotate(0turn);
+  }
+  to {
+    left: 104%;
+    transform: rotate(4turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hay-bale {
+    animation: none;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 /* ===== Pages texte ===== */
@@ -638,18 +695,24 @@ button.skip-pill.skip-ready:active {
 .total-reserve.malus {
   color: var(--error);
 }
-.results table {
+/* Splits d'un run : partagé entre l'écran de résultats et le classement */
+.run-splits {
   width: 100%;
   border-collapse: collapse;
-  margin: var(--sp-4) 0;
   font-size: var(--text-sm);
 }
-.results td {
+.results .run-splits {
+  margin: var(--sp-4) 0;
+}
+.run-splits td {
   padding: var(--sp-2) var(--sp-3);
   border-bottom: 1px solid var(--border);
   text-align: left;
 }
-.results td.adj {
+.run-splits tr:last-child td {
+  border-bottom: 0;
+}
+.run-splits td.adj {
   text-align: right;
   font-family: var(--font-mono);
 }
@@ -670,9 +733,10 @@ button.skip-pill.skip-ready:active {
   }
 }
 .lb .row,
-.results tbody tr {
+.run-splits tbody tr {
   animation: slide-in-left 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(var(--i, 0) * 0.08s);
+  /* décalage plafonné : le classement complet peut compter 100 lignes */
+  animation-delay: calc(min(var(--i, 0), 12) * 0.08s);
 }
 /* Squelette pendant le chargement du classement (évite le flash du peloton simulé) */
 .lb-skeleton .row {

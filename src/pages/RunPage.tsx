@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { jeuxDuJour, JEUX_PAR_JOUR } from '../games';
 import type { GameResult } from '../games/types';
@@ -8,6 +8,7 @@ import { loadSettings, saveRun, type GameLine } from '../lib/storage';
 import { syncRun } from '../lib/sync';
 import GameIcon, { SymEtincelle } from '../components/GameIcon';
 import Solutions from '../components/Solutions';
+import SplitsRun from '../components/SplitsRun';
 
 const FLAWLESS_MS = 5 * 60 * 1000;
 const COUNTDOWN_S = 3;
@@ -337,19 +338,7 @@ export default function RunPage() {
           {settings.pseudo} · temps brut {formatMs(rawMs)}
           {adjustMs !== 0 && <> · {formatAdjust(adjustMs)}</>}
         </p>
-        <table>
-          <tbody>
-            {lines.map((l, i) => (
-              <tr key={l.id} style={{ '--i': i } as CSSProperties}>
-                <td>{l.nom}</td>
-                <td className="muted">{l.detail}</td>
-                <td className={`adj ${l.adjustMs < 0 ? 'bonus' : l.adjustMs > 0 ? 'malus' : ''}`}>
-                  {l.adjustMs === 0 ? '—' : formatAdjust(l.adjustMs)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <SplitsRun lines={lines} />
         <div className="game-actions">
           <button className="btn btn-primary" onClick={() => navigator.clipboard?.writeText(partage)}>
             Copier le résultat

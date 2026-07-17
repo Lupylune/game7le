@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { classementJour, type Board, type Entry } from '../lib/classement';
 import { todayStr } from '../lib/rng';
-import { formatMs } from '../lib/time';
 import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
-import { SymEtincelle, SymEtoile } from '../components/GameIcon';
+import BalleDeFoin from '../components/BalleDeFoin';
+import LigneClassement from '../components/LigneClassement';
 
 export default function Classement() {
   const date = todayStr();
@@ -38,9 +38,10 @@ export default function Classement() {
   // Si l'utilisateur a couru mais n'apparaît pas (peloton simulé, ou sync
   // Supabase absente/échouée), on l'ajoute depuis son historique local.
   if (myRun && !all.some((e) => e.me)) {
-    all = [...all, { pseudo, ms: myRun.totalMs, flawless: myRun.flawless, me: true }].sort(
-      (x, y) => x.ms - y.ms,
-    );
+    all = [
+      ...all,
+      { pseudo, ms: myRun.totalMs, flawless: myRun.flawless, lines: myRun.lines, me: true },
+    ].sort((x, y) => x.ms - y.ms);
   }
 
   return (
@@ -51,22 +52,10 @@ export default function Classement() {
           Vous n'avez pas encore couru aujourd'hui. <Link to="/jouer">C'est par ici →</Link>
         </p>
       )}
-      {all.length === 0 && (
-        <p className="note mt-4">
-          Personne n'a encore couru aujourd'hui. Soyez la première ou le premier !
-        </p>
-      )}
+      {all.length === 0 && <BalleDeFoin />}
       <ol className="mt-4">
         {all.map((e, i) => (
-          <li className={`row${e.me ? ' me' : ''}`} key={`${e.pseudo}-${i}`}>
-            <span className="rank">{i + 1}</span>
-            <span className="name">
-              {e.pseudo} {e.badge && <SymEtoile />}
-              {e.me && ' (vous)'}
-            </span>
-            <span className="time">{formatMs(e.ms)}</span>
-            <span>{e.flawless && <SymEtincelle />}</span>
-          </li>
+          <LigneClassement key={`${e.pseudo}-${i}`} e={e} rank={i + 1} />
         ))}
       </ol>
       {(!board.reel || all.length > 0) && (
