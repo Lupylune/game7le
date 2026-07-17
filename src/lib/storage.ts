@@ -1,3 +1,5 @@
+import { todayStr } from './rng';
+
 export interface GameLine {
   id: string;
   nom: string;
@@ -15,6 +17,9 @@ export interface RunRecord {
   flawless: boolean;
   lines: GameLine[];
   finishedAt: number;
+  /** Joué le jour même (`false` : rejoué via les archives). Absent des anciens
+   *  runs — reclassé au chargement d'après `finishedAt`. */
+  enDirect?: boolean;
 }
 
 export interface Settings {
@@ -25,20 +30,47 @@ export interface Settings {
 const K_RUNS = 'game7le:runs';
 const K_SETTINGS = 'game7le:settings';
 
-export function loadRuns(): Record<string, RunRecord> {
+/** Clé de stockage : une entrée par jour ET par type (direct / archive), pour
+ *  qu'un meilleur temps rejoué en archive n'écrase jamais le run du jour même. */
+function cleRun(run: RunRecord): string {
+  return run.enDirect ? run.date : `${run.date}#archive`;
+}
+
+function chargeRuns(): Record<string, RunRecord> {
+  let brut: Record<string, RunRecord> = {};
   try {
-    return JSON.parse(localStorage.getItem(K_RUNS) || '{}');
+    brut = JSON.parse(localStorage.getItem(K_RUNS) || '{}');
   } catch {
     return {};
   }
+  // Migration des anciens enregistrements (une entrée par jour, sans enDirect) :
+  // reclassement d'après finishedAt, comme l'ancienne heuristique des stats.
+  let migre = false;
+  const runs: Record<string, RunRecord> = {};
+  for (const [k, r] of Object.entries(brut)) {
+    if (r.enDirect == null) {
+      r.enDirect = r.finishedAt == null || todayStr(new Date(r.finishedAt)) === r.date;
+      migre = true;
+    }
+    const key = cleRun(r);
+    if (key !== k) migre = true;
+    if (!runs[key] || r.totalMs < runs[key].totalMs) runs[key] = r;
+  }
+  if (migre) localStorage.setItem(K_RUNS, JSON.stringify(runs));
+  return runs;
+}
+
+export function loadRuns(): RunRecord[] {
+  return Object.values(chargeRuns());
 }
 
 export function saveRun(run: RunRecord): void {
-  const runs = loadRuns();
-  // On garde le meilleur temps si le jour a déjà été couru (via les archives).
-  const prev = runs[run.date];
+  const runs = chargeRuns();
+  // On garde le meilleur temps par jour et par type (direct / archive).
+  const key = cleRun(run);
+  const prev = runs[key];
   if (!prev || run.totalMs < prev.totalMs) {
-    runs[run.date] = run;
+    runs[key] = run;
     localStorage.setItem(K_RUNS, JSON.stringify(runs));
   }
 }

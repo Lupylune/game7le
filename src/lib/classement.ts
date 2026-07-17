@@ -1,4 +1,4 @@
-import { seededRng, randInt, shuffle, todayStr } from './rng';
+import { seededRng, randInt, shuffle } from './rng';
 import type { GameLine } from './storage';
 import { supabase } from './supabase';
 
@@ -33,6 +33,7 @@ async function fetchRunsReels(date: string): Promise<RunReel[] | null> {
     .from('runs')
     .select('pseudo, total_ms, flawless, lines')
     .eq('date', date)
+    .eq('en_direct', true)
     .order('total_ms', { ascending: true });
   if (error || !data) return null;
   return data as RunReel[];
@@ -72,16 +73,13 @@ export async function rangsReels(
   if (!supabase || dates.length === 0) return null;
   const { data, error } = await supabase
     .from('runs')
-    .select('pseudo, date, total_ms, finished_at')
+    .select('pseudo, date, total_ms')
+    .eq('en_direct', true)
     .in('date', dates);
   if (error || !data) return null;
   const out: Record<string, { rang: number; total: number }> = {};
   for (const date of dates) {
-    const jour = data.filter(
-      (r) =>
-        r.date === date &&
-        (!r.finished_at || todayStr(new Date(Date.parse(r.finished_at))) === date),
-    );
+    const jour = data.filter((r) => r.date === date);
     const moi = jour.find((r) => r.pseudo === pseudo);
     if (!moi) continue;
     out[date] = {

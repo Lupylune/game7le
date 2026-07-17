@@ -20,9 +20,8 @@ function Tuile({ label, valeur, sous }: { label: string; valeur: React.ReactNode
 
 export default function Profil() {
   const pseudo = usePseudo();
-  const parDate = useHistorique(pseudo);
   // Seuls les runs joués le jour même comptent — pas les archives rejouées.
-  const runsLive = Object.values(parDate).filter(estEnDirect);
+  const runsLive = useHistorique(pseudo).filter(estEnDirect);
   const s = calculeStats(runsLive, todayStr());
   const parJeu = statsParJeu(runsLive);
 
@@ -56,8 +55,7 @@ export default function Profil() {
       <h1>{pseudo}</h1>
       <p className="muted">
         Compte sans mot de passe, identifié par pseudo — les stats sont synchronisées depuis vos
-        runs enregistrés sous ce pseudo, joués le jour même (les archives rejouées ne comptent
-        pas).
+        runs enregistrés sous ce pseudo.
       </p>
       {s.runs === 0 ? (
         <div className="center mt-6">
@@ -102,8 +100,7 @@ export default function Profil() {
             ))}
           </ul>
           <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-            Temps brut passé sur chaque épreuve, hors bonus/malus. Les runs les plus anciens
-            n'enregistraient pas ce détail et ne comptent pas dans la moyenne.
+            Temps brut passé sur chaque épreuve, hors bonus/malus.
           </p>
 
           <h2>Runs ({s.runs})</h2>
@@ -119,9 +116,6 @@ export default function Profil() {
               </li>
             ))}
           </ul>
-          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-            Rang parmi les runs joués en direct ce jour-là.
-          </p>
         </>
       )}
       <p className="muted mt-6" style={{ fontSize: 'var(--text-sm)' }}>

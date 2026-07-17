@@ -264,7 +264,15 @@ export default function RunPage() {
   useEffect(() => {
     if (phase === 'results' && !savedRef.current && lines.length === jeux.length) {
       savedRef.current = true;
-      const run = { date, totalMs, rawMs, flawless, lines, finishedAt: Date.now() };
+      const run = {
+        date,
+        totalMs,
+        rawMs,
+        flawless,
+        lines,
+        finishedAt: Date.now(),
+        enDirect: date === todayStr(),
+      };
       saveRun(run);
       syncRun(loadSettings().pseudo, run);
     }

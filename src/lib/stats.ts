@@ -21,16 +21,26 @@ export interface RunPourStats {
   flawless: boolean;
   /** Horodatage de fin du run (ms epoch). Absent sur d'anciens runs → traité comme joué en direct. */
   finishedAt?: number;
+  /** Joué le jour même (`false` : archive rejouée). Absent des anciens runs. */
+  enDirect?: boolean;
 }
 
 /**
- * Run joué « en direct », c.-à-d. le jour même du puzzle (`finishedAt` tombe
- * le même jour que `date`), par opposition aux archives rejouées après coup.
- * Un run sans `finishedAt` est compté comme en direct (rétro-compat avec les
- * anciens enregistrements).
+ * Run joué « en direct », c.-à-d. le jour même du puzzle, par opposition aux
+ * archives rejouées après coup. Flag explicite `enDirect` en priorité ;
+ * repli sur l'heuristique `finishedAt` pour les anciens enregistrements (un
+ * run sans `finishedAt` est compté comme en direct).
  */
 export function estEnDirect(r: RunPourStats): boolean {
+  if (r.enDirect != null) return r.enDirect;
   return r.finishedAt == null || todayStr(new Date(r.finishedAt)) === r.date;
+}
+
+/** Meilleur run par date, tous types confondus (affichage des archives). */
+export function meilleurParDate(runs: RunPourStats[]): Record<string, RunPourStats> {
+  const out: Record<string, RunPourStats> = {};
+  for (const r of runs) if (!out[r.date] || r.totalMs < out[r.date].totalMs) out[r.date] = r;
+  return out;
 }
 
 /** Dates jouées en direct — les archives ne doivent pas alimenter la série. */

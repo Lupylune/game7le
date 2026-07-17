@@ -31,9 +31,10 @@ export default function Home() {
       vivant = false;
     };
   }, [date]);
-  const parDate = useHistorique(usePseudo());
-  const myRun = parDate[date];
-  const streak = calculeStreak(joursEnDirect(Object.values(parDate)), date);
+  const runs = useHistorique(usePseudo());
+  // Un run daté d'aujourd'hui est forcément joué en direct : au plus une entrée.
+  const myRun = runs.find((r) => r.date === date);
+  const streak = calculeStreak(joursEnDirect(runs), date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);
 
   return (
