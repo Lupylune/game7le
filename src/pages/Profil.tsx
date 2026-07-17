@@ -26,7 +26,7 @@ export default function Profil() {
       <h1>{pseudo}</h1>
       <p className="muted">
         Compte sans mot de passe, identifié par pseudo — les stats sont synchronisées depuis vos
-        runs enregistrés sous ce pseudo (ou depuis ce navigateur si le backend est indisponible).
+        runs enregistrés sous ce pseudo.
       </p>
       {s.runs === 0 ? (
         <div className="center mt-6">
@@ -56,8 +56,7 @@ export default function Profil() {
         </div>
       )}
       <p className="muted mt-6" style={{ fontSize: 'var(--text-sm)' }}>
-        Changer de pseudo ? Direction les <Link to="/parametres">paramètres</Link>. Le rang est
-        estimé face au peloton simulé du jour.
+        Changer de pseudo ? Direction les <Link to="/parametres">paramètres</Link>.
       </p>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CROISES } from '../data/croises';
 import { genCroise } from '../lib/croisesgen';
+import { useSaisieTexte } from '../lib/saisie';
 import type { GameProps } from './types';
 
 const N = 5;
@@ -19,6 +20,19 @@ export default function Croises({ rng, onAdjust, onDone }: GameProps) {
   const [revealed, setRevealed] = useState(false);
   const [wrong, setWrong] = useState<Set<string>>(() => new Set());
   const doneRef = useRef(false);
+  // Champ caché : donne un foyer de saisie pour que le clavier virtuel
+  // s'ouvre au toucher d'une case (aucun clavier physique sur mobile).
+  const inputRef = useRef<HTMLInputElement>(null);
+  const saisie = useSaisieTexte(
+    (ch) => {
+      if (/[a-zA-Z]/.test(ch)) setLetter(ch.toUpperCase());
+    },
+    () => setLetter(''),
+  );
+
+  function focusSaisie() {
+    inputRef.current?.focus({ preventScroll: true });
+  }
 
   function firstWhite() {
     for (let r = 0; r < N; r++)
@@ -74,8 +88,10 @@ export default function Croises({ rng, onAdjust, onDone }: GameProps) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey) return;
-      if (/^[a-zA-Z]$/.test(e.key)) setLetter(e.key.toUpperCase());
-      else if (e.key === 'Backspace') {
+      // le champ caché a le foyer : lettres et effacement passent par lui
+      const surSaisie = e.target === inputRef.current;
+      if (!surSaisie && /^[a-zA-Z]$/.test(e.key)) setLetter(e.key.toUpperCase());
+      else if (!surSaisie && e.key === 'Backspace') {
         e.preventDefault();
         setLetter('');
       } else if (e.key === 'ArrowRight') setSel((s) => (isWhite(s.r, s.c + 1) ? { ...s, c: s.c + 1, dir: 'h' } : s));
@@ -135,6 +151,23 @@ export default function Croises({ rng, onAdjust, onDone }: GameProps) {
   return (
     <div className="game-area">
       <div className="cw-wrap">
+        <input
+          ref={inputRef}
+          className="saisie-cachee"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          aria-label="Saisie de lettres"
+          onInput={saisie}
+          onKeyDown={(e) => {
+            // champ vide : l'effacement n'émet pas d'événement input
+            if (e.key === 'Backspace' && e.currentTarget.value === '') {
+              e.preventDefault();
+              setLetter('');
+            }
+          }}
+        />
         <div
           className="cellgrid cw-grid"
           style={{ gridTemplateColumns: `repeat(${N}, 1fr)` }}
@@ -148,11 +181,12 @@ export default function Croises({ rng, onAdjust, onDone }: GameProps) {
                 <div
                   key={`${r}${c}`}
                   className={`cell${isSel ? ' sel' : inWord ? ' word' : ''}${wrong.has(`${r},${c}`) ? ' error' : ''}`}
-                  onClick={() =>
+                  onClick={() => {
                     setSel((s) =>
                       s.r === r && s.c === c ? { ...s, dir: s.dir === 'h' ? 'v' : 'h' } : { r, c, dir: s.dir },
-                    )
-                  }
+                    );
+                    focusSaisie();
+                  }}
                 >
                   {cells[r][c] && (
                     <span className="cell-pop" key={cells[r][c]}>

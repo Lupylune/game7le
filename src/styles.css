@@ -1428,7 +1428,7 @@ button.skip-pill.skip-ready:active {
   animation: shake 0.2s ease;
   border-color: var(--error);
 }
-.dactylo-input {
+.saisie-cachee {
   position: absolute;
   opacity: 0.01;
   height: 1px;

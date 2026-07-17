@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pick } from '../lib/rng';
+import { useSaisieTexte } from '../lib/saisie';
 import { SOL5, SOL6 } from '../data/lexique';
 import type { GameProps } from './types';
 
@@ -17,6 +18,7 @@ export default function Dactylo({ rng, onDone }: GameProps) {
   const [flash, setFlash] = useState(false);
   const doneRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const saisie = useSaisieTexte((ch) => onChar(ch.toLowerCase()));
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -58,18 +60,16 @@ export default function Dactylo({ rng, onDone }: GameProps) {
       </p>
       <input
         ref={inputRef}
-        className="dactylo-input"
-        value=""
+        className="saisie-cachee"
         autoComplete="off"
+        autoCorrect="off"
         autoCapitalize="none"
+        spellCheck={false}
         aria-label="Zone de frappe"
         placeholder="Tapez ici…"
-        onChange={(e) => {
-          const v = e.target.value;
-          if (v) onChar(v[v.length - 1].toLowerCase());
-        }}
+        onInput={saisie}
         onKeyDown={(e) => {
-          // les lettres passent par onChange ; on ne bloque que la navigation
+          // les lettres passent par onInput ; on ne bloque que la navigation
           if (e.key === 'Backspace') e.preventDefault();
         }}
       />

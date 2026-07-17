@@ -9,8 +9,7 @@ export default function APropos() {
         </a>
         , le jeu de casse-têtes quotidien créé par Hannah : des mini-jeux enchaînés sous un
         chronomètre unique, les mêmes énigmes pour tout le monde chaque jour. Game7le s'en
-        distingue par son format : <strong>7 épreuves tirées au sort chaque jour</strong> parmi un
-        vivier de treize mini-jeux (les onze de l'original plus deux inédits, Dactylo et Échecs).
+        distingue par son format : <strong>7 épreuves tirées au sort chaque jour</strong>.
       </p>
       <h2>Comment ça marche ici</h2>
       <p>
@@ -22,7 +21,7 @@ export default function APropos() {
           Les grilles du jour sont générées par un algorithme déterministe seedé sur la date — tous
           les visiteurs d'un même jour reçoivent les mêmes puzzles.
         </li>
-        <li>Vos temps et votre historique sont stockés localement (localStorage).</li>
+        <li>Vos temps et votre historique sont stockés sous votre pseudo.</li>
         <li>
           Le classement mondial est simulé pour la démonstration ; seul votre temps est réel.
         </li>
