@@ -24,17 +24,18 @@ export interface RunPourStats {
 }
 
 /**
- * Dates jouées « en direct », c.-à-d. le jour même du puzzle (`finishedAt` tombe
- * le même jour que `date`). Les archives — rejouées après coup — sont exclues :
- * elles ne doivent pas alimenter la série. Un run sans `finishedAt` est compté
- * comme en direct (rétro-compat avec les anciens enregistrements).
+ * Run joué « en direct », c.-à-d. le jour même du puzzle (`finishedAt` tombe
+ * le même jour que `date`), par opposition aux archives rejouées après coup.
+ * Un run sans `finishedAt` est compté comme en direct (rétro-compat avec les
+ * anciens enregistrements).
  */
+export function estEnDirect(r: RunPourStats): boolean {
+  return r.finishedAt == null || todayStr(new Date(r.finishedAt)) === r.date;
+}
+
+/** Dates jouées en direct — les archives ne doivent pas alimenter la série. */
 export function joursEnDirect(runs: RunPourStats[]): Set<string> {
-  return new Set(
-    runs
-      .filter((r) => r.finishedAt == null || todayStr(new Date(r.finishedAt)) === r.date)
-      .map((r) => r.date),
-  );
+  return new Set(runs.filter(estEnDirect).map((r) => r.date));
 }
 
 /** Série de jours consécutifs joués (jusqu'à `today` ou hier). */
@@ -91,6 +92,41 @@ export function calculeStats(historique: RunPourStats[], today: string): StatsJo
     tauxPasseP: Math.round((passees / lignes) * 100),
     totalMs,
   };
+}
+
+export interface StatsJeu {
+  id: string;
+  nom: string;
+  /** Nombre de runs où l'épreuve figurait dans le tirage. */
+  joues: number;
+  /** Temps moyen (ms) sur les runs où la durée a été enregistrée, `null` si aucun. */
+  moyenneMs: number | null;
+}
+
+/**
+ * Temps moyen par mini-jeu. La durée par épreuve (`GameLine.ms`) n'existe que
+ * sur les runs récents : la moyenne ignore les lignes qui en sont dépourvues.
+ */
+export function statsParJeu(historique: RunPourStats[]): StatsJeu[] {
+  const acc = new Map<string, { nom: string; joues: number; totalMs: number; mesures: number }>();
+  for (const r of historique)
+    for (const l of r.lines) {
+      const j = acc.get(l.id) ?? { nom: l.nom, joues: 0, totalMs: 0, mesures: 0 };
+      j.joues++;
+      if (l.ms != null) {
+        j.totalMs += l.ms;
+        j.mesures++;
+      }
+      acc.set(l.id, j);
+    }
+  return [...acc.entries()]
+    .map(([id, j]) => ({
+      id,
+      nom: j.nom,
+      joues: j.joues,
+      moyenneMs: j.mesures > 0 ? j.totalMs / j.mesures : null,
+    }))
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
 }
 
 /** Durée compacte « 1h 6m » / « 26m ». */

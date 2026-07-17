@@ -1,4 +1,4 @@
-import { seededRng, randInt, shuffle } from './rng';
+import { seededRng, randInt, shuffle, todayStr } from './rng';
 import type { GameLine } from './storage';
 import { supabase } from './supabase';
 
@@ -57,6 +57,39 @@ export async function classementJour(date: string, n = 15): Promise<Board> {
     };
   }
   return { ...classementSimule(date, n), reel: false };
+}
+
+/**
+ * Rangs réels d'un pseudo pour un ensemble de dates : position de son temps
+ * parmi les runs Supabase joués en direct ce jour-là (les archives rejouées
+ * après coup sont exclues). `null` si le backend est absent/injoignable ;
+ * les dates où le pseudo n'a pas de run synchronisé sont omises du résultat.
+ */
+export async function rangsReels(
+  pseudo: string,
+  dates: string[],
+): Promise<Record<string, { rang: number; total: number }> | null> {
+  if (!supabase || dates.length === 0) return null;
+  const { data, error } = await supabase
+    .from('runs')
+    .select('pseudo, date, total_ms, finished_at')
+    .in('date', dates);
+  if (error || !data) return null;
+  const out: Record<string, { rang: number; total: number }> = {};
+  for (const date of dates) {
+    const jour = data.filter(
+      (r) =>
+        r.date === date &&
+        (!r.finished_at || todayStr(new Date(Date.parse(r.finished_at))) === date),
+    );
+    const moi = jour.find((r) => r.pseudo === pseudo);
+    if (!moi) continue;
+    out[date] = {
+      rang: 1 + jour.filter((r) => r.total_ms < moi.total_ms).length,
+      total: jour.length,
+    };
+  }
+  return out;
 }
 
 const PSEUDOS = [

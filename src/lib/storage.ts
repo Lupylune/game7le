@@ -4,6 +4,8 @@ export interface GameLine {
   adjustMs: number;
   detail: string;
   status: 'success' | 'fail' | 'skip';
+  /** Durée brute passée sur l'épreuve (hors transitions). Absente des anciens runs. */
+  ms?: number;
 }
 
 export interface RunRecord {
