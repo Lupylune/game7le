@@ -46,7 +46,9 @@ export default function Melimelo({ rng, onAdjust, onDone }: GameProps) {
         () =>
           onDone({
             adjustMs: -8000,
-            detail: `trouvé (${input})${errors ? `, ${errors} erreur${errors > 1 ? 's' : ''}` : ''}`,
+            // Pas le mot trouvé dans le détail : il est synchronisé et visible
+            // par les autres joueurs en dépliant la run (spoiler du puzzle du jour).
+            detail: `trouvé${errors ? ` (${errors} erreur${errors > 1 ? 's' : ''})` : ''}`,
             status: 'success',
           }),
         600,

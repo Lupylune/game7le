@@ -78,7 +78,9 @@ export default function LeMot({ rng, onDone }: GameProps) {
     } else if (next.length >= 6) {
       setOver(true);
       setMessage(`C'était « ${solution} »`);
-      setTimeout(() => onDone({ adjustMs: adjustFor(null), detail: `échoué (${solution})`, status: 'fail' }), 1400);
+      // Pas de solution dans le détail : il est synchronisé et visible par les
+      // autres joueurs en dépliant la run (spoiler du puzzle du jour).
+      setTimeout(() => onDone({ adjustMs: adjustFor(null), detail: 'échoué', status: 'fail' }), 1400);
     }
   }, [current, guesses, over, solution, onDone]);
 
