@@ -1,4 +1,4 @@
-import { seededRng, randInt, shuffle, todayStr } from './rng';
+import { seededRng, randInt, shuffle } from './rng';
 import type { GameLine } from './storage';
 import { supabase } from './supabase';
 
@@ -62,13 +62,16 @@ export async function classementJour(date: string, n = 15): Promise<Board> {
   return { ...classementSimule(date, n), reel: false };
 }
 
-/** Les 7 dates (AAAA-MM-JJ) de la semaine calendaire (lundi→dimanche) contenant `date`. */
+/**
+ * Les 7 dates (AAAA-MM-JJ) de la semaine calendaire (lundi→dimanche) contenant
+ * `date`. Arithmétique en UTC : indépendante du fuseau du navigateur.
+ */
 function datesSemaine(date: string): string[] {
   const [y, m, d] = date.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  const depuisLundi = (dt.getDay() + 6) % 7; // 0 = lundi … 6 = dimanche
+  const depuisLundi = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 0 = lundi … 6 = dimanche
   const out: string[] = [];
-  for (let i = 0; i < 7; i++) out.push(todayStr(new Date(y, m - 1, d - depuisLundi + i)));
+  for (let i = 0; i < 7; i++)
+    out.push(new Date(Date.UTC(y, m - 1, d - depuisLundi + i)).toISOString().slice(0, 10));
   return out;
 }
 

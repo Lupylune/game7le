@@ -49,9 +49,19 @@ export function shuffle<T>(rng: RNG, arr: readonly T[]): T[] {
 }
 
 /** Date locale au format YYYY-MM-DD. */
+const fmtParis = new Intl.DateTimeFormat('fr-CA', {
+  timeZone: 'Europe/Paris',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/**
+ * Jour du défi (AAAA-MM-JJ) pour un instant donné, évalué en Europe/Paris :
+ * le nouveau défi apparaît à minuit heure de Paris pour tout le monde, quel
+ * que soit le fuseau du navigateur (même règle que `submit_run()` côté
+ * serveur pour le flag « en direct »).
+ */
 export function todayStr(d = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const j = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${j}`;
+  return fmtParis.format(d);
 }

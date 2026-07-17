@@ -60,7 +60,12 @@ export default function Home() {
             </Link>
           )}
           <span className="hero-date">
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {new Date().toLocaleDateString('fr-FR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              timeZone: 'Europe/Paris',
+            })}
             {streak > 0 && (
               <>
                 {' · '}
