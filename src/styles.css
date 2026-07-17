@@ -716,6 +716,12 @@ button.skip-pill.skip-ready:active {
   text-align: right;
   font-family: var(--font-mono);
 }
+.run-splits td.duree {
+  text-align: right;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
 .flawless {
   font-size: 1.2rem;
   margin: var(--sp-3) 0;
