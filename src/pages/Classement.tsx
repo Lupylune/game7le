@@ -10,7 +10,7 @@ import LigneClassement from '../components/LigneClassement';
 export default function Classement() {
   const date = todayStr();
   const pseudo = usePseudo();
-  const myRun = useHistorique(pseudo)[date];
+  const myRun = useHistorique(pseudo).find((r) => r.date === date);
   const [board, setBoard] = useState<Board | null>(null);
 
   useEffect(() => {

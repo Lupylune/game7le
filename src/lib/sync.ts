@@ -16,6 +16,7 @@ export async function syncRun(pseudo: string, run: RunRecord): Promise<void> {
       p_total_ms: Math.round(run.totalMs),
       p_lines: run.lines,
       p_flawless: run.flawless,
+      p_en_direct: run.enDirect ?? true,
     });
   } catch {
     // silencieux : pas de retry, le run est déjà enregistré en local
@@ -31,7 +32,7 @@ export async function fetchRunsParPseudo(pseudo: string): Promise<RunPourStats[]
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('runs')
-    .select('date, total_ms, lines, flawless, finished_at')
+    .select('date, total_ms, lines, flawless, finished_at, en_direct')
     .eq('pseudo', pseudo)
     .order('date', { ascending: true });
   if (error || !data) return null;
@@ -41,5 +42,6 @@ export async function fetchRunsParPseudo(pseudo: string): Promise<RunPourStats[]
     lines: r.lines,
     flawless: r.flawless,
     finishedAt: r.finished_at ? Date.parse(r.finished_at) : undefined,
+    enDirect: r.en_direct,
   }));
 }

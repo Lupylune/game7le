@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { todayStr } from '../lib/rng';
 import { formatDateFr, formatMs } from '../lib/time';
+import { meilleurParDate } from '../lib/stats';
 import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
 import { SymEtincelle } from '../components/GameIcon';
@@ -22,7 +23,8 @@ function listDates(): string[] {
 }
 
 export default function Archives() {
-  const runs = useHistorique(usePseudo());
+  // Meilleur temps par jour, direct ou archive confondus.
+  const runs = meilleurParDate(useHistorique(usePseudo()));
   const today = todayStr();
 
   return (
