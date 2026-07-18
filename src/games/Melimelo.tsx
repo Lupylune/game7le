@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pick, shuffle } from '../lib/rng';
-import { SOL6, DICO6 } from '../data/lexique';
+import { SOL6, DICO6, SOL8, DICO8 } from '../data/lexique';
 import type { GameProps } from './types';
 
 const norm = (w: string) => w.split('').sort().join('');
 const REVEAL_MS = 650; // durée d'affichage de chaque lettre
 
-export default function Melimelo({ rng, onAdjust, onDone }: GameProps) {
+export default function Melimelo({ rng, difficile, onAdjust, onDone }: GameProps) {
   const { letters, solutions } = useMemo(() => {
-    const target = pick(rng, SOL6);
+    // Défi difficile : mot de 8 lettres au lieu de 6
+    const target = pick(rng, difficile ? SOL8 : SOL6);
     // toute anagramme du dictionnaire complet est acceptée
-    const solutions = new Set(DICO6.filter((w) => norm(w) === norm(target)));
+    const dico = difficile ? DICO8 : DICO6;
+    const solutions = new Set(dico.filter((w) => norm(w) === norm(target)));
     return { letters: shuffle(rng, target.split('')), solutions };
-  }, [rng]);
+  }, [rng, difficile]);
+  const L = letters.length;
 
   // Les lettres se révèlent une par une (comme l'original), puis tout se masque.
   // -2 = pas encore commencé, 0..5 = lettre en cours, -1 = séquence terminée
@@ -38,7 +41,7 @@ export default function Melimelo({ rng, onAdjust, onDone }: GameProps) {
   const sequenceActive = revealIdx !== -1;
 
   function submit() {
-    if (doneRef.current || sequenceActive || input.length !== 6) return;
+    if (doneRef.current || sequenceActive || input.length !== L) return;
     if (solutions.has(input)) {
       doneRef.current = true;
       setMessage('Bien joué !');
@@ -79,8 +82,8 @@ export default function Melimelo({ rng, onAdjust, onDone }: GameProps) {
         ref={inputRef}
         className="meli-input"
         value={input}
-        maxLength={6}
-        placeholder={sequenceActive ? 'Mémorisez…' : '······'}
+        maxLength={L}
+        placeholder={sequenceActive ? 'Mémorisez…' : '·'.repeat(L)}
         disabled={sequenceActive}
         autoCapitalize="characters"
         autoComplete="off"
@@ -92,7 +95,7 @@ export default function Melimelo({ rng, onAdjust, onDone }: GameProps) {
         <button
           className="btn btn-primary btn-sm"
           onClick={submit}
-          disabled={sequenceActive || input.length !== 6}
+          disabled={sequenceActive || input.length !== L}
         >
           Valider
         </button>
@@ -110,8 +113,8 @@ export default function Melimelo({ rng, onAdjust, onDone }: GameProps) {
         )}
       </div>
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-        Les six lettres se révèlent une par une : mémorisez-les, puis reconstituez le mot qui les
-        utilise toutes.
+        Les {difficile ? 'huit' : 'six'} lettres se révèlent une par une : mémorisez-les, puis
+        reconstituez le mot qui les utilise toutes.
       </p>
     </div>
   );

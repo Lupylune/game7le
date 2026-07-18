@@ -28,6 +28,7 @@ export interface Settings {
 }
 
 const K_RUNS = 'game7le:runs';
+const K_DEFIS = 'game7le:defis';
 const K_SETTINGS = 'game7le:settings';
 
 /** Clé de stockage : une entrée par jour ET par type (direct / archive), pour
@@ -81,6 +82,36 @@ export function saveRun(run: RunRecord): void {
   }
 }
 
+/* ===== Défi hebdomadaire difficile — stockage séparé des runs quotidiens.
+   `date` est le lundi de la semaine ; mêmes règles direct/archive. ===== */
+
+function chargeDefis(): Record<string, RunRecord> {
+  try {
+    return JSON.parse(localStorage.getItem(K_DEFIS) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+export function loadDefis(): RunRecord[] {
+  return Object.values(chargeDefis());
+}
+
+/** Y a-t-il déjà un défi joué en direct pour cette semaine (lundi) ? */
+export function aDefiEnDirect(lundi: string): boolean {
+  return chargeDefis()[lundi] != null;
+}
+
+export function saveDefi(run: RunRecord): void {
+  const defis = chargeDefis();
+  const key = cleRun(run);
+  const prev = defis[key];
+  if (!prev || run.totalMs < prev.totalMs) {
+    defis[key] = run;
+    localStorage.setItem(K_DEFIS, JSON.stringify(defis));
+  }
+}
+
 export function loadSettings(): Settings {
   let s: Partial<Settings> = {};
   try {
@@ -110,6 +141,7 @@ export function saveSettings(s: Settings): void {
 
 export function resetAll(): void {
   localStorage.removeItem(K_RUNS);
+  localStorage.removeItem(K_DEFIS);
   localStorage.removeItem(K_SETTINGS);
   localStorage.removeItem('game7le:theme');
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PUZZLES } from '../data/echecs';
+import { PUZZLES, PUZZLES_DIFFICILES } from '../data/echecs';
 import type { GameProps } from './types';
 
 /** Échiquier en tableau de 64 cases, index 0 = a8 … 63 = h1. */
@@ -54,8 +54,9 @@ function applyUci(board: Board, uci: string): Board {
 const estBlanche = (p: string) => p !== '' && p === p.toUpperCase();
 
 /** Solution lisible du puzzle du jour (pour l'écran de résultats). */
-export function solutionEchecs(rng: () => number): string {
-  const pz = PUZZLES[Math.floor(rng() * PUZZLES.length)];
+export function solutionEchecs(rng: () => number, difficile = false): string {
+  const pool = difficile ? PUZZLES_DIFFICILES : PUZZLES;
+  const pz = pool[Math.floor(rng() * pool.length)];
   let { board } = parseFen(pz.fen);
   board = applyUci(board, pz.coups[0]);
   const parts: string[] = [];
@@ -70,8 +71,11 @@ export function solutionEchecs(rng: () => number): string {
   return `${parts.join(' · ')} (mat)`;
 }
 
-export default function Echecs({ rng, onAdjust, onDone }: GameProps) {
-  const puzzle = useMemo(() => PUZZLES[Math.floor(rng() * PUZZLES.length)], [rng]);
+export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) {
+  const puzzle = useMemo(() => {
+    const pool = difficile ? PUZZLES_DIFFICILES : PUZZLES;
+    return pool[Math.floor(rng() * pool.length)];
+  }, [rng, difficile]);
   const initial = useMemo(() => parseFen(puzzle.fen), [puzzle]);
   const joueurBlanc = initial.actif === 'b'; // l'adversaire joue la riposte, puis à nous
   const nbAJouer = Math.floor(puzzle.coups.length / 2); // coups du joueur jusqu'au mat

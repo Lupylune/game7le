@@ -18,6 +18,8 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/jouer" element={<RunPage />} />
           <Route path="/jouer/:date" element={<RunPage />} />
+          {/* key : ne jamais recycler l'état d'un run quotidien en cours */}
+          <Route path="/defi" element={<RunPage key="defi" defi />} />
           <Route path="/classement" element={<Classement />} />
           <Route path="/comment-jouer" element={<CommentJouer />} />
           <Route path="/a-propos" element={<APropos />} />

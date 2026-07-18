@@ -5,9 +5,10 @@ import { SymEtincelle, SymFlamme } from '../components/GameIcon';
 import BalleDeFoin from '../components/BalleDeFoin';
 import LigneClassement from '../components/LigneClassement';
 import { classementJour, classementSemaine, type Board } from '../lib/classement';
-import { seededRng, todayStr, pick } from '../lib/rng';
+import { lundiStr, seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
 import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
+import { loadDefis } from '../lib/storage';
 import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
 
@@ -39,6 +40,9 @@ export default function Home() {
   const myRun = runs.find((r) => r.date === date && estEnDirect(r));
   const streak = calculeStreak(joursEnDirect(runs), date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);
+  // Défi difficile de la semaine : temps officiel local (première tentative)
+  const lundi = lundiStr();
+  const myDefi = loadDefis().find((r) => r.date === lundi && r.enDirect);
 
   return (
     <div>
@@ -73,6 +77,19 @@ export default function Home() {
               </>
             )}
           </span>
+          {myDefi ? (
+            <div className="done-card">
+              <span className="muted">Votre défi difficile de la semaine</span>
+              <span className="time">
+                {formatMs(myDefi.totalMs)} {myDefi.flawless && <SymEtincelle size={18} />}
+              </span>
+              <Link to="/classement?onglet=defi">Voir le classement →</Link>
+            </div>
+          ) : (
+            <Link to="/defi" className="btn">
+              Relever le défi difficile de la semaine
+            </Link>
+          )}
         </div>
       </section>
 

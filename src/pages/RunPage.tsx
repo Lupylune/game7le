@@ -1,16 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { jeuxDuJour, JEUX_PAR_JOUR } from '../games';
+import { jeuxDefiSemaine, jeuxDuJour, JEUX_PAR_JOUR } from '../games';
 import type { GameResult } from '../games/types';
-import { seededRng, todayStr } from '../lib/rng';
+import { lundiStr, seededRng, todayStr } from '../lib/rng';
 import { formatAdjust, formatDateFr, formatMs } from '../lib/time';
-import { aRunEnDirect, loadSettings, saveRun, type GameLine } from '../lib/storage';
+import {
+  aDefiEnDirect,
+  aRunEnDirect,
+  loadSettings,
+  saveDefi,
+  saveRun,
+  type GameLine,
+} from '../lib/storage';
 import { syncRun } from '../lib/sync';
 import GameIcon, { SymEtincelle } from '../components/GameIcon';
 import Solutions from '../components/Solutions';
 import SplitsRun from '../components/SplitsRun';
 
 const FLAWLESS_MS = 5 * 60 * 1000;
+// Épreuves corsées : le sans-faute du défi difficile laisse 8 minutes
+const FLAWLESS_MS_DEFI = 8 * 60 * 1000;
+// Défi difficile : passer une épreuve coûte 3 min (le quotidien garde le
+// barème propre à chaque jeu, +90 s en général).
+const PENALITE_SKIP_DEFI_S = 180;
 const COUNTDOWN_S = 3;
 const RECAP_MS = 2400; // durée de l'écran récap avant le compte à rebours
 
@@ -117,13 +129,15 @@ function SkipControl({
   );
 }
 
-export default function RunPage() {
+export default function RunPage({ defi = false }: { defi?: boolean }) {
   const params = useParams();
-  const date = params.date ?? todayStr();
+  // Défi hebdomadaire difficile : identifié par le lundi de la semaine en cours
+  const date = defi ? lundiStr() : params.date ?? todayStr();
   const isToday = date === todayStr();
 
-  // Les 7 épreuves du jour, tirées au sort parmi les 13 (identiques pour tous)
-  const jeux = useMemo(() => jeuxDuJour(date), [date]);
+  // Les 7 épreuves, tirées au sort parmi les 13 du jour ou les 10 du défi
+  // difficile (identiques pour tous)
+  const jeux = useMemo(() => (defi ? jeuxDefiSemaine(date) : jeuxDuJour(date)), [date, defi]);
 
   const [phase, setPhase] = useState<'intro' | 'playing' | 'results'>('intro');
   const [index, setIndex] = useState(0);
@@ -146,6 +160,11 @@ export default function RunPage() {
   const savedRef = useRef(false);
 
   const jeu = jeux[index];
+  // Barème de passe effectif : 3 min fixes au défi difficile, sinon celui du jeu.
+  const skipEff = useMemo(
+    () => (jeu.skip ? { ...jeu.skip, penaliteS: defi ? PENALITE_SKIP_DEFI_S : jeu.skip.penaliteS } : null),
+    [jeu, defi],
+  );
 
   // Chrono (gelé pendant une transition)
   useEffect(() => {
@@ -244,14 +263,17 @@ export default function RunPage() {
   );
 
   const onSkip = useCallback(() => {
-    if (!jeu.skip) return;
-    const pen = jeu.skip.penaliteS * 1000;
+    if (!skipEff) return;
+    const pen = skipEff.penaliteS * 1000;
     addAdjust(pen, 'Jeu passé');
     nextGame({ id: jeu.id, nom: jeu.nom, adjustMs: pen, detail: 'passé', status: 'skip' });
-  }, [jeu, addAdjust, nextGame]);
+  }, [skipEff, jeu, addAdjust, nextGame]);
 
-  // RNG seedé par jour + jeu : identique pour tous les joueurs d'un même jour
-  const rng = useMemo(() => seededRng(`game7le:${date}:${jeu.id}`), [date, jeu.id]);
+  // RNG seedé par jour (ou semaine du défi) + jeu : identique pour tous les joueurs
+  const rng = useMemo(
+    () => seededRng(`game7le:${defi ? 'defi:' : ''}${date}:${jeu.id}`),
+    [date, jeu.id, defi],
+  );
 
   const totalMs = Math.max(0, rawMs + adjustMs);
 
@@ -259,7 +281,7 @@ export default function RunPage() {
   const flawless =
     lines.length === jeux.length &&
     lines.every((l) => l.status === 'success' && l.adjustMs <= 0) &&
-    totalMs < FLAWLESS_MS;
+    totalMs < (defi ? FLAWLESS_MS_DEFI : FLAWLESS_MS);
 
   useEffect(() => {
     if (phase === 'results' && !savedRef.current && lines.length === jeux.length) {
@@ -271,14 +293,17 @@ export default function RunPage() {
         flawless,
         lines,
         finishedAt: Date.now(),
-        // En direct = première tentative du jour même ; tout rejeu (même le
-        // jour même) est un run d'archive et ne touche pas au temps officiel.
-        enDirect: date === todayStr() && !aRunEnDirect(date),
+        // En direct = première tentative du jour même (ou de la semaine pour le
+        // défi) ; tout rejeu est un run d'archive et ne touche pas au temps officiel.
+        enDirect: defi
+          ? lundiStr() === date && !aDefiEnDirect(date)
+          : date === todayStr() && !aRunEnDirect(date),
       };
-      saveRun(run);
-      syncRun(loadSettings().pseudo, run);
+      if (defi) saveDefi(run);
+      else saveRun(run);
+      syncRun(loadSettings().pseudo, run, defi);
     }
-  }, [phase, lines, jeux, date, totalMs, rawMs, flawless]);
+  }, [phase, lines, jeux, date, totalMs, rawMs, flawless, defi]);
 
   // À la fin, on verse les bonus/malus accumulés dans le total : la réserve se
   // vide (→ 0) pendant que le total glisse de « temps brut » vers « temps final ».
@@ -308,12 +333,15 @@ export default function RunPage() {
     return (
       <div className="interstitial">
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-h2)' }}>
-          {isToday ? 'Le Game7le du jour' : 'Game7le des archives'}
+          {defi ? 'Le défi difficile de la semaine' : isToday ? 'Le Game7le du jour' : 'Game7le des archives'}
         </h2>
-        <p className="muted mt-4">{formatDateFr(date)}</p>
+        <p className="muted mt-4">
+          {defi ? `Semaine du ${formatDateFr(date)}` : formatDateFr(date)}
+        </p>
         <p className="mt-4" style={{ maxWidth: 420, margin: 'var(--sp-4) auto 0' }}>
-          {JEUX_PAR_JOUR} épreuves tirées au sort du jour, enchaînées sous un seul chrono. Les
-          bonus font gagner du temps, les pénalités en ajoutent. Prêt·e ?
+          {defi
+            ? `${JEUX_PAR_JOUR} épreuves corsées tirées au sort de la semaine, enchaînées sous un seul chrono. Les bonus font gagner du temps, les pénalités en ajoutent. Prêt·e ?`
+            : `${JEUX_PAR_JOUR} épreuves tirées au sort du jour, enchaînées sous un seul chrono. Les bonus font gagner du temps, les pénalités en ajoutent. Prêt·e ?`}
         </p>
         <button className="btn btn-primary btn-lg mt-6" onClick={start}>
           Lancer le chrono
@@ -324,7 +352,7 @@ export default function RunPage() {
 
   if (phase === 'results') {
     const settings = loadSettings();
-    const partage = `Game7le ${date} — ${formatMs(totalMs)}${flawless ? ' ✨ SANS-FAUTE ✨' : ''}\n${lines
+    const partage = `Game7le ${defi ? `défi difficile (semaine du ${date})` : date} — ${formatMs(totalMs)}${flawless ? ' ✨ SANS-FAUTE ✨' : ''}\n${lines
       .map((l) => (l.status === 'success' ? '🟩' : l.status === 'skip' ? '🟨' : '🟥'))
       .join('')}`;
     // Valeurs animées : le total glisse de rawMs → totalMs, la réserve se vide → 0
@@ -357,14 +385,14 @@ export default function RunPage() {
           <button className="btn" onClick={() => setVoirSolutions((v) => !v)}>
             {voirSolutions ? 'Masquer les solutions' : 'Voir les solutions'}
           </button>
-          <Link className="btn" to="/classement">
+          <Link className="btn" to={defi ? '/classement?onglet=defi' : '/classement'}>
             Voir le classement
           </Link>
           <Link className="btn" to="/">
             Accueil
           </Link>
         </div>
-        {voirSolutions && <Solutions date={date} ids={lines.map((l) => l.id)} />}
+        {voirSolutions && <Solutions date={date} ids={lines.map((l) => l.id)} defi={defi} />}
       </div>
     );
   }
@@ -391,7 +419,7 @@ export default function RunPage() {
             <span className={`adj ${adjustMs < 0 ? 'bonus' : 'malus'}`}>{formatAdjust(adjustMs)}</span>
           )}
         </div>
-        <SkipControl skip={jeu.skip} elapsedS={gameElapsedS} paused={!!trans} onSkip={onSkip} />
+        <SkipControl skip={skipEff} elapsedS={gameElapsedS} paused={!!trans} onSkip={onSkip} />
       </div>
       {trans && trans.phase === 'recap' && trans.verdict && trans.line ? (
         <div className="transition recap">
@@ -437,8 +465,14 @@ export default function RunPage() {
         </div>
       ) : (
         <>
-          <p className="game-rules">{jeu.regles}</p>
-          <jeu.Component key={`${date}-${jeu.id}`} rng={rng} onAdjust={addAdjust} onDone={onDone} />
+          <p className="game-rules">{(defi && jeu.reglesDifficile) || jeu.regles}</p>
+          <jeu.Component
+            key={`${date}-${jeu.id}`}
+            rng={rng}
+            difficile={defi}
+            onAdjust={addAdjust}
+            onDone={onDone}
+          />
         </>
       )}
     </div>

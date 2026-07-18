@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { classementJour, type Board, type Entry } from '../lib/classement';
-import { todayStr } from '../lib/rng';
+import { Link, useSearchParams } from 'react-router-dom';
+import { classementDefi, classementJour, type Board, type Entry } from '../lib/classement';
+import { lundiStr, todayStr } from '../lib/rng';
 import { estEnDirect } from '../lib/stats';
+import { loadDefis } from '../lib/storage';
 import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
 import BalleDeFoin from '../components/BalleDeFoin';
@@ -10,23 +11,52 @@ import LigneClassement from '../components/LigneClassement';
 
 export default function Classement() {
   const date = todayStr();
+  const lundi = lundiStr();
   const pseudo = usePseudo();
-  // Seul le run en direct (première tentative du jour) compte au classement.
-  const myRun = useHistorique(pseudo).find((r) => r.date === date && estEnDirect(r));
+  const [params, setParams] = useSearchParams();
+  const ongletDefi = params.get('onglet') === 'defi';
+  // Seul le run en direct (première tentative du jour / de la semaine) compte.
+  const myRunJour = useHistorique(pseudo).find((r) => r.date === date && estEnDirect(r));
+  const myDefi = loadDefis().find((r) => r.date === lundi && r.enDirect);
+  const myRun = ongletDefi ? myDefi : myRunJour;
   const [board, setBoard] = useState<Board | null>(null);
 
   useEffect(() => {
     let vivant = true;
-    classementJour(date, 100).then((b) => vivant && setBoard(b));
+    setBoard(null);
+    const promesse = ongletDefi ? classementDefi(lundi, 100) : classementJour(date, 100);
+    promesse.then((b) => vivant && setBoard(b));
     return () => {
       vivant = false;
     };
-  }, [date]);
+  }, [date, lundi, ongletDefi]);
+
+  const onglets = (
+    <div className="lb-tabs" role="tablist">
+      <button
+        role="tab"
+        aria-selected={!ongletDefi}
+        className={`lb-tab${!ongletDefi ? ' actif' : ''}`}
+        onClick={() => setParams({}, { replace: true })}
+      >
+        Défi du jour
+      </button>
+      <button
+        role="tab"
+        aria-selected={ongletDefi}
+        className={`lb-tab${ongletDefi ? ' actif' : ''}`}
+        onClick={() => setParams({ onglet: 'defi' }, { replace: true })}
+      >
+        Défi difficile
+      </button>
+    </div>
+  );
 
   if (!board) {
     return (
       <div className="lb" style={{ marginTop: 0 }}>
-        <h2>Classement du jour</h2>
+        <h2>{ongletDefi ? 'Classement du défi difficile' : 'Classement du jour'}</h2>
+        {onglets}
         <ol aria-hidden className="lb-skeleton mt-4">
           {Array.from({ length: 8 }, (_, i) => (
             <li className="row" key={i} />
@@ -48,10 +78,20 @@ export default function Classement() {
 
   return (
     <div className="lb" style={{ marginTop: 0 }}>
-      <h2>Classement du jour</h2>
+      <h2>{ongletDefi ? 'Classement du défi difficile' : 'Classement du jour'}</h2>
+      {onglets}
       {!myRun && (
         <p className="note">
-          Vous n'avez pas encore couru aujourd'hui. <Link to="/jouer">C'est par ici →</Link>
+          {ongletDefi ? (
+            <>
+              Vous n'avez pas encore relevé le défi de la semaine.{' '}
+              <Link to="/defi">C'est par ici →</Link>
+            </>
+          ) : (
+            <>
+              Vous n'avez pas encore couru aujourd'hui. <Link to="/jouer">C'est par ici →</Link>
+            </>
+          )}
         </p>
       )}
       {all.length === 0 && <BalleDeFoin />}
@@ -63,8 +103,10 @@ export default function Classement() {
       {(!board.reel || all.length > 0) && (
         <p className="note">
           {board.reel
-            ? 'Classement basé sur les runs réels du jour.'
-            : "Version démo hors-ligne : les autres joueurs sont simulés (déterministes par jour). Seul votre temps est réel."}
+            ? ongletDefi
+              ? 'Classement basé sur les runs réels du défi de la semaine.'
+              : 'Classement basé sur les runs réels du jour.'
+            : "Version démo hors-ligne : les autres joueurs sont simulés (déterministes). Seul votre temps est réel."}
         </p>
       )}
     </div>

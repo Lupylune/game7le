@@ -6,6 +6,12 @@ import type { GameProps } from './types';
 const N = 12;
 const MINES = 20;
 
+// Pénalité de mine dégressive : maximale si la faute survient d'entrée, elle
+// décroît d'une seconde par seconde de jeu jusqu'à un plancher (on punit la
+// précipitation, pas l'erreur commise après un vrai effort de déduction).
+const PENALITE_MAX = 120000; // +2 min si la mine saute dès le départ
+const PENALITE_MIN = 30000; // plancher atteint après ~90 s de jeu
+
 const MS_COLORS = ['', 'var(--ms-1)', 'var(--ms-2)', 'var(--ms-3)', 'var(--ms-4)', 'var(--ms-5)', 'var(--ms-6)', 'var(--ms-7)', 'var(--ms-8)'];
 
 function neighbors(i: number): number[] {
@@ -113,16 +119,23 @@ export default function Demineur({ rng, onDone }: GameProps) {
   const [mode, setMode] = useState<'dig' | 'flag'>('dig');
   const [boom, setBoom] = useState<number | null>(null);
   const doneRef = useRef(false);
+  // Début de l'épreuve : le composant est monté au lancement du jeu (après le
+  // décompte), donc `performance.now()` ici ≈ départ du chrono de l'épreuve.
+  const startRef = useRef(performance.now());
 
   function finish(win: boolean) {
     if (doneRef.current) return;
     doneRef.current = true;
+    const penalite = Math.max(
+      PENALITE_MIN,
+      Math.round(PENALITE_MAX - (performance.now() - startRef.current)),
+    );
     setTimeout(
       () =>
         onDone(
           win
             ? { adjustMs: -15000, detail: 'grille nettoyée', status: 'success' }
-            : { adjustMs: 60000, detail: 'mine touchée', status: 'fail' },
+            : { adjustMs: penalite, detail: 'mine touchée', status: 'fail' },
         ),
       900,
     );

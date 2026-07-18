@@ -29,13 +29,14 @@ interface RunReel {
   lines: GameLine[];
 }
 
-async function fetchRunsReels(date: string): Promise<RunReel[] | null> {
+async function fetchRunsReels(date: string, defi = false): Promise<RunReel[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('runs')
     .select('pseudo, total_ms, flawless, lines')
     .eq('date', date)
     .eq('en_direct', true)
+    .eq('defi', defi)
     .order('total_ms', { ascending: true });
   if (error || !data) return null;
   return data as RunReel[];
@@ -60,6 +61,54 @@ export async function classementJour(date: string, n = 15): Promise<Board> {
     };
   }
   return { ...classementSimule(date, n), reel: false };
+}
+
+/**
+ * Classement du défi difficile de la semaine (identifiée par son lundi) :
+ * runs `defi` joués en direct, classés au temps. Repli sur un peloton simulé
+ * si le backend est absent ou injoignable.
+ */
+export async function classementDefi(lundi: string, n = 15): Promise<Board> {
+  const reel = await fetchRunsReels(lundi, true);
+  if (reel) {
+    return {
+      entries: reel
+        .slice(0, n)
+        .map((r) => ({ pseudo: r.pseudo, ms: r.total_ms, flawless: r.flawless, lines: r.lines })),
+      avgMs: reel.length > 0 ? reel.reduce((s, r) => s + r.total_ms, 0) / reel.length : 0,
+      runs: reel.length,
+      reel: true,
+    };
+  }
+  return { ...classementDefiSimule(lundi, n), reel: false };
+}
+
+/**
+ * Peloton fictif du défi difficile (démo hors-ligne) : déterministe par
+ * semaine, temps plus lents que le quotidien (épreuves corsées).
+ */
+export function classementDefiSimule(
+  lundi: string,
+  n = 5,
+): { entries: Entry[]; avgMs: number; runs: number } {
+  const rng = seededRng(`game7le:defi:${lundi}:classement`);
+  const noms = shuffle(rng, PSEUDOS).slice(0, n);
+  let ms = randInt(rng, 220000, 320000);
+  const entries: Entry[] = noms.map((pseudo, i) => {
+    const e: Entry = {
+      pseudo,
+      ms,
+      badge: rng() < 0.3 ? '★' : undefined,
+      flawless: ms < 300000 && rng() < 0.1,
+    };
+    ms += randInt(rng, 8000, i < 2 ? 45000 : 80000);
+    return e;
+  });
+  return {
+    entries,
+    avgMs: randInt(rng, 15 * 60000, 25 * 60000),
+    runs: randInt(rng, 150, 600),
+  };
 }
 
 /**
@@ -94,6 +143,7 @@ export async function classementSemaine(date: string, n = 5): Promise<Board> {
       .from('runs')
       .select('pseudo, total_ms, flawless')
       .eq('en_direct', true)
+      .eq('defi', false)
       .in('date', dates);
     if (!error && data) {
       // en_direct est unique par (pseudo, date) : on peut cumuler sans dédoublonner.
@@ -169,6 +219,7 @@ export async function rangsReels(
     .from('runs')
     .select('pseudo, date, total_ms')
     .eq('en_direct', true)
+    .eq('defi', false)
     .in('date', dates);
   if (error || !data) return null;
   const out: Record<string, { rang: number; total: number }> = {};

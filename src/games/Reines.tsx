@@ -3,10 +3,11 @@ import { shuffle, type RNG } from '../lib/rng';
 import { SymCouronne } from '../components/GameIcon';
 import type { GameProps } from './types';
 
-const N = 6;
+const N_NORMAL = 6;
+const N_DIFFICILE = 8;
 
 /** Compte les placements valides (1 reine par ligne, colonne, région ; jamais adjacentes). */
-function countSolutions(regions: number[], limit: number): number {
+function countSolutions(N: number, regions: number[], limit: number): number {
   let count = 0;
   const perm: number[] = [];
   const usedCol = new Array(N).fill(false);
@@ -35,35 +36,47 @@ function countSolutions(regions: number[], limit: number): number {
 
 /**
  * Tailles cibles très déséquilibrées : des régions équilibrées ne donnent
- * pratiquement jamais de solution unique (0 % mesuré) ; avec 2 petites régions
- * qui « épinglent » leurs reines, ~10 % des tirages sont uniques.
+ * pratiquement jamais de solution unique (0 % mesuré) ; avec des petites
+ * régions qui « épinglent » leurs reines, les tirages uniques deviennent
+ * fréquents (~10 % en 6×6 ; en 8×8 il faut 4 régions de 1–2 cases dont deux
+ * singletons, mesuré à ~5 % par tirage soit ~20 tentatives par grille).
  */
-function targetSizes(rng: RNG): number[] {
-  const sizes = [
-    1 + Math.floor(rng() * 2),
-    1 + Math.floor(rng() * 2),
-    3 + Math.floor(rng() * 4),
-    3 + Math.floor(rng() * 4),
-  ];
-  const rest = N * N - sizes.reduce((a, b) => a + b, 0);
-  const g1 = Math.max(1, Math.floor(rest / 2) + Math.floor(rng() * 3) - 1);
-  sizes.push(g1, Math.max(1, rest - g1));
+function targetSizes(rng: RNG, N: number): number[] {
+  const sizes =
+    N === 8
+      ? [1, 1, 1 + Math.floor(rng() * 2), 1 + Math.floor(rng() * 2), 3 + Math.floor(rng() * 4)]
+      : [
+          1 + Math.floor(rng() * 2),
+          1 + Math.floor(rng() * 2),
+          3 + Math.floor(rng() * 4),
+          3 + Math.floor(rng() * 4),
+        ];
+  // Les régions restantes se partagent le reste de la grille
+  const nGros = N - sizes.length;
+  let rest = N * N - sizes.reduce((a, b) => a + b, 0);
+  for (let k = 0; k < nGros - 1; k++) {
+    const part = Math.max(1, Math.floor(rest / (nGros - k)) + Math.floor(rng() * 3) - 1);
+    sizes.push(part);
+    rest -= part;
+  }
+  sizes.push(Math.max(1, rest));
   return shuffle(rng, sizes);
 }
 
-export function generate(rng: RNG) {
+export function generate(rng: RNG, difficile = false) {
+  const N = difficile ? N_DIFFICILE : N_NORMAL;
   for (let attempt = 0; attempt < 300; attempt++) {
     // Placement des reines : permutation sans adjacence diagonale entre lignes voisines
     let perm: number[] | null = null;
     for (let t = 0; t < 500 && !perm; t++) {
-      const p = shuffle(rng, [0, 1, 2, 3, 4, 5]);
+      const p = shuffle(rng, Array.from({ length: N }, (_, k) => k));
       if (p.every((c, r) => r === 0 || Math.abs(c - p[r - 1]) >= 2)) perm = p;
     }
     if (!perm) continue;
 
     // Croissance de régions contiguës depuis chaque reine, bornées par leur taille
     // cible tant que possible, puis débordement libre pour remplir la grille
-    const targets = targetSizes(rng);
+    const targets = targetSizes(rng, N);
     const regions = new Array(N * N).fill(-1);
     const frontier: number[][] = [];
     perm.forEach((c, r) => {
@@ -105,19 +118,19 @@ export function generate(rng: RNG) {
       }
     }
     if (remaining > 0) continue;
-    if (countSolutions(regions, 2) === 1) {
+    if (countSolutions(N, regions, 2) === 1) {
       const sol = new Set(perm.map((c, r) => r * N + c));
-      return { regions, sol };
+      return { N, regions, sol };
     }
   }
   // Secours improbable : grille fixe valide (régions = colonnes)
-  const perm = [0, 2, 4, 1, 5, 3];
+  const perm = N === 8 ? [0, 2, 4, 6, 1, 3, 5, 7] : [0, 2, 4, 1, 5, 3];
   const regions = Array.from({ length: N * N }, (_, i) => i % N);
-  return { regions, sol: new Set(perm.map((c, r) => r * N + c)) };
+  return { N, regions, sol: new Set(perm.map((c, r) => r * N + c)) };
 }
 
-export default function Reines({ rng, onAdjust, onDone }: GameProps) {
-  const { regions, sol } = useMemo(() => generate(rng), [rng]);
+export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) {
+  const { N, regions, sol } = useMemo(() => generate(rng, difficile), [rng, difficile]);
   // 0 = vide, 1 = croix, 2 = reine
   const [grid, setGrid] = useState<number[]>(() => new Array(N * N).fill(0));
   const [revealed, setRevealed] = useState(false);
@@ -140,11 +153,14 @@ export default function Reines({ rng, onAdjust, onDone }: GameProps) {
         400,
       );
     }
-  }, [grid, sol, revealed, onDone]);
+  }, [grid, sol, revealed, onDone, N]);
 
   return (
     <div className="game-area">
-      <div className="cellgrid queens-grid" style={{ gridTemplateColumns: `repeat(${N}, 1fr)` }}>
+      <div
+        className={`cellgrid queens-grid${N === 8 ? ' n8' : ''}`}
+        style={{ gridTemplateColumns: `repeat(${N}, 1fr)` }}
+      >
         {grid.map((v, i) => (
           <div
             key={i}
