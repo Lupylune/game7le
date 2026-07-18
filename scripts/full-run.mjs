@@ -41,8 +41,9 @@ async function dragOnce() {
   await page.mouse.up();
 }
 
-async function dragAcross() {
-  await forward(6000); // récap + compte à rebours avant l'épreuve
+async function dragAcross(extraMs = 0) {
+  // récap + compte à rebours avant l'épreuve, + éventuelle animation du jeu
+  await forward(6000 + extraMs);
   await dragOnce();
   await forward(2500);
 }
@@ -68,7 +69,8 @@ const actions = {
   Ratiole: tripleCut,
   Mélimélo: () => skip(45),
   Chromal: () => skip(30),
-  Tracé: dragAcross,
+  // Tracé : le segment parcourt la forme (~3 s) avant que le dessin ne soit permis
+  Tracé: () => dragAcross(4500),
   Dactylo: () => skip(45),
   Échecs: () => skip(45),
 };

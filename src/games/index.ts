@@ -98,8 +98,9 @@ export const JEUX: GameDef[] = [
   {
     id: 'trace',
     nom: 'Tracé',
-    regles: 'Repassez la forme en pointillé d’un seul trait, le plus fidèlement possible.',
-    scoring: 'De −40 s (100 % de précision) à +90 s (0 %) · une seule tentative',
+    regles:
+      'Un segment dessine la forme puis s’efface : reproduisez-la de mémoire, d’un seul trait.',
+    scoring: 'De −40 s (100 % de précision) à +90 s (0 %) · une seule tentative · revoir +10 s',
     skip: null,
     Component: Trace,
   },
