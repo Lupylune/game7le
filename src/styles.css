@@ -215,6 +215,23 @@ main.content {
   background: var(--error);
   color: #fff;
 }
+/* Défi difficile : bouton « challenge » à l'accent chaud, encadré de flammes */
+.btn-defi {
+  background: color-mix(in srgb, var(--error) 14%, var(--surface-elevated));
+  border: 1px solid color-mix(in srgb, var(--error) 50%, transparent);
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--text-sm);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--error) 45%, transparent);
+  transition: transform 0.06s, background-color 0.15s, border-color 0.15s, box-shadow 0.2s;
+}
+.btn-defi:hover {
+  background: color-mix(in srgb, var(--error) 24%, var(--surface-elevated));
+  border-color: var(--error);
+  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--error) 55%, transparent);
+}
+
 .btn-sm {
   padding: var(--sp-2) var(--sp-4);
   font-size: var(--text-sm);

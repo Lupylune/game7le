@@ -86,8 +86,8 @@ export default function Home() {
               <Link to="/classement?onglet=defi">Voir le classement →</Link>
             </div>
           ) : (
-            <Link to="/defi" className="btn">
-              Relever le défi difficile de la semaine
+            <Link to="/defi" className="btn btn-defi">
+              <SymFlamme size={18} /> Défi difficile <SymFlamme size={18} />
             </Link>
           )}
         </div>
