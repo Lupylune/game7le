@@ -357,6 +357,19 @@ main.content {
   color: var(--text-muted);
   width: 1.5em;
 }
+/* Podium : or, argent, bronze pour les 3 premiers */
+.lb .rank-1 {
+  color: #e8b923;
+  font-weight: 700;
+}
+.lb .rank-2 {
+  color: #a9b3bd;
+  font-weight: 700;
+}
+.lb .rank-3 {
+  color: #c17a3f;
+  font-weight: 700;
+}
 .lb .name {
   flex: 1;
   font-weight: 600;

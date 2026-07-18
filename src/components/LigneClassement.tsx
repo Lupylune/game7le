@@ -15,7 +15,7 @@ export default function LigneClassement({ e, rank }: { e: Entry; rank: number })
 
   const contenu = (
     <>
-      <span className="rank">{rank}</span>
+      <span className={`rank${rank <= 3 ? ` rank-${rank}` : ''}`}>{rank}</span>
       <span className="name">
         {e.pseudo} {e.badge && <SymEtoile />}
         {e.me && ' (vous)'}
