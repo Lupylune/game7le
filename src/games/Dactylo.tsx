@@ -6,12 +6,14 @@ import type { GameProps } from './types';
 
 const N_MOTS = 12;
 
-export default function Dactylo({ rng, onDone }: GameProps) {
+export default function Dactylo({ rng, difficile, onDone }: GameProps) {
   const phrase = useMemo(() => {
+    // Défi difficile : deux fois plus de mots à recopier
+    const n = difficile ? N_MOTS * 2 : N_MOTS;
     const mots: string[] = [];
-    for (let i = 0; i < N_MOTS; i++) mots.push(pick(rng, i % 2 ? SOL6 : SOL5).toLowerCase());
+    for (let i = 0; i < n; i++) mots.push(pick(rng, i % 2 ? SOL6 : SOL5).toLowerCase());
     return mots.join(' ');
-  }, [rng]);
+  }, [rng, difficile]);
 
   const [pos, setPos] = useState(0);
   const [typos, setTypos] = useState(0);

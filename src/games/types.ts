@@ -9,6 +9,8 @@ export interface GameResult {
 
 export interface GameProps {
   rng: RNG;
+  /** Variante corsée du défi hebdomadaire (grille plus grande, mots plus longs…). */
+  difficile?: boolean;
   /** Signale un ajustement intermédiaire (indice révélé, erreur…) pour le toast et le chrono. */
   onAdjust: (ms: number, label: string) => void;
   /** Termine le jeu. L'ajustement final NE doit PAS réinclure les ajustements intermédiaires. */
@@ -19,6 +21,8 @@ export interface GameDef {
   id: string;
   nom: string;
   regles: string; // une ligne, affichée pendant la partie
+  /** Règles de la variante difficile quand elles diffèrent (défi hebdomadaire). */
+  reglesDifficile?: string;
   scoring: string; // description du barème (page « Comment jouer »)
   skip: { apresS: number; penaliteS: number } | null;
   Component: ComponentType<GameProps>;

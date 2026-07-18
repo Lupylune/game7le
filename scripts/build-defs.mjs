@@ -1,6 +1,7 @@
 /**
- * Récupère les définitions Wiktionnaire des lemmes CROISES5 et génère
- * src/data/definitions.ts (indices des mini mots croisés).
+ * Récupère les définitions Wiktionnaire des lemmes CROISES5 et CROISES5_RARE
+ * et génère src/data/definitions.ts (indices des mini mots croisés, pools
+ * quotidien et défi difficile).
  * Usage : node scripts/build-defs.mjs   (cache : /tmp/defs-cache.json)
  * Requêtes groupées (50 titres/appel) pour ménager l'API.
  */
@@ -10,9 +11,11 @@ const LEXIQUE = new URL('../src/data/lexique.ts', import.meta.url);
 const CACHE = '/tmp/defs-cache.json';
 
 const src = readFileSync(LEXIQUE, 'utf8');
-const m = src.match(/CROISES5: string\[\] = '([^']+)'/);
-if (!m) throw new Error('CROISES5 introuvable dans lexique.ts — lancer build-lexique.mjs d’abord');
-const pairs = m[1].split(' ').map((p) => p.split(':')); // [STRIPPE, accentué]
+const pairs = ['CROISES5', 'CROISES5_RARE'].flatMap((nom) => {
+  const m = src.match(new RegExp(`${nom}: string\\[\\] = '([^']+)'`));
+  if (!m) throw new Error(`${nom} introuvable dans lexique.ts — lancer build-lexique.mjs d’abord`);
+  return m[1].split(' ').map((p) => p.split(':')); // [STRIPPE, accentué]
+});
 
 const cache = existsSync(CACHE) ? JSON.parse(readFileSync(CACHE, 'utf8')) : {};
 

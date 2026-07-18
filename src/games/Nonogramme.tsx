@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RNG } from '../lib/rng';
 import type { GameProps } from './types';
 
-const N = 8;
+const N_NORMAL = 8;
+const N_DIFFICILE = 15;
 
 function cluesOf(line: number[]): number[] {
   const out: number[] = [];
@@ -40,7 +41,7 @@ function placements(clue: number[], len: number): number[][] {
 }
 
 /** Résolubilité par logique de lignes (intersection des dispositions). */
-function lineSolvable(rows: number[][], cols: number[][]): boolean {
+function lineSolvable(N: number, rows: number[][], cols: number[][]): boolean {
   const g = new Array(N * N).fill(-1);
   for (let iter = 0; iter < 40; iter++) {
     let progress = false;
@@ -65,7 +66,8 @@ function lineSolvable(rows: number[][], cols: number[][]): boolean {
   return false;
 }
 
-export function generate(rng: RNG) {
+export function generate(rng: RNG, difficile = false) {
+  const N = difficile ? N_DIFFICILE : N_NORMAL;
   for (let t = 0; t < 80; t++) {
     const pattern = Array.from({ length: N * N }, () => (rng() < 0.52 ? 1 : 0));
     const rows = Array.from({ length: N }, (_, r) =>
@@ -74,7 +76,7 @@ export function generate(rng: RNG) {
     const cols = Array.from({ length: N }, (_, c) =>
       cluesOf(Array.from({ length: N }, (_, r) => pattern[r * N + c])),
     );
-    if (lineSolvable(rows, cols)) return { pattern, rows, cols };
+    if (lineSolvable(N, rows, cols)) return { N, pattern, rows, cols };
   }
   // Secours : damier (toujours résoluble ligne à ligne)
   const pattern = Array.from({ length: N * N }, (_, i) => (i % 2) as number);
@@ -82,13 +84,17 @@ export function generate(rng: RNG) {
   const cols = Array.from({ length: N }, (_, c) =>
     cluesOf(Array.from({ length: N }, (_, r) => pattern[r * N + c])),
   );
-  return { pattern, rows, cols };
+  return { N, pattern, rows, cols };
 }
 
-export default function Nonogramme({ rng, onAdjust, onDone }: GameProps) {
-  const { pattern, rows, cols } = useMemo(() => generate(rng), [rng]);
+export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GameProps) {
+  const { N, pattern, rows, cols } = useMemo(() => generate(rng, difficile), [rng, difficile]);
   // 0 = vide, 1 = rempli, 2 = croix
   const [grid, setGrid] = useState<number[]>(() => new Array(N * N).fill(0));
+  // Grille 15×15 : cases plus petites pour tenir à l'écran
+  const taille = difficile
+    ? 'clamp(16px, 4.4vw, 26px)'
+    : 'clamp(28px, 7vw, 36px)';
   const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
 
@@ -121,7 +127,7 @@ export default function Nonogramme({ rng, onAdjust, onDone }: GameProps) {
       rows: rows.map((clue, r) => calc(Array.from({ length: N }, (_, c) => r * N + c), clue)),
       cols: cols.map((clue, c) => calc(Array.from({ length: N }, (_, r) => r * N + c), clue)),
     };
-  }, [grid, rows, cols]);
+  }, [grid, rows, cols, N]);
 
   useEffect(() => {
     if (doneRef.current) return;
@@ -136,7 +142,7 @@ export default function Nonogramme({ rng, onAdjust, onDone }: GameProps) {
     }
     doneRef.current = true;
     setTimeout(() => onDone({ adjustMs: -10000, detail: 'résolu', status: 'success' }), 400);
-  }, [grid, rows, cols, onDone]);
+  }, [grid, rows, cols, onDone, N]);
 
   // La grille étant résoluble par pure logique, sa solution est unique :
   // on peut vérifier les cases remplies contre le motif d'origine.
@@ -183,8 +189,8 @@ export default function Nonogramme({ rng, onAdjust, onDone }: GameProps) {
 
   return (
     <div className="game-area">
-      <div className="nono-wrap" onContextMenu={(e) => e.preventDefault()}>
-        <div className="nono-colclues" style={{ gridTemplateColumns: `repeat(${N}, clamp(28px, 7vw, 36px))` }}>
+      <div className={`nono-wrap${difficile ? ' n15' : ''}`} onContextMenu={(e) => e.preventDefault()}>
+        <div className="nono-colclues" style={{ gridTemplateColumns: `repeat(${N}, ${taille})` }}>
           {cols.map((clue, c) => (
             <div className="clue" key={c}>
               {clue.map((v, k) => (
@@ -195,7 +201,7 @@ export default function Nonogramme({ rng, onAdjust, onDone }: GameProps) {
             </div>
           ))}
         </div>
-        <div className="nono-rowclues" style={{ gridTemplateRows: `repeat(${N}, clamp(28px, 7vw, 36px))` }}>
+        <div className="nono-rowclues" style={{ gridTemplateRows: `repeat(${N}, ${taille})` }}>
           {rows.map((clue, r) => (
             <div className="clue" key={r}>
               {clue.map((v, k) => (

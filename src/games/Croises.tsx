@@ -6,11 +6,11 @@ import type { GameProps } from './types';
 
 const N = 5;
 
-export default function Croises({ rng, onAdjust, onDone }: GameProps) {
+export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps) {
   // Grille dynamique (Lexique + Wiktionnaire) ; repli sur les grilles artisanales
   const puzzle = useMemo(
-    () => genCroise(rng) ?? CROISES[Math.floor(rng() * CROISES.length)],
-    [rng],
+    () => genCroise(rng, difficile) ?? CROISES[Math.floor(rng() * CROISES.length)],
+    [rng, difficile],
   );
   const solution = puzzle.grille;
   const [cells, setCells] = useState<string[][]>(() =>

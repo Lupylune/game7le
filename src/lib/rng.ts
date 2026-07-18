@@ -65,3 +65,14 @@ const fmtParis = new Intl.DateTimeFormat('fr-CA', {
 export function todayStr(d = new Date()): string {
   return fmtParis.format(d);
 }
+
+/**
+ * Lundi (AAAA-MM-JJ) de la semaine calendaire contenant `date` — identifiant
+ * du défi hebdomadaire difficile. Arithmétique en UTC sur la date déjà
+ * exprimée en Europe/Paris : indépendante du fuseau du navigateur.
+ */
+export function lundiStr(date = todayStr()): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const depuisLundi = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 0 = lundi
+  return new Date(Date.UTC(y, m - 1, d - depuisLundi)).toISOString().slice(0, 10);
+}

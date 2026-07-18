@@ -7,7 +7,7 @@ import type { RunPourStats } from './stats';
  * Le local reste la source de vérité : si le backend est absent, injoignable,
  * ou en erreur, l'app continue de fonctionner normalement.
  */
-export async function syncRun(pseudo: string, run: RunRecord): Promise<void> {
+export async function syncRun(pseudo: string, run: RunRecord, defi = false): Promise<void> {
   if (!supabase) return;
   try {
     await supabase.rpc('submit_run', {
@@ -17,6 +17,7 @@ export async function syncRun(pseudo: string, run: RunRecord): Promise<void> {
       p_lines: run.lines,
       p_flawless: run.flawless,
       p_en_direct: run.enDirect ?? true,
+      p_defi: defi,
     });
   } catch {
     // silencieux : pas de retry, le run est déjà enregistré en local
@@ -34,6 +35,7 @@ export async function fetchRunsParPseudo(pseudo: string): Promise<RunPourStats[]
     .from('runs')
     .select('date, total_ms, lines, flawless, finished_at, en_direct')
     .eq('pseudo', pseudo)
+    .eq('defi', false)
     .order('date', { ascending: true });
   if (error || !data) return null;
   return data.map((r) => ({

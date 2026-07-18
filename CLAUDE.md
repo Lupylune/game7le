@@ -10,6 +10,15 @@ The draw and puzzles are identical for every player on a given day (seeded PRNG,
 backend). Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as
 possible.
 
+There is also a **weekly hard challenge** (`/defi`, « défi difficile ») : 7 games drawn from a
+10-game pool (the 13 minus Paire, Ratiole and Trace, which have no meaningful hard variant),
+played in harder variants via the `difficile` game prop. It is identified by the **Monday of the
+current week** (Europe/Paris) — seeds `game7le:defi:${lundi}:…` (`lundiStr()` in `src/lib/rng.ts`,
+`jeuxDefiSemaine()` in `src/games/index.ts`) — so everyone gets the same draw all week. It has its
+own leaderboard tab (`/classement?onglet=defi`, `classementDefi()`), its own localStorage bucket
+(`game7le:defis` via `saveDefi()`/`loadDefis()`, same live/archive rules keyed by the Monday), and
+a looser SANS-FAUTE threshold (8 min vs 5, both client and server).
+
 Vite + React 19 + TypeScript, statically hosted. Language of the UI, code comments, and
 commit-worthy content is **French** — keep new user-facing strings in French. An optional Supabase
 backend (see below) mirrors local runs for a real global leaderboard, but the app is fully
@@ -61,6 +70,11 @@ registered as a `GameDef` in `src/games/index.ts` (see `src/games/types.ts`):
 
 - `rng: RNG` — the seeded generator described above; use it for all randomness (grid gen, word
   choice, shuffling) so the game is reproducible for a given seed.
+- `difficile?: boolean` — hard variant for the weekly challenge (Chromal 16 cells, Croisés rare
+  vocabulary, Dactylo 24 words, Echecs higher-rated mates in 2/3, LeMot & Mélimélo 8 letters,
+  Nonogramme 15×15, Reines 8×8, Sudoku 9×9 with 28 clues). **The `false`/absent path must keep the
+  exact same `rng` call sequence as before** so existing daily puzzles don't change when touching
+  a generator. `GameDef.reglesDifficile` overrides the rules line shown during hard play.
 - `onAdjust(ms, label)` — report an intermediate time adjustment (bonus/penalty) that shows as a
   floating toast during play, without ending the game (e.g. a wrong guess, a hint revealed).
 - `onDone(result)` — end the game once, with a final `GameResult` (`adjustMs`, human-readable
@@ -87,7 +101,9 @@ Notable mechanics:
   of the previous game + countdown to the next) — `pausedRef`/`trans` track this so paused time is
   excluded from `rawMs`.
 - `RunPage` also drives `/jouer/:date` (replay any past day) — same draw/seed logic keyed by the
-  URL date instead of today.
+  URL date instead of today — and `/defi` (`<RunPage defi />`, keyed in `App.tsx` so a daily run's
+  state is never recycled), where `date` is the current week's Monday and results go through
+  `saveDefi()`/`syncRun(pseudo, run, true)` instead.
 - Results are persisted via `saveRun()` (`src/lib/storage.ts`, localStorage key `game7le:runs`),
   keeping the best time per day **and per type** (`enDirect`). Live = the **first attempt on the
   puzzle's day**; every replay — archives or same-day regrind — goes to the archive slot and never
@@ -96,16 +112,34 @@ Notable mechanics:
 
 ### Optional Supabase backend (`src/lib/supabase.ts`, `src/lib/sync.ts`, `supabase/schema.sql`)
 
-Two tables, `comptes(pseudo)` and `runs(pseudo, date, en_direct, total_ms, lines)`, defined and
-RLS-locked in `supabase/schema.sql` (run once in the Supabase SQL editor; includes an idempotent
-migration block for bases created with the old one-row-per-day schema). There's no auth (pseudo is
-chosen freely client-side, same as local storage), so direct table writes are denied by RLS — all
-writes go through the `submit_run()` `SECURITY DEFINER` RPC, which upserts the `comptes` row and
-only overwrites a `(pseudo, date, en_direct)` row if the new time is better — mirroring the local
-rule that live and archive runs never overwrite each other. The client-sent `p_en_direct` flag is
-capped server-side (live requires: submitted on the puzzle's day, Europe/Paris, and no live run
-already recorded for that pseudo/date — first attempt only). Reads are public (needed for a
+Two tables, `comptes(pseudo)` and `runs(pseudo, date, en_direct, defi, total_ms, lines)`, defined
+and RLS-locked in `supabase/schema.sql` (run once in the Supabase SQL editor; includes an
+idempotent migration block for bases created with the old one-row-per-day schema). There's no auth
+(pseudo is chosen freely client-side, same as local storage), so direct table writes are denied by
+RLS — all writes go through the `submit_run()` `SECURITY DEFINER` RPC, which upserts the `comptes`
+row and only overwrites a `(pseudo, date, en_direct, defi)` row if the new time is better —
+mirroring the local rule that live and archive runs never overwrite each other. The client-sent
+`p_en_direct` flag is capped server-side (live requires: submitted on the puzzle's day, Europe/
+Paris — or within the challenge's week when `p_defi` — and no live run already recorded for that
+pseudo/date/defi — first attempt only). Weekly-challenge rows have `defi = true` and `date` = the
+week's Monday (enforced server-side); every daily-oriented read in `classement.ts`/`sync.ts`
+filters `defi = false`, and `classementDefi()` reads `defi = true`. Reads are public (needed for a
 global leaderboard).
+
+Since anyone can call the RPC with the public anon key, `submit_run()` trusts nothing client-sent
+and rejects malformed or implausible payloads with an exception (swallowed by the fire-and-forget
+`syncRun()`): pseudo format, date within launch date…today (Europe/Paris), bounded `total_ms`,
+`lines` = exactly 7 distinct known game ids with plausible per-game durations and bounded string
+fields, and `flawless` recomputed server-side from the lines (the client flag can only remove it).
+The 13 game ids — and the 10-id hard pool used when `p_defi` — are hardcoded in the function —
+keep them in sync with `src/games/index.ts` (`JEUX` / `JEUX_DEFI`) when adding a game, and keep
+validation thresholds loose enough to never reject a legitimate run (a false positive is silently
+lost). `submit_run()` also rate-limits by client IP (from the
+Supabase-set `x-forwarded-for` header, tracked in the RLS-private `quota_ip` table, purged after
+2h): max 20 submissions and 5 new pseudos per IP per hour — dimensioned so a whole household of
+legitimate players never hits it (a real run takes minutes) while making scripted spam floods
+ineffective. `supabase/cleanup.sql` is the rerunnable purge script (same criteria as the
+validation) used after the 2026-07-18 pollution incidents.
 
 `src/lib/supabase.ts` builds the client from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (see
 `.env.example`); both are `undefined` unless set locally, so `supabase` is `null` and every
@@ -133,13 +167,15 @@ committed to the repo, not written by hand — regenerate them via `npm run lexi
 echecs` rather than editing directly:
 
 - `scripts/build-lexique.mjs` downloads Lexique 3.83 (lexique.org) and derives word lists (Le Mot
-  solutions/dictionary, Mélimélo anagram targets, Croisés crossword vocabulary) filtered by
-  frequency and cleanliness.
+  solutions/dictionary in 5 and 8 letters, Mélimélo anagram targets in 6 and 8, Croisés crossword
+  vocabulary) filtered by frequency and cleanliness. The Croisés pool is split by frequency:
+  `CROISES5` (common words, daily grids) vs `CROISES5_RARE` (rarer words, hard-challenge grids).
 - `scripts/build-defs.mjs` fetches French Wiktionary definitions (batched, cached, resumable) for
-  the Croisés vocabulary, used as crossword clues; `src/lib/croisesgen.ts` assembles actual 5×5
+  both Croisés pools, used as crossword clues; `src/lib/croisesgen.ts` assembles actual 5×5
   grids from that word+clue pool at runtime (via the seeded RNG), not from a fixed grid set.
 - `scripts/build-echecs.mjs` pulls a byte-range slice of the Lichess puzzle database (CC0),
-  filtering to one-move, no-promotion, rated puzzles for the Echecs game.
+  filtering to no-promotion, rated mate puzzles: `PUZZLES` (mates in 1–2, 700–1600 Elo, daily) and
+  `PUZZLES_DIFFICILES` (mates in 2 at 1600–2400 Elo plus mates in 3, hard challenge).
 
 ### Testing (`scripts/smoke.mjs`, `scripts/full-run.mjs`)
 

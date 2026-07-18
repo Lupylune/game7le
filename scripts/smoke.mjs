@@ -50,6 +50,7 @@ await check('/comment-jouer', '.rule-card', 'Comment jouer');
 await check('/a-propos', '.prose h1', 'À propos');
 await check('/archives', '.archive-list li', 'Archives');
 await check('/classement', SEL_CLASSEMENT, 'Classement');
+await check('/classement?onglet=defi', SEL_CLASSEMENT, 'Classement — défi difficile');
 await check('/parametres', '.settings-row', 'Paramètres');
 await check('/profil', '.prose h1', 'Profil');
 await check('/entrainement', '.game-card', 'Entraînement (liste)');
@@ -82,6 +83,19 @@ try {
 } catch {
   failures++;
   console.log('✗ Run — la première épreuve ne démarre pas', errors.join(' | '));
+}
+
+// Défi difficile de la semaine : intro puis première épreuve corsée
+await check('/defi', '.interstitial', 'Défi difficile — intro');
+await page.click('button.btn-primary');
+try {
+  await page.waitForSelector('.transition .countdown', { timeout: 4000 });
+  await page.waitForSelector('.game-rules', { timeout: 8000 });
+  const nom = (await page.textContent('.game-name'))?.trim();
+  console.log(`✓ Défi difficile — première épreuve du tirage (${nom})`);
+} catch {
+  failures++;
+  console.log('✗ Défi difficile — la première épreuve ne démarre pas', errors.join(' | '));
 }
 
 // Interactions rapides : sudoku (clic + pavé), démineur (premier clic génère)
