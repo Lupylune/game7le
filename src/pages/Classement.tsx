@@ -97,7 +97,17 @@ export default function Classement() {
       {all.length === 0 && <BalleDeFoin />}
       <ol className="mt-4">
         {all.map((e, i) => (
-          <LigneClassement key={`${e.pseudo}-${i}`} e={e} rank={i + 1} />
+          <LigneClassement
+            key={`${e.pseudo}-${i}`}
+            e={e}
+            rank={i + 1}
+            deverrouille={!!myRun}
+            messageVerrou={
+              ongletDefi
+                ? 'Terminez le défi difficile pour voir le détail des temps.'
+                : 'Terminez le défi du jour pour voir le détail des temps.'
+            }
+          />
         ))}
       </ol>
       {(!board.reel || all.length > 0) && (

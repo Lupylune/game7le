@@ -101,7 +101,13 @@ export default function Home() {
           <>
             <ol>
               {board.entries.map((e, i) => (
-                <LigneClassement key={e.pseudo} e={e} rank={i + 1} />
+                <LigneClassement
+                  key={e.pseudo}
+                  e={e}
+                  rank={i + 1}
+                  deverrouille={!!myRun}
+                  messageVerrou="Terminez le défi du jour pour voir le détail des temps."
+                />
               ))}
             </ol>
             <p className="global-avg">
@@ -129,7 +135,13 @@ export default function Home() {
           <>
             <ol>
               {semaine.entries.map((e, i) => (
-                <LigneClassement key={e.pseudo} e={e} rank={i + 1} />
+                <LigneClassement
+                  key={e.pseudo}
+                  e={e}
+                  rank={i + 1}
+                  deverrouille={!!myRun}
+                  messageVerrou="Terminez le défi du jour pour voir le détail des temps."
+                />
               ))}
             </ol>
             <p className="global-avg">

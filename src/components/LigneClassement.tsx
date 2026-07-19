@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import type { Entry } from '../lib/classement';
 import { formatMs } from '../lib/time';
 import { SymEtincelle, SymEtoile } from './GameIcon';
@@ -8,10 +8,40 @@ import SplitsRun from './SplitsRun';
  * Ligne d'un classement (top 5 de l'accueil, classement complet). Si le run
  * a des splits (runs réels ou run local), un clic déplie le détail par
  * mini-jeu, comme sur l'écran de résultats.
+ *
+ * Le détail n'est consultable que si l'on a soi-même terminé le défi
+ * correspondant (`deverrouille`) ; sinon, un clic affiche un petit message
+ * invitant à finir le défi d'abord.
  */
-export default function LigneClassement({ e, rank }: { e: Entry; rank: number }) {
+export default function LigneClassement({
+  e,
+  rank,
+  deverrouille = true,
+  messageVerrou,
+}: {
+  e: Entry;
+  rank: number;
+  deverrouille?: boolean;
+  messageVerrou?: string;
+}) {
   const [ouvert, setOuvert] = useState(false);
+  const [verrouAffiche, setVerrouAffiche] = useState(false);
   const depliable = !!e.lines?.length;
+  const verrouille = depliable && !deverrouille;
+
+  useEffect(() => {
+    if (!verrouAffiche) return;
+    const t = setTimeout(() => setVerrouAffiche(false), 2600);
+    return () => clearTimeout(t);
+  }, [verrouAffiche]);
+
+  function onClic() {
+    if (verrouille) {
+      setVerrouAffiche(true);
+    } else {
+      setOuvert((v) => !v);
+    }
+  }
 
   const contenu = (
     <>
@@ -27,18 +57,29 @@ export default function LigneClassement({ e, rank }: { e: Entry; rank: number })
       )}
       <span className="time">{formatMs(e.ms)}</span>
       <span>{e.flawless && <SymEtincelle />}</span>
-      {depliable && (
-        <svg className="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden>
-          <path
-            d="M2 4l4 4 4-4"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      )}
+      {depliable &&
+        (verrouille ? (
+          <svg className="cadenas" width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+            <rect x="2.5" y="5.5" width="7" height="5" rx="1" fill="currentColor" />
+            <path
+              d="M4 5.5V4a2 2 0 0 1 4 0v1.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+            />
+          </svg>
+        ) : (
+          <svg className="chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+            <path
+              d="M2 4l4 4 4-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ))}
     </>
   );
 
@@ -51,15 +92,20 @@ export default function LigneClassement({ e, rank }: { e: Entry; rank: number })
         <button
           type="button"
           className="row-main"
-          aria-expanded={ouvert}
-          onClick={() => setOuvert((v) => !v)}
+          aria-expanded={verrouille ? undefined : ouvert}
+          onClick={onClic}
         >
           {contenu}
         </button>
       ) : (
         <div className="row-main">{contenu}</div>
       )}
-      {ouvert && e.lines && <SplitsRun lines={e.lines} />}
+      {verrouAffiche && (
+        <div className="row-verrou" role="status">
+          {messageVerrou ?? 'Terminez le défi pour voir le détail des temps.'}
+        </div>
+      )}
+      {ouvert && !verrouille && e.lines && <SplitsRun lines={e.lines} />}
     </li>
   );
 }
