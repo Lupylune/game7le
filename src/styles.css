@@ -319,6 +319,7 @@ main.content {
   border-color: var(--accent);
 }
 .lb .row {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -348,6 +349,43 @@ main.content {
 }
 .lb .row.open .chev {
   transform: rotate(180deg);
+}
+.lb .cadenas {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.lb .row-verrou {
+  position: absolute;
+  top: calc(100% - var(--sp-2));
+  right: var(--sp-3);
+  z-index: 20;
+  max-width: 260px;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  animation: verrou-pop 2.6s ease forwards;
+  pointer-events: none;
+}
+@keyframes verrou-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
 }
 .lb .row .run-splits {
   padding: 0 var(--sp-4) var(--sp-2);
