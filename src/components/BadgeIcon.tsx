@@ -12,7 +12,10 @@ const COULEURS: Record<Niveau, string> = {
 };
 
 export function couleurNiveau(niveau: Niveau | null): string {
-  return niveau ? COULEURS[niveau] : 'var(--text-muted)';
+  // Verrouillé : gris OPAQUE (pas var(--text-muted), semi-transparent, qui
+  // s'additionnerait aux recouvrements de formes). Le grisé vient de l'opacité
+  // de la vignette, appliquée au groupe entier — donc homogène.
+  return niveau ? COULEURS[niveau] : 'color-mix(in srgb, var(--text) 50%, var(--bg))';
 }
 
 function glyphe(id: string, c: string) {
