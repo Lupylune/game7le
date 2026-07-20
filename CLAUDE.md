@@ -86,8 +86,10 @@ registered as a `GameDef` in `src/games/index.ts` (see `src/games/types.ts`):
 Games needing a "did I get it right" affordance without spoiling the solution use a **"Vérifier"
 (verify) button** that flags wrong cells red for ~2s and costs a small time penalty (+5s), rather
 than a "Révéler" (reveal) button that shows the answer — this pattern is used in Sudoku, Paire,
-Nonogramme, and Croises. Reines and Echecs still use reveal since there's no partial-fill state to
-check. Follow whichever pattern fits when adding a new puzzle-type game.
+Nonogramme, and Croises. Reines uses the same "Vérifier" button, highlighting queens "en échec"
+(same row/column/region or touching) red for ~2s (+5s). Echecs uses an "Indice" button that
+highlights the piece to play for the next expected move for ~2.5s (+15s) instead of revealing the
+full line. Follow whichever pattern fits when adding a new puzzle-type game.
 
 `GameIcon.tsx` renders a hand-drawn SVG glyph per game `id` (no emoji) — add a new `case` there for
 any new game id.

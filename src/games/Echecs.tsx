@@ -85,6 +85,7 @@ export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) 
   const [lastMove, setLastMove] = useState<[number, number] | null>(null);
   const [sel, setSel] = useState<number | null>(null);
   const [flashSq, setFlashSq] = useState<number | null>(null);
+  const [hintSq, setHintSq] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
   const doneRef = useRef(false);
 
@@ -216,7 +217,7 @@ export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) 
               data-i={i}
               className={`chess-sq ${clair ? 'clair' : 'sombre'}${sel === i ? ' sel' : ''}${
                 lastMove?.includes(i) ? ' last' : ''
-              }${flashSq === i ? ' errflash' : ''}`}
+              }${flashSq === i ? ' errflash' : ''}${hintSq === i ? ' hint' : ''}`}
             >
               {p && (
                 <span
@@ -243,24 +244,14 @@ export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) 
           className="btn btn-sm"
           disabled={!ready}
           onClick={() => {
-            if (doneRef.current) return;
-            onAdjust(30000, 'Solution révélée');
-            setReady(false);
-            setSel(null);
-            // Déroule tous les coups restants de la solution en cascade
-            let delai = 0;
-            for (let s = step; s < puzzle.coups.length; s++) {
-              const mv = puzzle.coups[s];
-              setTimeout(() => {
-                setBoard((b) => applyUci(b, mv));
-                setLastMove([idx(mv.slice(0, 2)), idx(mv.slice(2, 4))]);
-              }, delai);
-              delai += 700;
-            }
-            setTimeout(() => finish(0, 'solution révélée'), delai);
+            if (doneRef.current || !ready) return;
+            onAdjust(15000, 'Indice');
+            // Surligne la pièce à jouer pour le coup attendu
+            setHintSq(idx(puzzle.coups[step].slice(0, 2)));
+            setTimeout(() => setHintSq(null), 2500);
           }}
         >
-          Révéler (+30 s)
+          Indice (+15 s)
         </button>
         <span className="muted" style={{ fontSize: 'var(--text-sm)', alignSelf: 'center' }}>
           Glissez la pièce (ou cliquez départ puis arrivée) · mauvais coup : +10 s

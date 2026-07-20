@@ -133,7 +133,7 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
   const { N, regions, sol } = useMemo(() => generate(rng, difficile), [rng, difficile]);
   // 0 = vide, 1 = croix, 2 = reine
   const [grid, setGrid] = useState<number[]>(() => new Array(N * N).fill(0));
-  const [revealed, setRevealed] = useState(false);
+  const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
 
   useEffect(() => {
@@ -143,17 +143,35 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
     const okAll = queens.every((i) => sol.has(i));
     if (okAll) {
       doneRef.current = true;
-      setTimeout(
-        () =>
-          onDone(
-            revealed
-              ? { adjustMs: 0, detail: 'résolu (avec révélation)', status: 'success' }
-              : { adjustMs: -5000, detail: 'résolu', status: 'success' },
-          ),
-        400,
-      );
+      setTimeout(() => onDone({ adjustMs: -5000, detail: 'résolu', status: 'success' }), 400);
     }
-  }, [grid, sol, revealed, onDone, N]);
+  }, [grid, sol, onDone, N]);
+
+  /** Surligne les reines « en échec » : même ligne, colonne, région ou qui se touchent. */
+  function verifier() {
+    onAdjust(5000, 'Vérification');
+    const queens = grid.flatMap((v, i) => (v === 2 ? [i] : []));
+    const w = new Set<number>();
+    for (let a = 0; a < queens.length; a++) {
+      for (let b = a + 1; b < queens.length; b++) {
+        const ra = Math.floor(queens[a] / N);
+        const ca = queens[a] % N;
+        const rb = Math.floor(queens[b] / N);
+        const cb = queens[b] % N;
+        const conflit =
+          ra === rb ||
+          ca === cb ||
+          regions[queens[a]] === regions[queens[b]] ||
+          (Math.abs(ra - rb) <= 1 && Math.abs(ca - cb) <= 1);
+        if (conflit) {
+          w.add(queens[a]);
+          w.add(queens[b]);
+        }
+      }
+    }
+    setWrong(w);
+    setTimeout(() => setWrong(new Set()), 2000);
+  }
 
   return (
     <div className="game-area">
@@ -164,7 +182,7 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
         {grid.map((v, i) => (
           <div
             key={i}
-            className="cell"
+            className={`cell${wrong.has(i) ? ' error' : ''}`}
             style={{
               background: `color-mix(in srgb, var(--queens-r${regions[i] + 1}) 55%, var(--bg))`,
             }}
@@ -190,15 +208,8 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
         en diagonale) · clic : vide → reine → croix → vide
       </p>
       <div className="game-actions">
-        <button
-          className="btn btn-sm"
-          onClick={() => {
-            onAdjust(30000, 'Solution révélée');
-            setRevealed(true);
-            setGrid(Array.from({ length: N * N }, (_, i) => (sol.has(i) ? 2 : 0)));
-          }}
-        >
-          Révéler (+30 s)
+        <button className="btn btn-sm" onClick={verifier}>
+          Vérifier (+5 s)
         </button>
       </div>
     </div>
