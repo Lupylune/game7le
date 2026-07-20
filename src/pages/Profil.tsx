@@ -91,6 +91,8 @@ export default function Profil() {
             <Tuile label="Temps total" valeur={formatHeures(s.totalMs)} />
           </div>
 
+          <BadgesGrille pseudo={pseudo} />
+
           <h2>Temps moyen par épreuve</h2>
           <ul className="stats-jeux">
             {parJeu.map((j) => (
@@ -124,8 +126,6 @@ export default function Profil() {
           </ul>
         </>
       )}
-
-      <BadgesGrille pseudo={pseudo} />
 
       <p className="muted mt-6" style={{ fontSize: 'var(--text-sm)' }}>
         Changer de pseudo ? Direction les <Link to="/parametres">paramètres</Link>.
