@@ -5,8 +5,13 @@
 
 create table if not exists comptes (
   pseudo text primary key check (char_length(pseudo) between 2 and 20),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Badge (achievement) choisi comme picto affiché à côté du pseudo dans le
+  -- classement. Token « id » ou « id:niveau » (voir src/lib/badges.ts).
+  badge text
 );
+-- Migration d'une base créée sans la colonne badge. Idempotente.
+alter table comptes add column if not exists badge text;
 
 create table if not exists runs (
   pseudo text not null references comptes (pseudo) on delete cascade,
@@ -251,3 +256,32 @@ $$;
 
 revoke all on function submit_run(text, date, integer, jsonb, boolean, boolean, boolean) from public;
 grant execute on function submit_run(text, date, integer, jsonb, boolean, boolean, boolean) to anon, authenticated;
+
+-- Choix du badge affiché à côté du pseudo dans le classement. Isolée de
+-- submit_run pour ne pas toucher au chemin critique de soumission des runs.
+-- Comme le reste des écritures, elle passe par une fonction SECURITY DEFINER
+-- (les tables n'ont pas de policy insert/update). Le token n'est qu'un
+-- libellé d'affichage public : validation de forme seulement, chaîne vide =
+-- aucun badge.
+create or replace function set_badge(p_pseudo text, p_badge text) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  p_pseudo := trim(p_pseudo);
+  if p_pseudo is null or char_length(p_pseudo) not between 2 and 20
+     or p_pseudo ~ '[[:cntrl:]]' then
+    raise exception 'pseudo invalide';
+  end if;
+  p_badge := coalesce(p_badge, '');
+  if p_badge <> '' and p_badge !~ '^[a-z0-9-]{1,32}(:(bronze|argent|or))?$' then
+    raise exception 'badge invalide';
+  end if;
+  insert into comptes (pseudo, badge) values (p_pseudo, nullif(p_badge, ''))
+  on conflict (pseudo) do update set badge = nullif(p_badge, '');
+end;
+$$;
+
+revoke all on function set_badge(text, text) from public;
+grant execute on function set_badge(text, text) to anon, authenticated;

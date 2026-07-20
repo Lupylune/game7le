@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { calculeStats, estEnDirect, statsParJeu, formatHeures, formatDateCourte } from '../lib/stats';
 import { rangsReels } from '../lib/classement';
 import { useHistorique } from '../lib/useHistorique';
-import { usePseudo } from '../lib/usePseudo';
+import { usePseudo, useBadgeChoisi } from '../lib/usePseudo';
 import GameIcon, { SymFlamme } from '../components/GameIcon';
+import { BadgePicto } from '../components/BadgeIcon';
+import BadgesGrille from '../components/BadgesGrille';
 import { formatMs, formatSec } from '../lib/time';
 import { todayStr } from '../lib/rng';
 
@@ -20,6 +22,7 @@ function Tuile({ label, valeur, sous }: { label: string; valeur: React.ReactNode
 
 export default function Profil() {
   const pseudo = usePseudo();
+  const badge = useBadgeChoisi();
   // Seuls les runs joués le jour même comptent — pas les archives rejouées.
   const runsLive = useHistorique(pseudo).filter(estEnDirect);
   const s = calculeStats(runsLive, todayStr());
@@ -52,7 +55,10 @@ export default function Profil() {
 
   return (
     <div className="prose" style={{ maxWidth: 640 }}>
-      <h1>{pseudo}</h1>
+      <h1 className="profil-titre">
+        <BadgePicto token={badge} size={24} />
+        {pseudo}
+      </h1>
       <p className="muted">
         Compte sans mot de passe, identifié par pseudo — les stats sont synchronisées depuis vos
         runs enregistrés sous ce pseudo.
@@ -118,6 +124,9 @@ export default function Profil() {
           </ul>
         </>
       )}
+
+      <BadgesGrille pseudo={pseudo} />
+
       <p className="muted mt-6" style={{ fontSize: 'var(--text-sm)' }}>
         Changer de pseudo ? Direction les <Link to="/parametres">paramètres</Link>.
       </p>

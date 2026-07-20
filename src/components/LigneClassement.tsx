@@ -2,6 +2,8 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import type { Entry } from '../lib/classement';
 import { formatMs } from '../lib/time';
 import { SymEtincelle, SymEtoile } from './GameIcon';
+import { BadgePicto } from './BadgeIcon';
+import { parseToken } from '../lib/badges';
 import SplitsRun from './SplitsRun';
 
 /**
@@ -47,7 +49,12 @@ export default function LigneClassement({
     <>
       <span className={`rank${rank <= 3 ? ` rank-${rank}` : ''}`}>{rank}</span>
       <span className="name">
-        {e.pseudo} {e.badge && <SymEtoile />}
+        {parseToken(e.badge) ? (
+          <BadgePicto token={e.badge} size={16} />
+        ) : (
+          e.badge && <SymEtoile />
+        )}{' '}
+        {e.pseudo}
         {e.me && ' (vous)'}
       </span>
       {e.jours != null && (

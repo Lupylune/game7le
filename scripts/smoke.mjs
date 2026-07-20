@@ -52,7 +52,7 @@ await check('/archives', '.archive-list li', 'Archives');
 await check('/classement', SEL_CLASSEMENT, 'Classement');
 await check('/classement?onglet=defi', SEL_CLASSEMENT, 'Classement — défi difficile');
 await check('/parametres', '.settings-row', 'Paramètres');
-await check('/profil', '.prose h1', 'Profil');
+await check('/profil', '.badges-grid', 'Profil + badges');
 await check('/entrainement', '.game-card', 'Entraînement (liste)');
 
 const jeux = [

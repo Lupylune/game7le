@@ -3,8 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { classementDefi, classementJour, type Board, type Entry } from '../lib/classement';
 import { lundiStr, todayStr } from '../lib/rng';
 import { estEnDirect } from '../lib/stats';
-import { loadDefis } from '../lib/storage';
+import { loadDefis, loadSettings } from '../lib/storage';
 import { useHistorique } from '../lib/useHistorique';
+import { useBadgesJoueurs } from '../lib/useBadges';
 import { usePseudo } from '../lib/usePseudo';
 import BalleDeFoin from '../components/BalleDeFoin';
 import LigneClassement from '../components/LigneClassement';
@@ -20,6 +21,8 @@ export default function Classement() {
   const myDefi = loadDefis().find((r) => r.date === lundi && r.enDirect);
   const myRun = ongletDefi ? myDefi : myRunJour;
   const [board, setBoard] = useState<Board | null>(null);
+  const badges = useBadgesJoueurs(board ? board.entries.map((e) => e.pseudo) : []);
+  const monBadge = loadSettings().badge;
 
   useEffect(() => {
     let vivant = true;
@@ -99,7 +102,7 @@ export default function Classement() {
         {all.map((e, i) => (
           <LigneClassement
             key={`${e.pseudo}-${i}`}
-            e={e}
+            e={{ ...e, badge: e.me ? monBadge || undefined : badges[e.pseudo] ?? e.badge }}
             rank={i + 1}
             deverrouille={!!myRun}
             messageVerrou={

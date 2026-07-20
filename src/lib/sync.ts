@@ -25,6 +25,44 @@ export async function syncRun(pseudo: string, run: RunRecord, defi = false): Pro
 }
 
 /**
+ * Enregistre le badge choisi par un pseudo (picto affiché à côté du nom dans
+ * le classement global). Best-effort et totalement isolé de `submit_run` : si
+ * le backend n'a pas encore la RPC `set_badge` (migration non appliquée),
+ * l'appel échoue silencieusement et la soumission des runs n'est pas affectée.
+ */
+export async function syncBadge(pseudo: string, badge: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    await supabase.rpc('set_badge', { p_pseudo: pseudo, p_badge: badge });
+  } catch {
+    // silencieux : le choix reste dans les réglages locaux
+  }
+}
+
+/**
+ * Badges choisis par un ensemble de pseudos (pour les afficher dans le
+ * classement). Lecture best-effort de `comptes.badge` : `null` si le backend
+ * est absent ou si la colonne n'existe pas encore — dans ce cas le classement
+ * s'affiche simplement sans les badges des autres joueurs.
+ */
+export async function fetchBadges(pseudos: string[]): Promise<Record<string, string> | null> {
+  if (!supabase || pseudos.length === 0) return null;
+  try {
+    const { data, error } = await supabase
+      .from('comptes')
+      .select('pseudo, badge')
+      .in('pseudo', pseudos);
+    if (error || !data) return null;
+    const out: Record<string, string> = {};
+    for (const r of data as { pseudo: string; badge: string | null }[])
+      if (r.badge) out[r.pseudo] = r.badge;
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Historique des runs d'un pseudo, tous appareils confondus (Supabase).
  * `null` si le backend est absent/injoignable : l'appelant retombe alors sur
  * l'historique local du navigateur.
