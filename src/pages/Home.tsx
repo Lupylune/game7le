@@ -4,12 +4,13 @@ import Logo from '../components/Logo';
 import { SymEtincelle, SymFlamme } from '../components/GameIcon';
 import BalleDeFoin from '../components/BalleDeFoin';
 import LigneClassement from '../components/LigneClassement';
-import { classementJour, classementSemaine, type Board } from '../lib/classement';
+import { classementJour, classementSemaine, type Board, type Entry } from '../lib/classement';
 import { lundiStr, seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
 import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
-import { loadDefis } from '../lib/storage';
+import { loadDefis, loadSettings } from '../lib/storage';
 import { useHistorique } from '../lib/useHistorique';
+import { useBadgesJoueurs } from '../lib/useBadges';
 import { usePseudo } from '../lib/usePseudo';
 
 const TAGLINES = [
@@ -34,7 +35,17 @@ export default function Home() {
       vivant = false;
     };
   }, [date]);
-  const runs = useHistorique(usePseudo());
+  const pseudo = usePseudo();
+  const runs = useHistorique(pseudo);
+  const badges = useBadgesJoueurs([
+    ...(board?.entries ?? []),
+    ...(semaine?.entries ?? []),
+  ].map((e) => e.pseudo));
+  const monBadge = loadSettings().badge;
+  const avecBadge = (e: Entry): Entry => ({
+    ...e,
+    badge: e.pseudo === pseudo ? monBadge || undefined : badges[e.pseudo] ?? e.badge,
+  });
   // Le temps « officiel » du jour est celui de la première tentative (en
   // direct) — les rejeux du jour même sont des runs d'archive.
   const myRun = runs.find((r) => r.date === date && estEnDirect(r));
@@ -103,7 +114,7 @@ export default function Home() {
               {board.entries.map((e, i) => (
                 <LigneClassement
                   key={e.pseudo}
-                  e={e}
+                  e={avecBadge(e)}
                   rank={i + 1}
                   deverrouille={!!myRun}
                   messageVerrou="Terminez le défi du jour pour voir le détail des temps."
@@ -137,7 +148,7 @@ export default function Home() {
               {semaine.entries.map((e, i) => (
                 <LigneClassement
                   key={e.pseudo}
-                  e={e}
+                  e={avecBadge(e)}
                   rank={i + 1}
                   deverrouille={!!myRun}
                   messageVerrou="Terminez le défi du jour pour voir le détail des temps."

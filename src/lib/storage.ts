@@ -25,6 +25,9 @@ export interface RunRecord {
 export interface Settings {
   theme: 'dark' | 'light' | 'system';
   pseudo: string;
+  /** Badge choisi comme picto affiché à gauche du pseudo. Token `id` ou
+   *  `id:niveau` (voir `lib/badges`). Vide = aucun. */
+  badge: string;
 }
 
 const K_RUNS = 'game7le:runs';
@@ -119,7 +122,7 @@ export function loadSettings(): Settings {
   } catch {
     /* défauts */
   }
-  return { theme: s.theme ?? 'dark', pseudo: s.pseudo ?? 'Vous' };
+  return { theme: s.theme ?? 'dark', pseudo: s.pseudo ?? 'Vous', badge: s.badge ?? '' };
 }
 
 /** Émis à chaque enregistrement des réglages, pour que les pages déjà montées
