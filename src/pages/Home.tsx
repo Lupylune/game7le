@@ -156,7 +156,7 @@ export default function Home() {
               ))}
             </ol>
             <p className="global-avg">
-              Cumul des temps de la semaine (lundi→dimanche), classé par régularité.
+              Moyenne de la semaine, classé par régularité.
             </p>
           </>
         ) : (
