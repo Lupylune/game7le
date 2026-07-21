@@ -132,9 +132,9 @@ interface RunSemaine {
 
 /**
  * Classement de la semaine calendaire (lundi→dimanche) contenant `date` : on
- * cumule le temps des runs joués en direct de chaque pseudo, classés d'abord par
- * nombre de jours joués (régularité), puis par temps cumulé croissant. Repli sur
- * un peloton simulé si le backend est absent/injoignable.
+ * moyenne le temps des runs joués en direct de chaque pseudo, classés d'abord
+ * par nombre de jours joués (régularité), puis par temps moyen croissant.
+ * Repli sur un peloton simulé si le backend est absent/injoignable.
  */
 export async function classementSemaine(date: string, n = 5): Promise<Board> {
   const dates = datesSemaine(date);
@@ -158,7 +158,7 @@ export async function classementSemaine(date: string, n = 5): Promise<Board> {
       const entries: Entry[] = [...agg.entries()]
         .map(([pseudo, a]) => ({
           pseudo,
-          ms: a.total,
+          ms: a.total / a.jours,
           jours: a.jours,
           flawless: a.jours > 0 && a.flawless === a.jours,
         }))
@@ -166,7 +166,10 @@ export async function classementSemaine(date: string, n = 5): Promise<Board> {
         .slice(0, n);
       return {
         entries,
-        avgMs: agg.size > 0 ? [...agg.values()].reduce((s, a) => s + a.total, 0) / agg.size : 0,
+        avgMs:
+          agg.size > 0
+            ? [...agg.values()].reduce((s, a) => s + a.total / a.jours, 0) / agg.size
+            : 0,
         runs: data.length,
         reel: true,
       };
@@ -185,7 +188,7 @@ export function classementSemaineSimule(
 ): { entries: Entry[]; avgMs: number; runs: number } {
   const rng = seededRng(`game7le:semaine:${datesSemaine(date)[0]}`);
   const noms = shuffle(rng, PSEUDOS).slice(0, n);
-  let ms = randInt(rng, 7 * 85000, 7 * 105000);
+  let ms = randInt(rng, 85000, 105000);
   const entries: Entry[] = noms.map((pseudo, i) => {
     const e: Entry = {
       pseudo,
@@ -194,12 +197,12 @@ export function classementSemaineSimule(
       badge: rng() < 0.3 ? '★' : undefined,
       flawless: rng() < 0.12,
     };
-    ms += randInt(rng, 15000, i < 2 ? 40000 : 70000);
+    ms += randInt(rng, 3000, i < 2 ? 8000 : 15000);
     return e;
   });
   return {
     entries,
-    avgMs: randInt(rng, 55 * 60000, 80 * 60000),
+    avgMs: randInt(rng, 8 * 60000, 11 * 60000),
     runs: randInt(rng, 3000, 9000),
   };
 }
