@@ -13,6 +13,7 @@ import Chromal from './Chromal';
 import Trace from './Trace';
 import Dactylo from './Dactylo';
 import Echecs from './Echecs';
+import Pokedle from './Pokedle';
 
 export const JEUX: GameDef[] = [
   {
@@ -131,9 +132,18 @@ export const JEUX: GameDef[] = [
     regles: 'Un puzzle Lichess : l’adversaire vient de jouer, menez l’attaque jusqu’au mat.',
     reglesDifficile:
       'Un puzzle Lichess corsé : l’adversaire vient de jouer, menez l’attaque jusqu’au mat.',
-    scoring: 'Mat trouvé : −15 s (davantage si plusieurs coups) · mauvais coup : +10 s · révélation : +30 s',
+    scoring: 'Mat trouvé : −15 s (davantage si plusieurs coups) · mauvais coup : +10 s · indice : +15 s',
     skip: { apresS: 30, penaliteS: 90 },
     Component: Echecs,
+  },
+  {
+    id: 'pokedle',
+    nom: 'Pokédle',
+    regles:
+      'Devinez le Pokémon (génération 1) en 8 essais : chaque proposition révèle type, stade, couleur et habitat.',
+    scoring: 'Trouvé en 1–3 essais : −15 s · 4–5 : −10 s · 6–8 : −5 s · échec : +60 s',
+    skip: { apresS: 30, penaliteS: 90 },
+    Component: Pokedle,
   },
 ];
 
@@ -141,13 +151,13 @@ export const JEU_PAR_ID = new Map(JEUX.map((j) => [j.id, j]));
 
 export const JEUX_PAR_JOUR = 7;
 
-/** Les 7 épreuves du jour, tirées au sort parmi les 13 (même tirage pour tous). */
+/** Les 7 épreuves du jour, tirées au sort parmi les 14 (même tirage pour tous). */
 export function jeuxDuJour(date: string): GameDef[] {
   return shuffle(seededRng(`game7le:${date}:selection`), JEUX).slice(0, JEUX_PAR_JOUR);
 }
 
 /** Jeux exclus du défi difficile : pas de variante corsée pertinente. */
-const EXCLUS_DEFI = new Set(['paire', 'ratiole', 'trace']);
+const EXCLUS_DEFI = new Set(['paire', 'ratiole', 'trace', 'pokedle']);
 
 /** Pool du défi hebdomadaire difficile (10 jeux). */
 export const JEUX_DEFI: GameDef[] = JEUX.filter((j) => !EXCLUS_DEFI.has(j.id));

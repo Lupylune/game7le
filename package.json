@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "node scripts/smoke.mjs && node scripts/full-run.mjs",
     "lexique": "node scripts/build-lexique.mjs && node scripts/build-defs.mjs",
-    "echecs": "node scripts/build-echecs.mjs"
+    "echecs": "node scripts/build-echecs.mjs",
+    "pokemon": "node scripts/build-pokemon.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.6",

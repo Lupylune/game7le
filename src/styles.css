@@ -1942,3 +1942,140 @@ input[type='text'] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Pokédle */
+.pokedle-board {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.pokedle-row {
+  display: grid;
+  grid-template-columns: 1.3fr repeat(6, 1fr);
+  gap: 4px;
+}
+.pokedle-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  padding: 4px 2px;
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  font-size: 0.62rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.pokedle-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg);
+}
+.pokedle-head .pokedle-cell {
+  min-height: auto;
+  padding: 2px;
+  background: none;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.pokedle-cell.nom {
+  background: var(--surface-elevated);
+  font-weight: 600;
+  padding: 2px;
+}
+.pokedle-sprite {
+  width: 42px;
+  height: 42px;
+  image-rendering: pixelated;
+}
+.pokedle-cell.cache {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+}
+.pokedle-cell.ok,
+.pokedle-cell.proche,
+.pokedle-cell.non {
+  animation: pokedleflip 0.32s ease-out;
+}
+.pokedle-cell.ok {
+  background: var(--wordle-correct);
+  color: #fff;
+}
+.pokedle-cell.proche {
+  background: var(--wordle-present);
+  color: #fff;
+}
+.pokedle-cell.non {
+  background: var(--wordle-absent);
+}
+@keyframes pokedleflip {
+  0% {
+    transform: rotateX(-90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: rotateX(0);
+    opacity: 1;
+  }
+}
+.pokedle-fleche {
+  font-weight: 700;
+}
+.pokedle-saisie {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+}
+.pokedle-input {
+  width: 100%;
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+}
+.pokedle-suggestions {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow-y: auto;
+  max-height: 216px;
+  box-shadow: 0 6px 18px var(--shadow);
+}
+.pokedle-sugg {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: var(--sp-2) var(--sp-3);
+  border: none;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.pokedle-sugg:hover {
+  background: var(--surface-elevated);
+}
+.pokedle-sugg-sprite {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  flex: none;
+}

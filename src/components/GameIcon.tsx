@@ -214,6 +214,14 @@ export default function GameIcon({ id, size = 20 }: { id: string; size?: number 
           <path d="M6 19.5 C7.5 17.8 16.5 17.8 18 19.5 Z" fill="currentColor" stroke="none" />
         </svg>
       );
+    case 'pokedle': // poké ball
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M3.5 12 H8.4 M15.6 12 H20.5" />
+          <circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none" />
+        </svg>
+      );
     default:
       return (
         <svg {...common}>
