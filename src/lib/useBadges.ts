@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadDefis } from './storage';
+import { loadDefis, loadSettings, saveSettings } from './storage';
 import { rangsReels } from './classement';
 import { fetchBadges } from './sync';
 import { estEnDirect } from './stats';
@@ -63,4 +63,30 @@ export function useBadgesJoueurs(pseudos: string[]): Record<string, string> {
     };
   }, [key]);
   return badges;
+}
+
+/**
+ * Rapatrie, sur un appareil/navigateur neuf, le badge épinglé au pseudo courant
+ * depuis Supabase vers les réglages locaux — le badge suit ainsi le pseudo d'un
+ * appareil à l'autre. Ne remplit que si aucun badge local n'est déjà choisi : un
+ * choix local n'est jamais écrasé (et `fetchBadges` ne sait pas distinguer « pas
+ * de badge » de « backend indisponible », donc un pull ne peut pas effacer).
+ */
+export function useRestaureBadge(pseudo: string): void {
+  useEffect(() => {
+    if (!pseudo || pseudo === 'Vous') return;
+    if (loadSettings().badge) return; // un badge local est déjà choisi
+    let vivant = true;
+    fetchBadges([pseudo]).then((r) => {
+      if (!vivant || !r) return;
+      const token = r[pseudo];
+      if (!token) return;
+      const s = loadSettings();
+      if (s.badge) return; // choisi entre-temps : on ne l'écrase pas
+      saveSettings({ ...s, badge: token });
+    });
+    return () => {
+      vivant = false;
+    };
+  }, [pseudo]);
 }
