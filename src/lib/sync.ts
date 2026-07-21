@@ -67,13 +67,16 @@ export async function fetchBadges(pseudos: string[]): Promise<Record<string, str
  * `null` si le backend est absent/injoignable : l'appelant retombe alors sur
  * l'historique local du navigateur.
  */
-export async function fetchRunsParPseudo(pseudo: string): Promise<RunPourStats[] | null> {
+async function fetchHistoriqueParPseudo(
+  pseudo: string,
+  defi: boolean,
+): Promise<RunPourStats[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('runs')
     .select('date, total_ms, lines, flawless, finished_at, en_direct')
     .eq('pseudo', pseudo)
-    .eq('defi', false)
+    .eq('defi', defi)
     .order('date', { ascending: true });
   if (error || !data) return null;
   return data.map((r) => ({
@@ -84,4 +87,13 @@ export async function fetchRunsParPseudo(pseudo: string): Promise<RunPourStats[]
     finishedAt: r.finished_at ? Date.parse(r.finished_at) : undefined,
     enDirect: r.en_direct,
   }));
+}
+
+export function fetchRunsParPseudo(pseudo: string): Promise<RunPourStats[] | null> {
+  return fetchHistoriqueParPseudo(pseudo, false);
+}
+
+/** Historique des défis hebdomadaires difficiles d'un pseudo (voir `fetchRunsParPseudo`). */
+export function fetchDefisParPseudo(pseudo: string): Promise<RunPourStats[] | null> {
+  return fetchHistoriqueParPseudo(pseudo, true);
 }

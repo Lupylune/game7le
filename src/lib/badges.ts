@@ -1,4 +1,3 @@
-import type { RunRecord } from './storage';
 import { type RunPourStats, estEnDirect, joursEnDirect } from './stats';
 
 /**
@@ -43,8 +42,8 @@ export interface CtxBadges {
   runs: RunPourStats[];
   /** Runs quotidiens joués en direct uniquement. */
   runsLive: RunPourStats[];
-  /** Défis difficiles hebdomadaires (stockage local). */
-  defis: RunRecord[];
+  /** Défis difficiles hebdomadaires (Supabase si disponible, sinon stockage local). */
+  defis: RunPourStats[];
   /** Nombre de jours où le joueur a fini 1er au classement réel (Supabase). */
   nbNumeroUn: number;
   today: string;

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { loadDefis, loadSettings, saveSettings } from './storage';
+import { loadSettings, saveSettings } from './storage';
 import { rangsReels } from './classement';
 import { fetchBadges } from './sync';
 import { estEnDirect } from './stats';
-import { useHistorique } from './useHistorique';
+import { useHistorique, useHistoriqueDefis } from './useHistorique';
 import { todayStr } from './rng';
 import { calculeBadges, type CtxBadges, type EtatBadge } from './badges';
 
@@ -16,6 +16,7 @@ import { calculeBadges, type CtxBadges, type EtatBadge } from './badges';
 export function useBadges(pseudo: string): EtatBadge[] {
   const runs = useHistorique(pseudo);
   const runsLive = runs.filter(estEnDirect);
+  const defis = useHistoriqueDefis(pseudo);
   const [nbNumeroUn, setNbNumeroUn] = useState(0);
 
   const datesKey = runsLive
@@ -38,7 +39,7 @@ export function useBadges(pseudo: string): EtatBadge[] {
   const ctx: CtxBadges = {
     runs,
     runsLive,
-    defis: loadDefis(),
+    defis,
     nbNumeroUn,
     today: todayStr(),
   };
