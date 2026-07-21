@@ -2,6 +2,7 @@ import { Link, Outlet } from 'react-router-dom';
 import { loadSettings, saveSettings } from '../lib/storage';
 import { usePseudo } from '../lib/usePseudo';
 import { useRestaureBadge } from '../lib/useBadges';
+import Nouveautes from './Nouveautes';
 import PseudoModal from './PseudoModal';
 
 function toggleTheme() {
@@ -21,6 +22,7 @@ export default function Layout() {
           G7
         </Link>
         <div className="top-right">
+          <Nouveautes />
           <Link to="/profil" className="icon-btn" aria-label="Mon profil" title="Mon profil">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="8" r="4" />
