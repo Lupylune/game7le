@@ -8,8 +8,8 @@ import { classementJour, classementSemaine, type Board, type Entry } from '../li
 import { lundiStr, seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
 import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
-import { loadDefis, loadSettings } from '../lib/storage';
-import { useHistorique } from '../lib/useHistorique';
+import { loadSettings } from '../lib/storage';
+import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
 import { useBadgesJoueurs } from '../lib/useBadges';
 import { usePseudo } from '../lib/usePseudo';
 
@@ -51,9 +51,9 @@ export default function Home() {
   const myRun = runs.find((r) => r.date === date && estEnDirect(r));
   const streak = calculeStreak(joursEnDirect(runs), date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);
-  // Défi difficile de la semaine : temps officiel local (première tentative)
+  // Défi difficile de la semaine : temps officiel (première tentative)
   const lundi = lundiStr();
-  const myDefi = loadDefis().find((r) => r.date === lundi && r.enDirect);
+  const myDefi = useHistoriqueDefis(pseudo).find((r) => r.date === lundi && estEnDirect(r));
 
   return (
     <div>

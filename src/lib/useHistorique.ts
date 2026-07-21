@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { loadRuns } from './storage';
-import { fetchRunsParPseudo } from './sync';
+import { loadDefis, loadRuns } from './storage';
+import { fetchDefisParPseudo, fetchRunsParPseudo } from './sync';
 import type { RunPourStats } from './stats';
 
 /**
@@ -23,4 +23,26 @@ export function useHistorique(pseudo: string): RunPourStats[] {
   }, [pseudo]);
 
   return distant ?? loadRuns();
+}
+
+/**
+ * Historique des défis hebdomadaires difficiles d'un pseudo, tous appareils
+ * confondus — même principe que `useHistorique` mais sur la table `defis`
+ * (`defi = true` côté Supabase). Sans ça, un défi complété sur un autre
+ * appareil / après un vidage du navigateur resterait invisible localement
+ * alors qu'il est bien enregistré côté serveur.
+ */
+export function useHistoriqueDefis(pseudo: string): RunPourStats[] {
+  const [distant, setDistant] = useState<RunPourStats[] | null>(null);
+
+  useEffect(() => {
+    let vivant = true;
+    setDistant(null);
+    fetchDefisParPseudo(pseudo).then((r) => vivant && setDistant(r));
+    return () => {
+      vivant = false;
+    };
+  }, [pseudo]);
+
+  return distant ?? loadDefis();
 }

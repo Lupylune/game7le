@@ -3,8 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { classementDefi, classementJour, type Board, type Entry } from '../lib/classement';
 import { lundiStr, todayStr } from '../lib/rng';
 import { estEnDirect } from '../lib/stats';
-import { loadDefis, loadSettings } from '../lib/storage';
-import { useHistorique } from '../lib/useHistorique';
+import { loadSettings } from '../lib/storage';
+import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
 import { useBadgesJoueurs } from '../lib/useBadges';
 import { usePseudo } from '../lib/usePseudo';
 import BalleDeFoin from '../components/BalleDeFoin';
@@ -18,7 +18,7 @@ export default function Classement() {
   const ongletDefi = params.get('onglet') === 'defi';
   // Seul le run en direct (première tentative du jour / de la semaine) compte.
   const myRunJour = useHistorique(pseudo).find((r) => r.date === date && estEnDirect(r));
-  const myDefi = loadDefis().find((r) => r.date === lundi && r.enDirect);
+  const myDefi = useHistoriqueDefis(pseudo).find((r) => r.date === lundi && estEnDirect(r));
   const myRun = ongletDefi ? myDefi : myRunJour;
   const [board, setBoard] = useState<Board | null>(null);
   const badges = useBadgesJoueurs(board ? board.entries.map((e) => e.pseudo) : []);
