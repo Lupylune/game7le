@@ -205,7 +205,7 @@ export default function Trace({ rng, onAdjust, onDone }: GameProps) {
           detail: `précision ${accuracy.toFixed(0)} %`,
           status: adjustMs <= 0 ? 'success' : 'fail',
         }),
-      1600,
+      2200,
     );
   }
 
@@ -234,6 +234,9 @@ export default function Trace({ rng, onAdjust, onDone }: GameProps) {
       >
         {segment.length > 1 && (
           <path d={path(segment)} fill="none" stroke="var(--text-muted)" strokeWidth={2.5} strokeLinecap="round" />
+        )}
+        {acc !== null && (
+          <path d={path(shape.pts)} fill="none" stroke="var(--text-muted)" strokeWidth={2.5} strokeLinecap="round" strokeDasharray="6 6" opacity={0.7} />
         )}
         {stroke.length > 1 && <path d={path(stroke)} fill="none" stroke="var(--accent)" strokeWidth={3} strokeLinecap="round" />}
         {acc !== null && (
