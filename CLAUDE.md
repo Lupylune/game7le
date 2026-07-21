@@ -5,13 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Game7le — an unofficial French adaptation of [gauntle.com](https://gauntle.com): a daily challenge
-of **7 mini-games drawn at random each day out of a pool of 13**, chained under a single stopwatch.
+of **7 mini-games drawn at random each day out of a pool of 14**, chained under a single stopwatch.
 The draw and puzzles are identical for every player on a given day (seeded PRNG, no required
 backend). Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as
 possible.
 
 There is also a **weekly hard challenge** (`/defi`, « défi difficile ») : 7 games drawn from a
-10-game pool (the 13 minus Paire, Ratiole and Trace, which have no meaningful hard variant),
+10-game pool (the 14 minus Paire, Ratiole, Trace and Pokédle, which have no meaningful hard variant),
 played in harder variants via the `difficile` game prop. It is identified by the **Monday of the
 current week** (Europe/Paris) — seeds `game7le:defi:${lundi}:…` (`lundiStr()` in `src/lib/rng.ts`,
 `jeuxDefiSemaine()` in `src/games/index.ts`) — so everyone gets the same draw all week. It has its
@@ -35,6 +35,7 @@ npm test          # node scripts/smoke.mjs && node scripts/full-run.mjs
                   # requires `npm run preview` running on port 4183 first
 npm run lexique   # regenerate src/data/{lexique,definitions}.ts from Lexique 3.83 + Wiktionary
 npm run echecs    # regenerate src/data/echecs.ts from the Lichess puzzle database
+npm run pokemon   # regenerate src/data/pokemon.ts from PokeAPI (gen 1 only)
 ```
 
 There is no unit test runner — `npm test` is two Playwright scripts (see Testing below). To run
@@ -52,7 +53,7 @@ string key, via `seededRng()` in `src/lib/rng.ts` (xmur3 hash → mulberry32). T
 mechanic and touches most of the app:
 
 - `jeuxDuJour(date)` in `src/games/index.ts` seeds on `game7le:${date}:selection` to shuffle the
-  13-entry `JEUX` array and take the first `JEUX_PAR_JOUR` (7) — this is the day's game order.
+  14-entry `JEUX` array and take the first `JEUX_PAR_JOUR` (7) — this is the day's game order.
 - Each individual game's RNG is seeded on `game7le:${date}:${jeu.id}` (see `RunPage.tsx`), so the
   puzzle content (word, grid, board…) is also fixed per day per game.
 - The fake global leaderboard (`src/lib/classement.ts`) is seeded the same way, purely for demo
@@ -133,7 +134,7 @@ and rejects malformed or implausible payloads with an exception (swallowed by th
 `syncRun()`): pseudo format, date within launch date…today (Europe/Paris), bounded `total_ms`,
 `lines` = exactly 7 distinct known game ids with plausible per-game durations and bounded string
 fields, and `flawless` recomputed server-side from the lines (the client flag can only remove it).
-The 13 game ids — and the 10-id hard pool used when `p_defi` — are hardcoded in the function —
+The 14 game ids — and the 10-id hard pool used when `p_defi` — are hardcoded in the function —
 keep them in sync with `src/games/index.ts` (`JEUX` / `JEUX_DEFI`) when adding a game, and keep
 validation thresholds loose enough to never reject a legitimate run (a false positive is silently
 lost). `submit_run()` also rate-limits by client IP (from the
@@ -164,9 +165,9 @@ as an estimate in the UI.
 
 ### Content pipelines (generated, not hand-authored)
 
-`src/data/lexique.ts`, `src/data/definitions.ts`, and `src/data/echecs.ts` are **generated files**
-committed to the repo, not written by hand — regenerate them via `npm run lexique` / `npm run
-echecs` rather than editing directly:
+`src/data/lexique.ts`, `src/data/definitions.ts`, `src/data/echecs.ts`, and `src/data/pokemon.ts`
+are **generated files** committed to the repo, not written by hand — regenerate them via `npm run
+lexique` / `npm run echecs` / `npm run pokemon` rather than editing directly:
 
 - `scripts/build-lexique.mjs` downloads Lexique 3.83 (lexique.org) and derives word lists (Le Mot
   solutions/dictionary in 5 and 8 letters, Mélimélo anagram targets in 6 and 8, Croisés crossword
@@ -178,6 +179,11 @@ echecs` rather than editing directly:
 - `scripts/build-echecs.mjs` pulls a byte-range slice of the Lichess puzzle database (CC0),
   filtering to no-promotion, rated mate puzzles: `PUZZLES` (mates in 1–2, 700–1600 Elo, daily) and
   `PUZZLES_DIFFICILES` (mates in 2 at 1600–2400 Elo plus mates in 3, hard challenge).
+- `scripts/build-pokemon.mjs` fetches the 151 gen-1 Pokémon from PokeAPI (`POKEMONS` in
+  `src/data/pokemon.ts`): French name, type(s), color, habitat, and evolution stage / fully-evolved
+  — the latter two computed over gen-1-only evolution relationships (a gen-2 baby like Pichu is
+  ignored, and Golbat/Onix/Snorlax count as fully evolved). Feeds the `pokedle` game (Pokédle);
+  gen 1 only, no hard variant so it's excluded from the weekly challenge pool.
 
 ### Testing (`scripts/smoke.mjs`, `scripts/full-run.mjs`)
 
