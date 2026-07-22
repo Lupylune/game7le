@@ -5,14 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Game7le — an unofficial French adaptation of [gauntle.com](https://gauntle.com): a daily challenge
-of **7 mini-games drawn at random each day out of a pool of 14**, chained under a single stopwatch.
+of **7 mini-games drawn at random each day out of a pool of 15**, chained under a single stopwatch.
 The draw and puzzles are identical for every player on a given day (seeded PRNG, no required
 backend). Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as
 possible.
 
 There is also a **weekly hard challenge** (`/defi`, « défi difficile ») : 7 games drawn from a
-10-game pool (the 14 minus Paire, Ratiole, Trace and Pokédle, which have no meaningful hard variant),
-played in harder variants via the `difficile` game prop. It is identified by the **Monday of the
+10-game pool (the 15 minus Paire, Ratiole, Trace, Pokédle and Atlas, which have no meaningful hard
+variant), played in harder variants via the `difficile` game prop. It is identified by the **Monday of the
 current week** (Europe/Paris) — seeds `game7le:defi:${lundi}:…` (`lundiStr()` in `src/lib/rng.ts`,
 `jeuxDefiSemaine()` in `src/games/index.ts`) — so everyone gets the same draw all week. It has its
 own leaderboard tab (`/classement?onglet=defi`, `classementDefi()`), its own localStorage bucket
@@ -134,7 +134,7 @@ and rejects malformed or implausible payloads with an exception (swallowed by th
 `syncRun()`): pseudo format, date within launch date…today (Europe/Paris), bounded `total_ms`,
 `lines` = exactly 7 distinct known game ids with plausible per-game durations and bounded string
 fields, and `flawless` recomputed server-side from the lines (the client flag can only remove it).
-The 14 game ids — and the 10-id hard pool used when `p_defi` — are hardcoded in the function —
+The 15 game ids — and the 10-id hard pool used when `p_defi` — are hardcoded in the function —
 keep them in sync with `src/games/index.ts` (`JEUX` / `JEUX_DEFI`) when adding a game, and keep
 validation thresholds loose enough to never reject a legitimate run (a false positive is silently
 lost). `submit_run()` also rate-limits by client IP (from the

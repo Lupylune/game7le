@@ -14,6 +14,7 @@ import Trace from './Trace';
 import Dactylo from './Dactylo';
 import Echecs from './Echecs';
 import Pokedle from './Pokedle';
+import Atlas from './Atlas';
 
 export const JEUX: GameDef[] = [
   {
@@ -145,6 +146,15 @@ export const JEUX: GameDef[] = [
     skip: { apresS: 30, penaliteS: 90 },
     Component: Pokedle,
   },
+  {
+    id: 'atlas',
+    nom: 'Atlas',
+    regles:
+      'Un panorama 360° d’un lieu du monde : explorez-le puis placez votre marqueur sur la carte pour deviner où vous êtes.',
+    scoring: 'Plus vous tombez juste, plus le bonus est grand : jusqu’à −35 s (< 100 m), +60 s à l’autre bout du monde',
+    skip: { apresS: 25, penaliteS: 90 },
+    Component: Atlas,
+  },
 ];
 
 export const JEU_PAR_ID = new Map(JEUX.map((j) => [j.id, j]));
@@ -157,7 +167,7 @@ export function jeuxDuJour(date: string): GameDef[] {
 }
 
 /** Jeux exclus du défi difficile : pas de variante corsée pertinente. */
-const EXCLUS_DEFI = new Set(['paire', 'ratiole', 'trace', 'pokedle']);
+const EXCLUS_DEFI = new Set(['paire', 'ratiole', 'trace', 'pokedle', 'atlas']);
 
 /** Pool du défi hebdomadaire difficile (10 jeux). */
 export const JEUX_DEFI: GameDef[] = JEUX.filter((j) => !EXCLUS_DEFI.has(j.id));

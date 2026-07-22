@@ -5,12 +5,12 @@ import BadgeIcon from './BadgeIcon';
 
 /**
  * Icône « Nouveautés » de la barre du haut : ouvre un popin mettant en avant les
- * dernières fonctionnalités (Pokédle, badges). Une pastille signale les
+ * dernières fonctionnalités (Atlas, Pokédle, badges). Une pastille signale les
  * nouveautés non encore vues ; l'ouverture du popin marque la version comme vue
  * (mémorisée en localStorage). Bumper `VERSION` réaffiche la pastille après
  * l'ajout d'autres nouveautés.
  */
-const VERSION = 'badges-pokedle';
+const VERSION = 'atlas-badges-pokedle';
 const CLE = 'game7le:nouveautes-vues';
 
 function dejaVu(): boolean {
@@ -80,6 +80,17 @@ export default function Nouveautes() {
               </button>
             </div>
             <div className="nouveautes-liste">
+              <Link to="/entrainement/atlas" className="nouveaute-item" onClick={() => setOuvert(false)}>
+                <span className="nouveaute-ico">
+                  <GameIcon id="atlas" size={26} />
+                </span>
+                <span className="nouveaute-txt">
+                  <strong>Atlas</strong>
+                  <span className="muted">
+                    Un nouveau mini-jeu : un panorama 360° du monde, devinez où vous êtes.
+                  </span>
+                </span>
+              </Link>
               <Link to="/entrainement/pokedle" className="nouveaute-item" onClick={() => setOuvert(false)}>
                 <span className="nouveaute-ico">
                   <GameIcon id="pokedle" size={26} />
