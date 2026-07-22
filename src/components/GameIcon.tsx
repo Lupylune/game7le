@@ -222,6 +222,15 @@ export default function GameIcon({ id, size = 20 }: { id: string; size?: number 
           <circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none" />
         </svg>
       );
+    case 'atlas': // globe surmonté d'un marqueur de carte
+      return (
+        <svg {...common}>
+          <circle cx="10.5" cy="13" r="7.5" />
+          <path d="M3 13 H18 M10.5 5.5 C7 8 7 18 10.5 20.5 C14 18 14 8 10.5 5.5" />
+          <path d="M18 2.5 C20.2 2.5 21.8 4.1 21.8 6.2 C21.8 8.6 18 12 18 12 C18 12 14.2 8.6 14.2 6.2 C14.2 4.1 15.8 2.5 18 2.5 Z" fill="currentColor" stroke="none" />
+          <circle cx="18" cy="6.2" r="1.2" fill="var(--bg)" stroke="none" />
+        </svg>
+      );
     default:
       return (
         <svg {...common}>

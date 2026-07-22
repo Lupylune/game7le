@@ -106,12 +106,12 @@ set search_path = public
 as $$
 declare
   v_aujourdhui date := (now() at time zone 'Europe/Paris')::date;
-  -- Les 14 ids du pool de jeux (src/games/index.ts) — à tenir en phase.
+  -- Les 15 ids du pool de jeux (src/games/index.ts) — à tenir en phase.
   v_ids constant text[] := array[
     'lemot', 'croises', 'paire', 'sudoku', 'reines', 'demineur', 'nonogramme',
-    'ratiole', 'melimelo', 'chromal', 'trace', 'dactylo', 'echecs', 'pokedle'
+    'ratiole', 'melimelo', 'chromal', 'trace', 'dactylo', 'echecs', 'pokedle', 'atlas'
   ];
-  -- Pool du défi hebdomadaire difficile : sans paire, ratiole, trace ni pokedle
+  -- Pool du défi hebdomadaire difficile : sans paire, ratiole, trace, pokedle ni atlas
   -- (src/games/index.ts, JEUX_DEFI) — à tenir en phase.
   v_ids_defi constant text[] := array[
     'lemot', 'croises', 'sudoku', 'reines', 'demineur', 'nonogramme',

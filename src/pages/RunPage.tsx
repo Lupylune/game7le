@@ -14,6 +14,7 @@ import {
 } from '../lib/storage';
 import { syncRun } from '../lib/sync';
 import GameIcon, { SymEtincelle } from '../components/GameIcon';
+import { prewarmAtlas } from '../games/Atlas';
 import Solutions from '../components/Solutions';
 import SplitsRun from '../components/SplitsRun';
 
@@ -274,6 +275,12 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     () => seededRng(`game7le:${defi ? 'defi:' : ''}${date}:${jeu.id}`),
     [date, jeu.id, defi],
   );
+
+  // Atlas dépend d'un appel réseau (imagerie Mapillary) : on le préchauffe dès
+  // le compte à rebours qui le précède, pour masquer la latence derrière.
+  useEffect(() => {
+    if (trans?.phase === 'countdown' && jeu.id === 'atlas') prewarmAtlas(date, defi);
+  }, [trans?.phase, jeu.id, date, defi]);
 
   const totalMs = Math.max(0, rawMs + adjustMs);
 
