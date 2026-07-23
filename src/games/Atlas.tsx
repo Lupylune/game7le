@@ -88,6 +88,8 @@ export default function Atlas({ rng, onDone }: GameProps) {
   const leafletRef = useRef<any>(null); // le global `L` une fois chargé
   const guessMarkerRef = useRef<any>(null);
   const doneRef = useRef(false);
+  // Début de l'épreuve (montée après le décompte) : sert au malus dégressif.
+  const startRef = useRef(performance.now());
 
   // Panorama 360° Mapillary (uniquement pendant la phase de jeu).
   useEffect(() => {
@@ -206,7 +208,7 @@ export default function Atlas({ rng, onDone }: GameProps) {
   function deviner() {
     if (!guess || doneRef.current) return;
     const km = haversineKm(guess, reel ?? { lat: cible.lat, lng: cible.lng });
-    setRes({ km, ...scoreDistance(km) });
+    setRes({ km, ...scoreDistance(km, performance.now() - startRef.current) });
     setPhase('recap');
   }
 

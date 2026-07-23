@@ -29,17 +29,31 @@ export function haversineKm(
 }
 
 const BONUS_MAX = -35000; // meilleur cas (< 100 m) : −35 s
-const MALUS_MAX = 60000; // à l'autre bout du monde : +60 s
 const ECHELLE_KM = 800; // décroissance exponentielle
+// Malus maximal (0 point, devinette à l'autre bout du monde) dégressif, comme
+// la mine du démineur : maximal si l'on devine d'emblée, il décroît d'une
+// seconde par seconde de jeu jusqu'à un plancher (on punit la précipitation).
+const MALUS_DEBUT = 120000; // +2 min si l'on valide dès le départ
+const MALUS_PLANCHER = 60000; // plancher +1 min, atteint après ~60 s de jeu
+
+/** Malus maximal courant selon le temps déjà passé sur l'épreuve. */
+export function malusMaxAtlas(elapsedMs: number): number {
+  return Math.max(MALUS_PLANCHER, Math.round(MALUS_DEBUT - elapsedMs));
+}
 
 /**
  * Barème du round : le bonus est maximal quand on tombe pile (< 100 m) puis
- * décroît exponentiellement avec la distance, jusqu'à devenir une pénalité.
+ * décroît exponentiellement avec la distance, jusqu'à devenir une pénalité. Le
+ * malus maximal (0 point) dépend du temps déjà écoulé (voir `malusMaxAtlas`).
  * On renvoie aussi un score « points » (0 à 5000) pour l'affichage récap.
  */
-export function scoreDistance(km: number): { adjustMs: number; points: number } {
+export function scoreDistance(
+  km: number,
+  elapsedMs: number,
+): { adjustMs: number; points: number } {
   const f = Math.exp(-km / ECHELLE_KM); // 1 quand km→0, 0 quand km→∞
-  const adjustMs = Math.round(MALUS_MAX - (MALUS_MAX - BONUS_MAX) * f);
+  const malusMax = malusMaxAtlas(elapsedMs);
+  const adjustMs = Math.round(malusMax - (malusMax - BONUS_MAX) * f);
   const points = Math.round(5000 * f);
   return { adjustMs, points };
 }
