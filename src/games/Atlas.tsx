@@ -38,10 +38,11 @@ export function cibleDe(rng: () => number) {
 }
 
 /**
- * Préchauffage déclenché par RunPage pendant le compte à rebours précédant
- * Atlas : télécharge les libs et lance (en cache) la résolution de l'image, de
- * sorte que le panorama soit prêt dès le montage. Utilise un RNG *frais* du même
- * seed que le composant — même cible, sans consommer le RNG partagé du run.
+ * Préchauffage déclenché par RunPage dès le début du run (si Atlas est dans le
+ * tirage) : télécharge les libs et lance (en cache) la résolution de l'image,
+ * de sorte que le panorama soit prêt dès le montage de l'épreuve. Utilise un
+ * RNG *frais* du même seed que le composant — même cible, sans consommer le RNG
+ * partagé du run.
  */
 export function prewarmAtlas(date: string, defi: boolean) {
   const token = MAPILLARY_TOKEN;
