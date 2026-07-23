@@ -276,11 +276,13 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     [date, jeu.id, defi],
   );
 
-  // Atlas dépend d'un appel réseau (imagerie Mapillary) : on le préchauffe dès
-  // le compte à rebours qui le précède, pour masquer la latence derrière.
+  // Atlas dépend d'un appel réseau (imagerie Mapillary) : dès que le run
+  // démarre, si Atlas figure dans le tirage on le préchauffe tout de suite —
+  // ainsi l'image a tout le temps du run pour arriver, quelle que soit sa
+  // position, et elle est prête au montage de l'épreuve.
   useEffect(() => {
-    if (trans?.phase === 'countdown' && jeu.id === 'atlas') prewarmAtlas(date, defi);
-  }, [trans?.phase, jeu.id, date, defi]);
+    if (phase === 'playing' && jeux.some((j) => j.id === 'atlas')) prewarmAtlas(date, defi);
+  }, [phase, jeux, date, defi]);
 
   const totalMs = Math.max(0, rawMs + adjustMs);
 
