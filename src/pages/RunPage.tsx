@@ -67,6 +67,47 @@ function IconeAvance({ barre = false }: { barre?: boolean }) {
   );
 }
 
+/**
+ * Affichage du chrono rafraîchi à chaque frame (`requestAnimationFrame`), pour
+ * que les centièmes défilent en direct — isolé dans son propre composant afin
+ * de ne pas re-rendre l'épreuve en cours 60 fois par seconde. Le temps est
+ * recalculé depuis les refs (source de vérité), gelé pendant les transitions.
+ */
+function Chrono({
+  startRef,
+  pausedRef,
+  pauseStartRef,
+  paused,
+  adjustMs,
+}: {
+  startRef: { current: number };
+  pausedRef: { current: number };
+  pauseStartRef: { current: number };
+  paused: boolean;
+  adjustMs: number;
+}) {
+  const [ms, setMs] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      const now = performance.now();
+      const pause = pausedRef.current + (paused ? now - pauseStartRef.current : 0);
+      setMs(now - startRef.current - pause);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [paused, startRef, pausedRef, pauseStartRef]);
+  return (
+    <div className="timer">
+      {formatMs(ms)}
+      {adjustMs !== 0 && (
+        <span className={`adj ${adjustMs < 0 ? 'bonus' : 'malus'}`}>{formatAdjust(adjustMs)}</span>
+      )}
+    </div>
+  );
+}
+
 /** Contrôle de passe : anneau de progression puis bouton, à la DA du site. */
 function SkipControl({
   skip,
@@ -422,12 +463,13 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
             Épreuve {index + 1} / {jeux.length}
           </div>
         </div>
-        <div className="timer">
-          {formatMs(rawMs)}
-          {adjustMs !== 0 && (
-            <span className={`adj ${adjustMs < 0 ? 'bonus' : 'malus'}`}>{formatAdjust(adjustMs)}</span>
-          )}
-        </div>
+        <Chrono
+          startRef={startRef}
+          pausedRef={pausedRef}
+          pauseStartRef={pauseStartRef}
+          paused={!!trans}
+          adjustMs={adjustMs}
+        />
         <SkipControl skip={skipEff} elapsedS={gameElapsedS} paused={!!trans} onSkip={onSkip} />
       </div>
       {trans && trans.phase === 'recap' && trans.verdict && trans.line ? (
