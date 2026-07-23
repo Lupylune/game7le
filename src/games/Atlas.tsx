@@ -21,6 +21,31 @@ type LatLng = { lat: number; lng: number };
 const TUILES_OSM = 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png';
 const ATTRIB_OSM = '© OpenStreetMap France | © contributeurs OpenStreetMap';
 
+// Palette des marqueurs, alignée sur la DA du projet (terracotta accent + vert
+// olive des boutons). `h` = teinte claire du haut du dégradé.
+const PIN_REEL = { c: '#c24c34', h: '#dd7a5f' }; // lieu réel : terracotta
+const PIN_DEVINE = { c: '#6b7f46', h: '#8ba05a' }; // devinette : vert olive
+
+/** Épingle SVG stylisée (dégradé + cœur en cible), pointe en bas, sans image. */
+function pinIcon(L: any, p: { c: string; h: string }) {
+  const id = `g${p.c.slice(1)}`; // id de dégradé unique par couleur
+  return L.divIcon({
+    className: 'atlas-pin',
+    html:
+      `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40">` +
+      `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">` +
+      `<stop offset="0" stop-color="${p.h}"/><stop offset="1" stop-color="${p.c}"/>` +
+      `</linearGradient></defs>` +
+      `<path d="M15 1.6C8 1.6 2.3 7.3 2.3 14.3 2.3 23.7 15 38.4 15 38.4S27.7 23.7 27.7 14.3C27.7 7.3 22 1.6 15 1.6Z" ` +
+      `fill="url(#${id})" stroke="#fff" stroke-width="2.2"/>` +
+      `<circle cx="15" cy="14.3" r="5" fill="#fff"/>` +
+      `<circle cx="15" cy="14.3" r="2.3" fill="${p.c}"/></svg>`,
+    iconSize: [30, 40],
+    iconAnchor: [15, 40],
+    popupAnchor: [0, -34],
+  });
+}
+
 /** Décalage maxi autour du centre-ville (~0,015° ≈ 1–1,5 km selon la latitude). */
 const RAYON_TIRAGE = 0.015;
 
@@ -159,7 +184,7 @@ export default function Atlas({ rng, onDone }: GameProps) {
           const ll = { lat: e.latlng.lat, lng: e.latlng.lng };
           setGuess(ll);
           if (guessMarkerRef.current) guessMarkerRef.current.setLatLng(e.latlng);
-          else guessMarkerRef.current = L.marker(e.latlng).addTo(map);
+          else guessMarkerRef.current = L.marker(e.latlng, { icon: pinIcon(L, PIN_DEVINE) }).addTo(map);
         });
         recalageSur(map, 80);
         // recalage après l'animation d'agrandissement au survol/focus
@@ -191,8 +216,11 @@ export default function Atlas({ rng, onDone }: GameProps) {
     const pos = reel ?? { lat: cible.lat, lng: cible.lng };
     const vrai: [number, number] = [pos.lat, pos.lng];
     const mien: [number, number] = [guess!.lat, guess!.lng];
-    L.marker(vrai).addTo(map).bindPopup(`${cible.ville.nom} — ${cible.ville.pays}`).openPopup();
-    L.marker(mien).addTo(map);
+    L.marker(vrai, { icon: pinIcon(L, PIN_REEL) })
+      .addTo(map)
+      .bindPopup(`${cible.ville.nom} — ${cible.ville.pays}`)
+      .openPopup();
+    L.marker(mien, { icon: pinIcon(L, PIN_DEVINE) }).addTo(map);
     L.polyline([mien, vrai], { color: '#dd7a5f', weight: 3, dashArray: '6 6' }).addTo(map);
     map.fitBounds([mien, vrai], { padding: [40, 40], maxZoom: 6 });
     recalageSur(map, 80);

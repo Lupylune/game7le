@@ -10,6 +10,7 @@ import { generate as genReines } from '../games/Reines';
 import { generate as genNono } from '../games/Nonogramme';
 import { solutionEchecs } from '../games/Echecs';
 import { cibleDe } from '../games/Atlas';
+import { POKEMONS } from '../data/pokemon';
 import GameIcon, { SymCouronne } from './GameIcon';
 
 /**
@@ -103,6 +104,19 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
       return (
         <p className="solution-mot">
           {ville.nom} — {ville.pays}
+        </p>
+      );
+    }
+    case 'pokedle': {
+      const p = pick(rng, POKEMONS);
+      return (
+        <p className="solution-mot solution-pokemon">
+          <img
+            className="pokedle-sprite"
+            src={`${import.meta.env.BASE_URL}sprites/pokemon/${p.num}.png`}
+            alt={p.nom}
+          />
+          {p.nom}
         </p>
       );
     }

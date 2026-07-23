@@ -1151,6 +1151,15 @@ button.skip-pill.skip-ready:active {
   font-size: 1.1rem;
   letter-spacing: 0.08em;
 }
+.solution-pokemon {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.solution-pokemon .pokedle-sprite {
+  width: 40px;
+  height: 40px;
+}
 .cellgrid.mini .cell {
   width: 24px;
   height: 24px;
@@ -2268,6 +2277,32 @@ input[type='text'] {
   background: var(--surface-elevated);
   border: 1px solid var(--border);
   font-size: var(--text-sm);
+}
+/* Épingles Leaflet en divIcon : pas de fond/bordure par défaut. */
+.atlas-pin {
+  background: none;
+  border: none;
+}
+.atlas-pin svg {
+  display: block;
+  filter: drop-shadow(0 3px 4px #0000004d);
+  transform-origin: 50% 100%;
+  animation: atlas-pin-pop 0.32s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+@keyframes atlas-pin-pop {
+  0% {
+    transform: scale(0) translateY(6px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-pin svg {
+    animation: none;
+  }
 }
 /* Écran récapitulatif du round. */
 .atlas-recap {
