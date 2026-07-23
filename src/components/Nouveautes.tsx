@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import GameIcon from './GameIcon';
+import GameIcon, { SymCouronne } from './GameIcon';
 import BadgeIcon from './BadgeIcon';
 
 /**
  * Icône « Nouveautés » de la barre du haut : ouvre un popin mettant en avant les
- * dernières fonctionnalités (Atlas, Pokédle, badges). Une pastille signale les
- * nouveautés non encore vues ; l'ouverture du popin marque la version comme vue
- * (mémorisée en localStorage). Bumper `VERSION` réaffiche la pastille après
- * l'ajout d'autres nouveautés.
+ * dernières fonctionnalités (champion de la semaine, Atlas, Pokédle, badges).
+ * Une pastille signale les nouveautés non encore vues ; l'ouverture du popin
+ * marque la version comme vue (mémorisée en localStorage). Bumper `VERSION`
+ * réaffiche la pastille après l'ajout d'autres nouveautés.
  */
-const VERSION = 'atlas-badges-pokedle';
+const VERSION = 'champion-atlas-badges-pokedle';
 const CLE = 'game7le:nouveautes-vues';
 
 function dejaVu(): boolean {
@@ -80,6 +80,18 @@ export default function Nouveautes() {
               </button>
             </div>
             <div className="nouveautes-liste">
+              <Link to="/classement" className="nouveaute-item" onClick={() => setOuvert(false)}>
+                <span className="nouveaute-ico">
+                  <SymCouronne size={26} />
+                </span>
+                <span className="nouveaute-txt">
+                  <strong>Champion de la semaine</strong>
+                  <span className="muted">
+                    Le n°1 de la semaine passée a le droit à un ramen et un reflet doré sur son pseudo, jusqu'à
+                    être détrôné.
+                  </span>
+                </span>
+              </Link>
               <Link to="/entrainement/atlas" className="nouveaute-item" onClick={() => setOuvert(false)}>
                 <span className="nouveaute-ico">
                   <GameIcon id="atlas" size={26} />

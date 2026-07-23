@@ -11,6 +11,7 @@ import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
 import { loadSettings } from '../lib/storage';
 import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
 import { useBadgesJoueurs } from '../lib/useBadges';
+import { useChampionSemaine } from '../lib/useChampion';
 import { usePseudo } from '../lib/usePseudo';
 
 const TAGLINES = [
@@ -41,6 +42,7 @@ export default function Home() {
     ...(board?.entries ?? []),
     ...(semaine?.entries ?? []),
   ].map((e) => e.pseudo));
+  const champion = useChampionSemaine();
   const monBadge = loadSettings().badge;
   const avecBadge = (e: Entry): Entry => ({
     ...e,
@@ -117,6 +119,7 @@ export default function Home() {
                   e={avecBadge(e)}
                   rank={i + 1}
                   deverrouille={!!myRun}
+                  champion={champion ?? undefined}
                   messageVerrou="Terminez le défi du jour pour voir le détail des temps."
                 />
               ))}
@@ -151,6 +154,7 @@ export default function Home() {
                   e={avecBadge(e)}
                   rank={i + 1}
                   deverrouille={!!myRun}
+                  champion={champion ?? undefined}
                   messageVerrou="Terminez le défi du jour pour voir le détail des temps."
                 />
               ))}
