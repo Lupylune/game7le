@@ -495,6 +495,42 @@ main.content {
   flex: 1;
   font-weight: 600;
 }
+/* Champion·ne de la semaine (n°1 du classement hebdomadaire) : reflet doré
+   animé sur le pseudo, partout où il apparaît. */
+.lb-champion {
+  font-weight: 700;
+  /* Gradient horizontal aux extrémités identiques (#f29028) : les tuiles se
+     raccordent sans couture. Déplacement d'exactement une tuile (200 %) par
+     cycle → boucle parfaite du reflet. */
+  background-image: linear-gradient(
+    90deg,
+    #f29028 0%,
+    #fcd040 30%,
+    #fffaf0 50%,
+    #fcd040 70%,
+    #f29028 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: champion-shimmer 2s linear infinite;
+}
+@keyframes champion-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lb-champion {
+    animation: none;
+    background-position: 50% 0;
+  }
+}
 .lb .time {
   font-family: var(--font-mono);
 }

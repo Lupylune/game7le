@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { calculeStats, estEnDirect, statsParJeu, formatHeures, formatDateCourte } from '../lib/stats';
 import { rangsReels } from '../lib/classement';
 import { useHistorique } from '../lib/useHistorique';
+import { useChampionSemaine } from '../lib/useChampion';
 import { usePseudo, useBadgeChoisi } from '../lib/usePseudo';
 import GameIcon, { SymFlamme } from '../components/GameIcon';
 import { BadgePicto } from '../components/BadgeIcon';
@@ -23,6 +24,7 @@ function Tuile({ label, valeur, sous }: { label: string; valeur: React.ReactNode
 export default function Profil() {
   const pseudo = usePseudo();
   const badge = useBadgeChoisi();
+  const champion = useChampionSemaine();
   // Seuls les runs joués le jour même comptent — pas les archives rejouées.
   const runsLive = useHistorique(pseudo).filter(estEnDirect);
   const s = calculeStats(runsLive, todayStr());
@@ -57,7 +59,7 @@ export default function Profil() {
     <div className="prose" style={{ maxWidth: 640 }}>
       <h1 className="profil-titre">
         <BadgePicto token={badge} size={24} />
-        {pseudo}
+        <span className={champion && pseudo === champion ? 'lb-champion' : undefined}>{pseudo}</span>
       </h1>
       <p className="muted">
         Compte sans mot de passe, identifié par pseudo — les stats sont synchronisées depuis vos

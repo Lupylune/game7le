@@ -6,6 +6,7 @@ import { estEnDirect } from '../lib/stats';
 import { loadSettings } from '../lib/storage';
 import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
 import { useBadgesJoueurs } from '../lib/useBadges';
+import { useChampionSemaine } from '../lib/useChampion';
 import { usePseudo } from '../lib/usePseudo';
 import BalleDeFoin from '../components/BalleDeFoin';
 import LigneClassement from '../components/LigneClassement';
@@ -22,6 +23,7 @@ export default function Classement() {
   const myRun = ongletDefi ? myDefi : myRunJour;
   const [board, setBoard] = useState<Board | null>(null);
   const badges = useBadgesJoueurs(board ? board.entries.map((e) => e.pseudo) : []);
+  const champion = useChampionSemaine();
   const monBadge = loadSettings().badge;
 
   useEffect(() => {
@@ -105,6 +107,7 @@ export default function Classement() {
             e={{ ...e, badge: e.me ? monBadge || undefined : badges[e.pseudo] ?? e.badge }}
             rank={i + 1}
             deverrouille={!!myRun}
+            champion={champion ?? undefined}
             messageVerrou={
               ongletDefi
                 ? 'Terminez le défi difficile pour voir le détail des temps.'
