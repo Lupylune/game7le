@@ -151,7 +151,8 @@ export const JEUX: GameDef[] = [
     nom: 'Atlas',
     regles:
       'Un panorama 360° d’un lieu du monde : explorez-le puis placez votre marqueur sur la carte pour deviner où vous êtes.',
-    scoring: 'Plus vous tombez juste, plus le bonus est grand : jusqu’à −35 s (< 100 m), +60 s à l’autre bout du monde',
+    scoring:
+      'Plus vous tombez juste, plus le bonus est grand : jusqu’à −35 s (< 100 m). Mauvaise réponse : de +2 min (validée d’emblée) à +1 min (dégressif)',
     skip: { apresS: 25, penaliteS: 90 },
     Component: Atlas,
   },
