@@ -2323,9 +2323,10 @@ input[type='text'] {
   width: clamp(110px, 16vw, 170px);
   transition: width 0.2s ease, height 0.2s ease;
 }
+/* Au survol/focus : la carte occupe ~3/4 du cadre de jeu (largeur et hauteur). */
 .atlas-guess:hover,
 .atlas-guess:focus-within {
-  width: clamp(160px, 23vw, 260px);
+  width: 75%;
 }
 .atlas-guess-map {
   width: 100%;
@@ -2337,7 +2338,8 @@ input[type='text'] {
 }
 .atlas-guess:hover .atlas-guess-map,
 .atlas-guess:focus-within .atlas-guess-map {
-  height: 160px;
+  /* 3/4 de la hauteur du stage (min(72vh, 620px)), bouton compris. */
+  height: min(50vh, 430px);
 }
 .atlas-guess-btn {
   width: 100%;
@@ -2412,9 +2414,11 @@ input[type='text'] {
   z-index: 1;
 }
 @media (max-width: 640px) {
-  .atlas-guess,
+  .atlas-guess {
+    width: 40vw;
+  }
   .atlas-guess:hover,
   .atlas-guess:focus-within {
-    width: 40vw;
+    width: calc(100% - 2 * var(--sp-3));
   }
 }
