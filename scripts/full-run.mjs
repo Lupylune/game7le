@@ -76,6 +76,7 @@ const actions = {
   Pokédle: () => skip(45),
   // Atlas charge des libs/tuiles externes ; on ne joue pas, on passe.
   Atlas: () => skip(45),
+  Coloris: () => skip(30),
 };
 
 for (let step = 0; step < 7; step++) {

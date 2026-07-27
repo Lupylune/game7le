@@ -1649,6 +1649,238 @@ button.skip-pill.skip-ready:active {
   color: var(--text-muted);
 }
 
+/* Coloris */
+.coloris {
+  align-items: center;
+  gap: var(--sp-4);
+}
+/* Progression : une pastille par sujet */
+.coloris-progress {
+  display: flex;
+  gap: var(--sp-2);
+}
+.coloris-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s, transform 0.2s;
+}
+.coloris-dot.est-fait {
+  background: var(--text-muted);
+}
+.coloris-dot.est-actif {
+  background: var(--pick, var(--accent));
+  transform: scale(1.5);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pick, var(--accent)) 22%, transparent);
+}
+.coloris-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  animation: levelin 0.24s ease-out;
+}
+/* Scène encadrée : le sujet posé sur un « chevalet », lueur = couleur choisie */
+.coloris-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    0 18px 40px -22px var(--pick, var(--shadow));
+  transition: box-shadow 0.15s ease-out;
+}
+.coloris-svg,
+.coloris-img,
+.coloris-logo {
+  width: clamp(120px, 34vw, 156px);
+  height: clamp(120px, 34vw, 156px);
+}
+.coloris-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.coloris-logo svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.coloris-img {
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+.coloris-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  width: min(340px, 90vw);
+}
+.coloris-sliders label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.coloris-slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.coloris-val {
+  font-family: var(--font-mono);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.coloris-sliders input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.coloris-sliders input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--pick, var(--surface-elevated));
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 0 1.5px var(--text), 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.coloris-sliders input[type='range']::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--pick, var(--surface-elevated));
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 0 1.5px var(--text), 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.coloris-hint {
+  font-size: var(--text-sm);
+  text-align: center;
+  max-width: 32ch;
+}
+/* Révélation : deux fois l'image (couleur du joueur vs vraie couleur) */
+.coloris-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  width: min(340px, 90vw);
+  animation: coloris-rise 0.35s ease-out both;
+}
+.coloris-compare {
+  display: flex;
+  gap: var(--sp-3);
+  width: 100%;
+}
+.coloris-cmp {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  animation: coloris-pop 0.4s ease-out both;
+}
+.coloris-cmp:nth-child(2) {
+  animation-delay: 0.1s;
+}
+/* Cadres réduits pour afficher les deux images côte à côte */
+.coloris-frame-sm {
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+}
+.coloris-frame-sm .coloris-svg,
+.coloris-frame-sm .coloris-img,
+.coloris-frame-sm .coloris-logo {
+  width: clamp(80px, 26vw, 118px);
+  height: clamp(80px, 26vw, 118px);
+}
+.coloris-cmp-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.coloris-prox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+}
+.coloris-prox-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.coloris-prox-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(to right, var(--accent), var(--pick, var(--accent)));
+  transform-origin: left;
+  animation: coloris-fill 0.6s ease-out both;
+  animation-delay: 0.15s;
+}
+.coloris-prox-val {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+@keyframes coloris-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes coloris-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@keyframes coloris-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+/* Coloris — carte solution */
+.coloris-sol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.coloris-sol-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-sm);
+}
+.coloris-sol-pastille {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 /* Mélimélo */
 .meli-reveal {
   height: 110px;

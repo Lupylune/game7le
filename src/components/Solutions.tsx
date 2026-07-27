@@ -10,6 +10,7 @@ import { generate as genReines } from '../games/Reines';
 import { generate as genNono } from '../games/Nonogramme';
 import { solutionEchecs } from '../games/Echecs';
 import { cibleDe } from '../games/Atlas';
+import { genColoris } from '../games/Coloris';
 import { POKEMONS } from '../data/pokemon';
 import GameIcon, { SymCouronne } from './GameIcon';
 
@@ -105,6 +106,19 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
         <p className="solution-mot">
           {ville.nom} — {ville.pays}
         </p>
+      );
+    }
+    case 'coloris': {
+      const sujets = genColoris(rng, defi);
+      return (
+        <div className="coloris-sol">
+          {sujets.map((s) => (
+            <div className="coloris-sol-item" key={s.nom}>
+              <span className="coloris-sol-pastille" style={{ background: s.cible }} />
+              {s.nom}
+            </div>
+          ))}
+        </div>
       );
     }
     case 'pokedle': {
