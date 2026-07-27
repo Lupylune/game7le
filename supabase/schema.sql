@@ -111,11 +111,11 @@ declare
     'lemot', 'croises', 'paire', 'sudoku', 'reines', 'demineur', 'nonogramme',
     'ratiole', 'melimelo', 'chromal', 'trace', 'dactylo', 'echecs', 'pokedle', 'atlas'
   ];
-  -- Pool du défi hebdomadaire difficile : sans paire, ratiole, trace, pokedle ni atlas
+  -- Pool du défi hebdomadaire difficile : sans paire, ratiole, trace, chromal ni atlas
   -- (src/games/index.ts, JEUX_DEFI) — à tenir en phase.
   v_ids_defi constant text[] := array[
     'lemot', 'croises', 'sudoku', 'reines', 'demineur', 'nonogramme',
-    'melimelo', 'chromal', 'dactylo', 'echecs'
+    'melimelo', 'dactylo', 'echecs', 'pokedle'
   ];
   v_pool text[];
   v_ligne jsonb;

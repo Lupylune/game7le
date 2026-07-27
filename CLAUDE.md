@@ -11,8 +11,8 @@ backend). Bonuses reduce total time, penalties add to it; the goal is to finish 
 possible.
 
 There is also a **weekly hard challenge** (`/defi`, « défi difficile ») : 7 games drawn from a
-10-game pool (the 15 minus Paire, Ratiole, Trace, Pokédle and Atlas, which have no meaningful hard
-variant), played in harder variants via the `difficile` game prop. It is identified by the **Monday of the
+10-game pool (the 15 minus Paire, Ratiole, Trace, Chromal and Atlas), played in harder variants
+via the `difficile` game prop. It is identified by the **Monday of the
 current week** (Europe/Paris) — seeds `game7le:defi:${lundi}:…` (`lundiStr()` in `src/lib/rng.ts`,
 `jeuxDefiSemaine()` in `src/games/index.ts`) — so everyone gets the same draw all week. It has its
 own leaderboard tab (`/classement?onglet=defi`, `classementDefi()`), its own localStorage bucket
@@ -35,7 +35,7 @@ npm test          # node scripts/smoke.mjs && node scripts/full-run.mjs
                   # requires `npm run preview` running on port 4183 first
 npm run lexique   # regenerate src/data/{lexique,definitions}.ts from Lexique 3.83 + Wiktionary
 npm run echecs    # regenerate src/data/echecs.ts from the Lichess puzzle database
-npm run pokemon   # regenerate src/data/pokemon.ts from PokeAPI (gen 1 only)
+npm run pokemon   # regenerate src/data/pokemon.ts from PokeAPI (all generations)
 ```
 
 There is no unit test runner — `npm test` is two Playwright scripts (see Testing below). To run
@@ -71,9 +71,11 @@ registered as a `GameDef` in `src/games/index.ts` (see `src/games/types.ts`):
 
 - `rng: RNG` — the seeded generator described above; use it for all randomness (grid gen, word
   choice, shuffling) so the game is reproducible for a given seed.
-- `difficile?: boolean` — hard variant for the weekly challenge (Chromal 16 cells, Croisés rare
+- `difficile?: boolean` — hard variant for the weekly challenge (Croisés rare
   vocabulary, Dactylo 24 words, Echecs higher-rated mates in 2/3, LeMot & Mélimélo 8 letters,
-  Nonogramme 15×15, Reines 8×8, Sudoku 9×9 with 28 clues). **The `false`/absent path must keep the
+  Nonogramme 15×15, Reines 8×8, Sudoku 9×9 with 28 clues, Pokédle all generations over 12
+  attempts with a Génération clue column replacing Habitat and a +180 s fail penalty). **The
+  `false`/absent path must keep the
   exact same `rng` call sequence as before** so existing daily puzzles don't change when touching
   a generator. `GameDef.reglesDifficile` overrides the rules line shown during hard play.
 - `onAdjust(ms, label)` — report an intermediate time adjustment (bonus/penalty) that shows as a
@@ -179,11 +181,15 @@ lexique` / `npm run echecs` / `npm run pokemon` rather than editing directly:
 - `scripts/build-echecs.mjs` pulls a byte-range slice of the Lichess puzzle database (CC0),
   filtering to no-promotion, rated mate puzzles: `PUZZLES` (mates in 1–2, 700–1600 Elo, daily) and
   `PUZZLES_DIFFICILES` (mates in 2 at 1600–2400 Elo plus mates in 3, hard challenge).
-- `scripts/build-pokemon.mjs` fetches the 151 gen-1 Pokémon from PokeAPI (`POKEMONS` in
-  `src/data/pokemon.ts`): French name, type(s), color, habitat, and evolution stage / fully-evolved
-  — the latter two computed over gen-1-only evolution relationships (a gen-2 baby like Pichu is
-  ignored, and Golbat/Onix/Snorlax count as fully evolved). Feeds the `pokedle` game (Pokédle);
-  gen 1 only, no hard variant so it's excluded from the weekly challenge pool.
+- `scripts/build-pokemon.mjs` fetches Pokémon from PokeAPI into two lists in `src/data/pokemon.ts`:
+  `POKEMONS` (gen 1, nº 1–151, daily Pokédle) and `POKEMONS_TOUTES` (all generations, nº 1–1025,
+  hard-challenge Pokédle). Each entry: French name, type(s), color, habitat, `generation`, and
+  evolution stage / fully-evolved. `POKEMONS` computes stage/fully-evolved over **gen-1-only**
+  evolution relationships (a gen-2 baby like Pichu is ignored, and Golbat/Onix/Snorlax count as
+  fully evolved) — kept identical to before so the daily draw never shifts; `POKEMONS_TOUTES`
+  computes them over the **full** chain. PokeAPI only defines `habitat` up to nº 386 (gens 1–3), so
+  the hard Pokédle variant shows a **Génération** clue column instead of Habitat. Sprites for all
+  1025 Pokémon are stored under `public/sprites/pokemon/`.
 
 ### Testing (`scripts/smoke.mjs`, `scripts/full-run.mjs`)
 
