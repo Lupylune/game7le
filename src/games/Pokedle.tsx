@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pick } from '../lib/rng';
-import { POKEMONS, type Pokemon } from '../data/pokemon';
+import { POKEMONS, POKEMONS_TOUTES, type Pokemon } from '../data/pokemon';
 import type { GameProps } from './types';
 
 const MAX_ESSAIS = 8;
+// Défi difficile : toutes générations = plus d'essais et une pénalité d'échec
+// alignée sur la passe du défi (3 min).
+const MAX_ESSAIS_DIFFICILE = 12;
+const PENALITE_ECHEC = 60000;
+const PENALITE_ECHEC_DIFFICILE = 180000;
 const REVEAL_MS = 320; // délai entre chaque colonne dévoilée
 const NB_COLS = 6; // colonnes dévoilées une à une (Type 1 → Habitat)
 const SPRITE = (num: number) => `${import.meta.env.BASE_URL}sprites/pokemon/${num}.png`;
@@ -24,10 +29,21 @@ interface Cellule {
   fleche?: '↑' | '↓';
 }
 
-const COLONNES = ['Pokémon', 'Type 1', 'Type 2', 'Stade', 'Évolué', 'Couleur', 'Habitat'];
+// Dernière colonne : Habitat au quotidien (Gen 1, toujours renseigné), mais
+// Génération au défi difficile (toutes générations — l'habitat n'existe que
+// jusqu'à la Gen 3 dans PokeAPI, indice inexploitable au-delà).
+const colonnes = (difficile: boolean): string[] => [
+  'Pokémon',
+  'Type 1',
+  'Type 2',
+  'Stade',
+  'Évolué',
+  'Couleur',
+  difficile ? 'Génération' : 'Habitat',
+];
 
 /** Compare un Pokémon proposé à la cible, colonne par colonne. */
-function compare(g: Pokemon, cible: Pokemon): Cellule[] {
+function compare(g: Pokemon, cible: Pokemon, difficile: boolean): Cellule[] {
   const type1: Cellule = {
     texte: g.type1,
     etat: g.type1 === cible.type1 ? 'ok' : g.type1 === cible.type2 ? 'proche' : 'non',
@@ -50,21 +66,42 @@ function compare(g: Pokemon, cible: Pokemon): Cellule[] {
     texte: g.couleur,
     etat: g.couleur === cible.couleur ? 'ok' : 'non',
   };
-  const habitat: Cellule = {
-    texte: cap(g.habitat),
-    etat: g.habitat === cible.habitat ? 'ok' : 'non',
-  };
-  return [type1, type2, stade, evolue, couleur, habitat];
+  const dernier: Cellule = difficile
+    ? {
+        texte: `Gén. ${g.generation}`,
+        etat: g.generation === cible.generation ? 'ok' : 'non',
+        fleche:
+          g.generation === cible.generation
+            ? undefined
+            : cible.generation > g.generation
+              ? '↑'
+              : '↓',
+      }
+    : {
+        texte: cap(g.habitat),
+        etat: g.habitat === cible.habitat ? 'ok' : 'non',
+      };
+  return [type1, type2, stade, evolue, couleur, dernier];
 }
 
-function bonus(essais: number): number {
+function bonus(essais: number, difficile: boolean): number {
+  // Paliers étalés sur le nombre d'essais du mode (8 au quotidien, 12 au défi).
+  if (difficile) {
+    if (essais <= 4) return -15000;
+    if (essais <= 8) return -10000;
+    return -5000;
+  }
   if (essais <= 3) return -15000;
   if (essais <= 5) return -10000;
   return -5000;
 }
 
-export default function Pokedle({ rng, onDone }: GameProps) {
-  const cible = useMemo(() => pick(rng, POKEMONS), [rng]);
+export default function Pokedle({ rng, difficile = false, onDone }: GameProps) {
+  // Défi difficile : toutes les générations, 12 essais ; quotidien : Gen 1, 8 essais.
+  const pool = difficile ? POKEMONS_TOUTES : POKEMONS;
+  const maxEssais = difficile ? MAX_ESSAIS_DIFFICILE : MAX_ESSAIS;
+  const COLONNES = useMemo(() => colonnes(difficile), [difficile]);
+  const cible = useMemo(() => pick(rng, pool), [rng, pool]);
   const [essais, setEssais] = useState<Pokemon[]>([]);
   const [saisie, setSaisie] = useState('');
   const [message, setMessage] = useState('');
@@ -86,8 +123,8 @@ export default function Pokedle({ rng, onDone }: GameProps) {
   const suggestions = useMemo(() => {
     const k = clef(saisie);
     if (!k) return [];
-    return POKEMONS.filter((p) => !dejaJoues.has(p.num) && clef(p.nom).startsWith(k));
-  }, [saisie, dejaJoues]);
+    return pool.filter((p) => !dejaJoues.has(p.num) && clef(p.nom).startsWith(k));
+  }, [saisie, dejaJoues, pool]);
 
   function deviner(p: Pokemon) {
     if (doneRef.current || enCoursRef.current || dejaJoues.has(p.num)) return;
@@ -114,18 +151,26 @@ export default function Pokedle({ rng, onDone }: GameProps) {
         setTimeout(
           () =>
             onDone({
-              adjustMs: bonus(suite.length),
+              adjustMs: bonus(suite.length, difficile),
               detail: `trouvé en ${suite.length} essai${suite.length > 1 ? 's' : ''}`,
               status: 'success',
             }),
           500,
         );
-      } else if (suite.length >= MAX_ESSAIS) {
+      } else if (suite.length >= maxEssais) {
         doneRef.current = true;
         // Le nom n'est affiché que localement : le détail synchronisé ne doit pas
         // spoiler le Pokémon du jour aux autres joueurs.
         setMessage(`C'était ${cible.nom}`);
-        setTimeout(() => onDone({ adjustMs: 60000, detail: 'échoué', status: 'fail' }), 1100);
+        setTimeout(
+          () =>
+            onDone({
+              adjustMs: difficile ? PENALITE_ECHEC_DIFFICILE : PENALITE_ECHEC,
+              detail: 'échoué',
+              status: 'fail',
+            }),
+          1100,
+        );
       }
     };
     setTimeout(tick, REVEAL_MS);
@@ -149,7 +194,7 @@ export default function Pokedle({ rng, onDone }: GameProps) {
               <div className={`pokedle-cell nom${p.num === cible.num ? ' ok' : ''}`}>
                 <img className="pokedle-sprite" src={SPRITE(p.num)} alt={p.nom} loading="lazy" />
               </div>
-              {compare(p, cible).map((cell, i) =>
+              {compare(p, cible, difficile).map((cell, i) =>
                 i < visibles ? (
                   <div className={`pokedle-cell ${cell.etat}`} key={i}>
                     {cell.texte}
@@ -170,7 +215,7 @@ export default function Pokedle({ rng, onDone }: GameProps) {
             className="pokedle-input"
             value={saisie}
             disabled={enCours}
-            placeholder={`Devinez le Pokémon · essai ${essais.length + 1}/${MAX_ESSAIS}`}
+            placeholder={`Devinez le Pokémon · essai ${essais.length + 1}/${maxEssais}`}
             autoComplete="off"
             onChange={(e) => setSaisie(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && suggestions[0] && deviner(suggestions[0])}
@@ -190,8 +235,9 @@ export default function Pokedle({ rng, onDone }: GameProps) {
 
       {message && <p className="muted">{message}</p>}
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-        Vert = exact · orange (types) = ce type est dans l’autre emplacement · ↑/↓ = stade
-        d’évolution plus haut / plus bas. Génération 1 uniquement.
+        Vert = exact · orange (types) = ce type est dans l’autre emplacement · ↑/↓ = valeur cible
+        plus haute / plus basse.{' '}
+        {difficile ? 'Toutes générations.' : 'Génération 1 uniquement.'}
       </p>
     </div>
   );

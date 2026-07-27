@@ -142,7 +142,10 @@ export const JEUX: GameDef[] = [
     nom: 'Pokédle',
     regles:
       'Devinez le Pokémon (génération 1) en 8 essais : chaque proposition révèle type, stade, couleur et habitat.',
-    scoring: 'Trouvé en 1–3 essais : −15 s · 4–5 : −10 s · 6–8 : −5 s · échec : +60 s',
+    reglesDifficile:
+      'Devinez le Pokémon (toutes générations) en 12 essais : chaque proposition révèle type, stade, couleur et génération.',
+    scoring:
+      'Trouvé en 1–3 essais : −15 s · 4–5 : −10 s · 6–8 : −5 s · échec : +60 s (défi difficile : 12 essais, paliers 1–4 / 5–8 / 9–12, échec +180 s)',
     skip: { apresS: 30, penaliteS: 90 },
     Component: Pokedle,
   },
@@ -168,7 +171,7 @@ export function jeuxDuJour(date: string): GameDef[] {
 }
 
 /** Jeux exclus du défi difficile : pas de variante corsée pertinente. */
-const EXCLUS_DEFI = new Set(['paire', 'ratiole', 'trace', 'pokedle', 'atlas']);
+const EXCLUS_DEFI = new Set(['paire', 'ratiole', 'trace', 'chromal', 'atlas']);
 
 /** Pool du défi hebdomadaire difficile (10 jeux). */
 export const JEUX_DEFI: GameDef[] = JEUX.filter((j) => !EXCLUS_DEFI.has(j.id));

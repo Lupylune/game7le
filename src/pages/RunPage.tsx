@@ -24,6 +24,10 @@ const FLAWLESS_MS_DEFI = 8 * 60 * 1000;
 // Défi difficile : passer une épreuve coûte 3 min (le quotidien garde le
 // barème propre à chaque jeu, +90 s en général).
 const PENALITE_SKIP_DEFI_S = 180;
+// …sauf les grosses grilles de logique (Sudoku, Croisés, Nonogramme), où passer
+// coûte 8 min pour décourager le skip sur les épreuves les plus longues.
+const PENALITE_SKIP_DEFI_LONG_S = 480;
+const SKIP_DEFI_LONG = new Set(['sudoku', 'croises', 'nonogramme']);
 const COUNTDOWN_S = 3;
 const RECAP_MS = 2400; // durée de l'écran récap avant le compte à rebours
 
@@ -208,7 +212,17 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   const jeu = jeux[index];
   // Barème de passe effectif : 3 min fixes au défi difficile, sinon celui du jeu.
   const skipEff = useMemo(
-    () => (jeu.skip ? { ...jeu.skip, penaliteS: defi ? PENALITE_SKIP_DEFI_S : jeu.skip.penaliteS } : null),
+    () =>
+      jeu.skip
+        ? {
+            ...jeu.skip,
+            penaliteS: defi
+              ? SKIP_DEFI_LONG.has(jeu.id)
+                ? PENALITE_SKIP_DEFI_LONG_S
+                : PENALITE_SKIP_DEFI_S
+              : jeu.skip.penaliteS,
+          }
+        : null,
     [jeu, defi],
   );
 
