@@ -113,6 +113,8 @@ export default function Paire({ rng, onAdjust, onDone }: GameProps) {
   const [grid, setGrid] = useState<number[]>(start);
   const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
+  // Le joueur s'est-il servi de « Vérifier » ? signalé dans le verdict final
+  const verifieRef = useRef(false);
 
   function cycle(i: number) {
     if (givens.has(i)) return;
@@ -128,12 +130,21 @@ export default function Paire({ rng, onAdjust, onDone }: GameProps) {
     // grille pleine : valide ssi identique à la solution (unique)
     if (grid.every((v, i) => v === sol[i])) {
       doneRef.current = true;
-      setTimeout(() => onDone({ adjustMs: -10000, detail: 'résolu', status: 'success' }), 400);
+      setTimeout(
+        () =>
+          onDone({
+            adjustMs: -10000,
+            detail: verifieRef.current ? 'résolu (avec vérification)' : 'résolu',
+            status: 'success',
+          }),
+        400,
+      );
     }
   }, [grid, sol, onDone]);
 
   function verifier() {
     onAdjust(5000, 'Vérification');
+    verifieRef.current = true;
     const w = new Set<number>();
     grid.forEach((v, i) => {
       if (v !== -1 && !givens.has(i) && v !== sol[i]) w.add(i);

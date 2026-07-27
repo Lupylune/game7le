@@ -97,6 +97,8 @@ export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GamePro
     : 'clamp(28px, 7vw, 36px)';
   const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
+  // Le joueur s'est-il servi de « Vérifier » ? signalé dans le verdict final
+  const verifieRef = useRef(false);
 
   // Indices barrés : un nombre est barré si, dans toutes les dispositions de la
   // ligne compatibles avec les cases posées (remplies/croix), son segment est
@@ -141,13 +143,22 @@ export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GamePro
       if (JSON.stringify(cluesOf(line)) !== JSON.stringify(cols[c])) return;
     }
     doneRef.current = true;
-    setTimeout(() => onDone({ adjustMs: -10000, detail: 'résolu', status: 'success' }), 400);
+    setTimeout(
+      () =>
+        onDone({
+          adjustMs: -10000,
+          detail: verifieRef.current ? 'résolu (avec vérification)' : 'résolu',
+          status: 'success',
+        }),
+      400,
+    );
   }, [grid, rows, cols, onDone, N]);
 
   // La grille étant résoluble par pure logique, sa solution est unique :
   // on peut vérifier les cases remplies contre le motif d'origine.
   function verifier() {
     onAdjust(5000, 'Vérification');
+    verifieRef.current = true;
     const w = new Set<number>();
     grid.forEach((v, i) => {
       if (v === 1 && pattern[i] !== 1) w.add(i);

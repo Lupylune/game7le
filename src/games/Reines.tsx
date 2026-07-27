@@ -135,6 +135,8 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
   const [grid, setGrid] = useState<number[]>(() => new Array(N * N).fill(0));
   const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
+  // Le joueur s'est-il servi de « Vérifier » ? signalé dans le verdict final
+  const verifieRef = useRef(false);
 
   useEffect(() => {
     if (doneRef.current) return;
@@ -143,13 +145,22 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
     const okAll = queens.every((i) => sol.has(i));
     if (okAll) {
       doneRef.current = true;
-      setTimeout(() => onDone({ adjustMs: -5000, detail: 'résolu', status: 'success' }), 400);
+      setTimeout(
+        () =>
+          onDone({
+            adjustMs: -5000,
+            detail: verifieRef.current ? 'résolu (avec vérification)' : 'résolu',
+            status: 'success',
+          }),
+        400,
+      );
     }
   }, [grid, sol, onDone, N]);
 
   /** Surligne les reines « en échec » : même ligne, colonne, région ou qui se touchent. */
   function verifier() {
     onAdjust(5000, 'Vérification');
+    verifieRef.current = true;
     const queens = grid.flatMap((v, i) => (v === 2 ? [i] : []));
     const w = new Set<number>();
     for (let a = 0; a < queens.length; a++) {
