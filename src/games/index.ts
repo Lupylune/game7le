@@ -15,6 +15,7 @@ import Dactylo from './Dactylo';
 import Echecs from './Echecs';
 import Pokedle from './Pokedle';
 import Atlas from './Atlas';
+import Coloris from './Coloris';
 
 export const JEUX: GameDef[] = [
   {
@@ -155,6 +156,17 @@ export const JEUX: GameDef[] = [
       'Plus vous tombez juste, plus le bonus est grand : jusqu’à −35 s (< 100 m). Mauvaise réponse : de +2 min (validée d’emblée) à +1 min (dégressif)',
     skip: { apresS: 25, penaliteS: 90 },
     Component: Atlas,
+  },
+  {
+    id: 'coloris',
+    nom: 'Coloris',
+    regles:
+      'Réglez les curseurs Teinte, Saturation et Luminosité pour retrouver la vraie couleur de chaque sujet.',
+    reglesDifficile:
+      'Réglez les curseurs pour retrouver la vraie couleur de chaque sujet — 5 teintes plus subtiles.',
+    scoring: 'Proximité moyenne des couleurs : de −15 s (parfait) à +30 s (très loin)',
+    skip: { apresS: 30, penaliteS: 90 },
+    Component: Coloris,
   },
 ];
 

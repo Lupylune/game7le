@@ -231,6 +231,13 @@ export default function GameIcon({ id, size = 20 }: { id: string; size?: number 
           <circle cx="18" cy="6.2" r="1.2" fill="var(--bg)" stroke="none" />
         </svg>
       );
+    case 'coloris': // goutte de couleur + curseur
+      return (
+        <svg {...common}>
+          <path d="M12 3 C12 3 18 10 18 14.5 A6 6 0 0 1 6 14.5 C6 10 12 3 12 3 Z" />
+          <circle cx="12" cy="14.5" r="2.4" fill="currentColor" stroke="none" />
+        </svg>
+      );
     default:
       return (
         <svg {...common}>
