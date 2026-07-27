@@ -52,7 +52,9 @@ await check('/archives', '.archive-list li', 'Archives');
 await check('/classement', SEL_CLASSEMENT, 'Classement');
 await check('/classement?onglet=defi', SEL_CLASSEMENT, 'Classement — défi difficile');
 await check('/parametres', '.settings-row', 'Paramètres');
-await check('/profil', '.badges-grid', 'Profil + badges');
+// `.badges-grid` n'apparaît qu'avec au moins un run (sinon écran « aucun run ») ;
+// on cible le titre, toujours présent, pour tester le chargement de /profil.
+await check('/profil', '.profil-titre', 'Profil');
 await check('/entrainement', '.game-card', 'Entraînement (liste)');
 
 const jeux = [

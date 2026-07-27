@@ -37,6 +37,11 @@
   --warning: #b57a3b;
   --error: #c04040;
   --link-accent: #6b7f46;
+  /* Le Mot : touche non jouée vs lettre éliminée (voir le thème sombre) */
+  --lemot-touche: var(--surface-elevated);
+  --lemot-touche-texte: var(--text);
+  --lemot-absent: #7a7a7a66;
+  --lemot-absent-texte: #fff;
 }
 :root[data-theme='dark'] {
   --bg: #1c1e26;
@@ -54,6 +59,12 @@
   --warning: #c8924b;
   --error: #d05858;
   --link-accent: #db886f;
+  /* Le Mot : en sombre, la lettre encore disponible est la plus claire et la
+     lettre éliminée s'efface vers le fond (l'inverse du gris unique clair). */
+  --lemot-touche: #5c6070;
+  --lemot-touche-texte: #f2f2f2;
+  --lemot-absent: #33363f;
+  --lemot-absent-texte: #d5d5d5a6;
 }
 :root {
   --wordle-correct: #3a7e5e;
@@ -1286,9 +1297,9 @@ button.skip-pill.skip-ready:active {
   color: #fff;
 }
 .wordy-cell.absent {
-  background: var(--wordle-absent);
+  background: var(--lemot-absent);
   border-color: transparent;
-  color: #fff;
+  color: var(--lemot-absent-texte);
 }
 /* Défi difficile : mot de 8 lettres, cases réduites */
 .wordy-board.l8 .wordy-cell {
@@ -1317,8 +1328,8 @@ button.skip-pill.skip-ready:active {
   height: 50px;
   border: none;
   border-radius: var(--radius-sm);
-  background: var(--surface-elevated);
-  color: var(--text);
+  background: var(--lemot-touche);
+  color: var(--lemot-touche-texte);
   font-weight: 600;
   cursor: pointer;
   text-transform: uppercase;
@@ -1341,8 +1352,8 @@ button.skip-pill.skip-ready:active {
   color: #fff;
 }
 .kb-key.absent {
-  background: var(--wordle-absent);
-  color: #fff;
+  background: var(--lemot-absent);
+  color: var(--lemot-absent-texte);
 }
 
 /* Mots croisés */
@@ -1394,6 +1405,37 @@ button.skip-pill.skip-ready:active {
 }
 .cw-grid .cell.sel {
   background: color-mix(in srgb, var(--accent) 30%, var(--bg));
+}
+/* Mot entièrement juste : teinte durable + vague de validation case par case
+   (déclenchée par `vague`, retirée à la fin de l'animation). */
+.cw-grid .cell.juste {
+  background: color-mix(in srgb, var(--success) 16%, var(--bg));
+  color: var(--success);
+}
+.cw-grid .cell.juste.sel {
+  background: color-mix(in srgb, var(--success) 32%, var(--bg));
+}
+@keyframes cw-vague {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.16);
+    background: var(--success);
+    color: #fff;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.cw-grid .cell.vague {
+  animation: cw-vague 0.5s ease-out both;
+  z-index: 2;
+}
+.cw-clues li.trouve {
+  color: var(--success);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--success) 55%, transparent);
 }
 
 /* Paire */

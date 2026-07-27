@@ -19,6 +19,12 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
   const [sel, setSel] = useState<{ r: number; c: number; dir: 'h' | 'v' }>(() => firstWhite());
   const [revealed, setRevealed] = useState(false);
   const [wrong, setWrong] = useState<Set<string>>(() => new Set());
+  // Mots entièrement justes : `solus` teinte durablement les cases et l'indice,
+  // `flash` déclenche la vague de validation (retirée à la fin de l'animation).
+  const [solus, setSolus] = useState<Set<string>>(() => new Set());
+  const [flash, setFlash] = useState<Set<string>>(() => new Set());
+  const solusRef = useRef<Set<string>>(new Set());
+  const minuteries = useRef<number[]>([]);
   const doneRef = useRef(false);
   // Champ caché : donne un foyer de saisie pour que le clavier virtuel
   // s'ouvre au toucher d'une case (aucun clavier physique sur mobile).
@@ -64,6 +70,67 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
     return set;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sel, solution]);
+
+  // Cases de chaque mot indicé, clés `h<ligne>` / `v<colonne>`
+  const mots = useMemo(() => {
+    const ligne = (dir: 'h' | 'v', i: number) => {
+      const cs: [number, number][] = [];
+      for (let k = 0; k < N; k++) {
+        const [r, c] = dir === 'h' ? [i, k] : [k, i];
+        if (isWhite(r, c)) cs.push([r, c]);
+      }
+      return { cle: `${dir}${i}`, cells: cs };
+    };
+    return [
+      ...puzzle.horizontaux.map((m) => ligne('h', m.ligne)),
+      ...puzzle.verticaux.map((m) => ligne('v', m.col)),
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzle, solution]);
+
+  // Un mot devient juste → vague de validation sur ses cases
+  useEffect(() => {
+    const justes = new Set(
+      mots
+        .filter((m) => m.cells.every(([r, c]) => cells[r][c] === solution[r][c]))
+        .map((m) => m.cle),
+    );
+    const nouveaux = [...justes].filter((k) => !solusRef.current.has(k));
+    const perdus = [...solusRef.current].filter((k) => !justes.has(k));
+    if (!nouveaux.length && !perdus.length) return;
+    solusRef.current = justes;
+    setSolus(justes);
+    if (!nouveaux.length) return;
+    setFlash((f) => new Set([...f, ...nouveaux]));
+    minuteries.current.push(
+      window.setTimeout(() => {
+        setFlash((f) => {
+          const n = new Set(f);
+          nouveaux.forEach((k) => n.delete(k));
+          return n;
+        });
+      }, 900),
+    );
+  }, [cells, mots, solution]);
+
+  useEffect(() => () => minuteries.current.forEach(clearTimeout), []);
+
+  // Cases teintées (mot juste) et cases en cours d'animation (→ décalage en vague)
+  const cellsSolues = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of mots) if (solus.has(m.cle)) m.cells.forEach(([r, c]) => s.add(`${r},${c}`));
+    return s;
+  }, [mots, solus]);
+  const cellsFlash = useMemo(() => {
+    const m2 = new Map<string, number>();
+    for (const m of mots)
+      if (flash.has(m.cle))
+        m.cells.forEach(([r, c], i) => {
+          const k = `${r},${c}`;
+          m2.set(k, Math.min(m2.get(k) ?? i, i));
+        });
+    return m2;
+  }, [mots, flash]);
 
   function moveNext(r: number, c: number, dir: 'h' | 'v', delta: 1 | -1) {
     const dr = dir === 'v' ? delta : 0;
@@ -177,10 +244,12 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
               if (ch === '#') return <div className="cell black" key={`${r}${c}`} />;
               const isSel = sel.r === r && sel.c === c;
               const inWord = wordCells.has(`${r},${c}`);
+              const rang = cellsFlash.get(`${r},${c}`);
               return (
                 <div
                   key={`${r}${c}`}
-                  className={`cell${isSel ? ' sel' : inWord ? ' word' : ''}${wrong.has(`${r},${c}`) ? ' error' : ''}`}
+                  className={`cell${isSel ? ' sel' : inWord ? ' word' : ''}${wrong.has(`${r},${c}`) ? ' error' : ''}${cellsSolues.has(`${r},${c}`) ? ' juste' : ''}${rang === undefined ? '' : ' vague'}`}
+                  style={rang === undefined ? undefined : { animationDelay: `${rang * 70}ms` }}
                   onClick={() => {
                     setSel((s) =>
                       s.r === r && s.c === c ? { ...s, dir: s.dir === 'h' ? 'v' : 'h' } : { r, c, dir: s.dir },
@@ -201,25 +270,25 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
         <div className="cw-clues">
           <h4>Horizontaux</h4>
           <ul>
-            {puzzle.horizontaux.map((m) => (
+            {puzzle.horizontaux.map((m, i) => (
               <li
                 key={m.mot}
-                className={sel.dir === 'h' && sel.r === m.ligne ? 'active' : ''}
+                className={`${sel.dir === 'h' && sel.r === m.ligne ? 'active' : ''}${solus.has(`h${m.ligne}`) ? ' trouve' : ''}`}
                 onClick={() => setSel({ r: m.ligne, c: solution[m.ligne].indexOf(m.mot[0]) >= 0 ? solution[m.ligne].split('').findIndex((x) => x !== '#') : 0, dir: 'h' })}
               >
-                {m.ligne + 1}. {m.indice} ({m.mot.length})
+                {i + 1}. {m.indice}
               </li>
             ))}
           </ul>
           <h4>Verticaux</h4>
           <ul>
-            {puzzle.verticaux.map((m) => (
+            {puzzle.verticaux.map((m, i) => (
               <li
                 key={m.mot}
-                className={sel.dir === 'v' && sel.c === m.col ? 'active' : ''}
+                className={`${sel.dir === 'v' && sel.c === m.col ? 'active' : ''}${solus.has(`v${m.col}`) ? ' trouve' : ''}`}
                 onClick={() => setSel({ r: 0, c: m.col, dir: 'v' })}
               >
-                {m.col + 1}. {m.indice} ({m.mot.length})
+                {i + 1}. {m.indice}
               </li>
             ))}
           </ul>
