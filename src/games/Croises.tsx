@@ -26,6 +26,8 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
   const solusRef = useRef<Set<string>>(new Set());
   const minuteries = useRef<number[]>([]);
   const doneRef = useRef(false);
+  // Le joueur s'est-il servi de « Vérifier » ? signalé dans le verdict final
+  const verifieRef = useRef(false);
   // Champ caché : donne un foyer de saisie pour que le clavier virtuel
   // s'ouvre au toucher d'une case (aucun clavier physique sur mobile).
   const inputRef = useRef<HTMLInputElement>(null);
@@ -180,13 +182,14 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
         if (cells[r][c] !== solution[r][c]) return;
       }
     doneRef.current = true;
+    const aides = [revealed && 'révélation', verifieRef.current && 'vérification'].filter(Boolean);
     setTimeout(
       () =>
-        onDone(
-          revealed
-            ? { adjustMs: 0, detail: 'résolu (avec révélation)', status: 'success' }
-            : { adjustMs: -10000, detail: 'résolu', status: 'success' },
-        ),
+        onDone({
+          adjustMs: revealed ? 0 : -10000,
+          detail: aides.length ? `résolu (avec ${aides.join(' et ')})` : 'résolu',
+          status: 'success',
+        }),
       400,
     );
   }, [cells, solution, revealed, onDone]);
@@ -205,6 +208,7 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
 
   function verifier() {
     onAdjust(5000, 'Vérification');
+    verifieRef.current = true;
     const w = new Set<string>();
     for (let r = 0; r < N; r++)
       for (let c = 0; c < N; c++) {

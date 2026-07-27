@@ -80,6 +80,8 @@ export default function Sudoku({ rng, difficile, onAdjust, onDone }: GameProps) 
   const [sel, setSel] = useState<number>(puzzle.indexOf(0));
   const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
+  // Le joueur s'est-il servi de « Vérifier » ? signalé dans le verdict final
+  const verifieRef = useRef(false);
 
   // Valeurs déjà posées dans le bloc de la case sélectionnée : on atténue
   // ces chiffres sur le pavé et on met en avant ceux qui restent à placer.
@@ -128,12 +130,21 @@ export default function Sudoku({ rng, difficile, onAdjust, onDone }: GameProps) 
     if (doneRef.current || grid.includes(0)) return;
     if (grid.every((v, i) => v === sol[i])) {
       doneRef.current = true;
-      setTimeout(() => onDone({ adjustMs: -10000, detail: 'résolu', status: 'success' }), 400);
+      setTimeout(
+        () =>
+          onDone({
+            adjustMs: -10000,
+            detail: verifieRef.current ? 'résolu (avec vérification)' : 'résolu',
+            status: 'success',
+          }),
+        400,
+      );
     }
   }, [grid, sol, onDone]);
 
   function verifier() {
     onAdjust(5000, 'Vérification');
+    verifieRef.current = true;
     const w = new Set<number>();
     grid.forEach((v, i) => {
       if (v !== 0 && puzzle[i] === 0 && v !== sol[i]) w.add(i);
