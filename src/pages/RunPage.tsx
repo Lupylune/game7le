@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { jeuxDefiSemaine, jeuxDuJour, JEUX_PAR_JOUR } from '../games';
 import type { GameResult } from '../games/types';
 import { lundiStr, seededRng, todayStr } from '../lib/rng';
@@ -173,6 +173,7 @@ function SkipControl({
 
 export default function RunPage({ defi = false }: { defi?: boolean }) {
   const params = useParams();
+  const navigate = useNavigate();
   // Défi hebdomadaire difficile : identifié par le lundi de la semaine en cours
   const date = defi ? lundiStr() : params.date ?? todayStr();
   const isToday = date === todayStr();
@@ -200,6 +201,9 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   const pauseStartRef = useRef(0);
   const toastId = useRef(0);
   const savedRef = useRef(false);
+  // Promesse d'upload Supabase du run : on la garde pour laisser la sync se
+  // terminer avant de quitter l'écran de résultats (voir `quitterVers`).
+  const syncRef = useRef<Promise<void> | null>(null);
 
   const jeu = jeux[index];
   // Barème de passe effectif : 3 min fixes au défi difficile, sinon celui du jeu.
@@ -351,9 +355,23 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
       };
       if (defi) saveDefi(run);
       else saveRun(run);
-      syncRun(loadSettings().pseudo, run, defi);
+      syncRef.current = syncRun(loadSettings().pseudo, run, defi);
     }
   }, [phase, lines, jeux, date, totalMs, rawMs, flawless, defi]);
+
+  // Quitter l'écran de résultats en laissant d'abord l'upload Supabase aboutir :
+  // naviguer immédiatement (ex. « Voir le classement ») couperait la requête au
+  // démontage ou ferait lire le classement avant que le run soit écrit. Plafonné
+  // pour ne jamais bloquer l'UI si le backend traîne.
+  const quitterVers = useCallback(
+    async (to: string) => {
+      if (syncRef.current) {
+        await Promise.race([syncRef.current, new Promise((r) => setTimeout(r, 2500))]);
+      }
+      navigate(to);
+    },
+    [navigate],
+  );
 
   // À la fin, on verse les bonus/malus accumulés dans le total : la réserve se
   // vide (→ 0) pendant que le total glisse de « temps brut » vers « temps final ».
@@ -435,12 +453,15 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
           <button className="btn" onClick={() => setVoirSolutions((v) => !v)}>
             {voirSolutions ? 'Masquer les solutions' : 'Voir les solutions'}
           </button>
-          <Link className="btn" to={defi ? '/classement?onglet=defi' : '/classement'}>
+          <button
+            className="btn"
+            onClick={() => quitterVers(defi ? '/classement?onglet=defi' : '/classement')}
+          >
             Voir le classement
-          </Link>
-          <Link className="btn" to="/">
+          </button>
+          <button className="btn" onClick={() => quitterVers('/')}>
             Accueil
-          </Link>
+          </button>
         </div>
         {voirSolutions && <Solutions date={date} ids={lines.map((l) => l.id)} defi={defi} />}
       </div>
