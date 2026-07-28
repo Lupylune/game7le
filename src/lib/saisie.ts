@@ -1,18 +1,37 @@
 import { useEffect, useRef, type FormEvent } from 'react';
 
 /**
- * Capture de texte fiable avec un clavier virtuel mobile. GBoard, iOS et
- * surtout le clavier Samsung ne frappent pas « une touche = un caractère » :
- * ils composent et réécrivent la valeur du champ. Le clavier Samsung va plus
- * loin — à chaque touche il vide la zone de composition puis re-commet le mot
- * entier, en deux événements `input` successifs. Lus un par un, ces
- * événements ressemblent à « tout supprimer puis retaper », d'où des lettres
- * fantômes.
+ * Attributs communs des champs de saisie cachés (Croisés, Dactylo).
  *
- * On ne lit donc jamais un événement isolé : on regroupe la rafale sur une
- * frame et on diffe la valeur *finale* du champ avec le texte déjà transmis.
- * Seuls les caractères réellement ajoutés sont émis ; une réécriture à
- * l'identique n'émet rien et une suppression appelle `onEfface`.
+ * Les claviers Android (SwiftKey, Samsung, GBoard) ne frappent pas « une touche
+ * = un caractère » : ils composent le mot et réécrivent la valeur du champ à
+ * chaque touche, ce qui rejoue les lettres déjà saisies et rend le retour
+ * arrière inopérant. `autoCorrect`/`spellCheck` ne suffisent pas — SwiftKey les
+ * ignore. Seul un champ de **type mot de passe** désactive vraiment prédiction,
+ * autocorrection et composition sur tous les claviers Android : une touche
+ * produit alors un caractère, comme sur un clavier physique.
+ *
+ * Réservé au tactile : sur ordinateur le champ reste un `text` pour ne pas
+ * réveiller les gestionnaires de mots de passe (la saisie y passe déjà par les
+ * événements clavier).
+ */
+const TACTILE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+export const ATTRS_SAISIE = {
+  className: 'saisie-cachee',
+  type: TACTILE ? 'password' : 'text',
+  autoComplete: 'off',
+  autoCorrect: 'off',
+  spellCheck: false,
+} as const;
+
+/**
+ * Capture de texte tolérante aux réécritures du champ : on ne lit jamais un
+ * événement isolé, on regroupe la rafale sur une frame et on diffe la valeur
+ * *finale* du champ avec le texte déjà transmis. Seuls les caractères
+ * réellement ajoutés sont émis ; une réécriture à l'identique n'émet rien et
+ * une suppression appelle `onEfface`. Filet de sécurité si un clavier compose
+ * malgré `ATTRS_SAISIE`.
  */
 export function useSaisieTexte(onChar: (ch: string) => void, onEfface?: () => void) {
   // texte déjà transmis pour le contenu courant du champ

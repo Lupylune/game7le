@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { pick } from '../lib/rng';
-import { useSaisieTexte } from '../lib/saisie';
+import { ATTRS_SAISIE, useSaisieTexte } from '../lib/saisie';
 import { SOL5, SOL6 } from '../data/lexique';
 import type { GameProps } from './types';
 
@@ -71,16 +71,8 @@ export default function Dactylo({ rng, difficile, onDone }: GameProps) {
       </p>
       <input
         ref={inputRef}
-        className="saisie-cachee"
-        autoComplete="off"
-        autoCorrect="off"
+        {...ATTRS_SAISIE}
         autoCapitalize="none"
-        spellCheck={false}
-        // Le clavier Samsung ignore autoCorrect/spellCheck et continue de
-        // prédire (il retire puis re-commet le mot entier à chaque touche) ;
-        // la variante « e-mail » désactive la saisie prédictive tout en
-        // gardant une disposition de lettres avec barre d'espace.
-        inputMode="email"
         aria-label="Zone de frappe"
         placeholder="Tapez ici…"
         onInput={saisie}

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Diagnostic saisie clavier — Game7le</title>
+    <!--
+      Page de diagnostic temporaire, non reliée au reste du site.
+      But : savoir ce qu'un clavier virtuel (SwiftKey, Samsung, GBoard…) envoie
+      réellement au navigateur, pour corriger Mini Croisés et Dactylo.
+      À supprimer une fois le problème réglé.
+    -->
+    <style>
+      body {
+        margin: 0;
+        padding: 12px;
+        font: 15px/1.4 system-ui, sans-serif;
+        background: #14161a;
+        color: #e8e8e8;
+      }
+      h1 {
+        font-size: 1.1rem;
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 4px 0;
+        color: #a8adb6;
+        font-size: 0.85rem;
+      }
+      label {
+        display: block;
+        margin-top: 14px;
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 16px;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #3a3f47;
+        background: #1d2026;
+        color: #fff;
+      }
+      .boutons {
+        display: flex;
+        gap: 8px;
+        margin: 16px 0 8px;
+      }
+      button {
+        flex: 1;
+        padding: 10px;
+        font-size: 0.9rem;
+        border-radius: 8px;
+        border: 0;
+        background: #e2653f;
+        color: #fff;
+        font-weight: 600;
+      }
+      button.sec {
+        background: #3a3f47;
+      }
+      pre {
+        margin: 0;
+        padding: 10px;
+        background: #0e1013;
+        border-radius: 8px;
+        font-size: 11px;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 45vh;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Diagnostic saisie clavier</h1>
+    <p>
+      Dans <strong>chacun</strong> des trois champs : tapez <strong>a</strong>,
+      <strong>b</strong>, <strong>c</strong> puis <strong>deux retours arrière</strong>. Envoyez
+      ensuite le journal (bouton « Copier »).
+    </p>
+
+    <label>1. Champ actuel (text, autocorrect off)</label>
+    <input id="c1" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" />
+
+    <label>2. Champ text + inputmode="email"</label>
+    <input id="c2" type="text" inputmode="email" autocomplete="off" autocorrect="off" spellcheck="false" />
+
+    <label>3. Champ type="password"</label>
+    <input id="c3" type="password" autocomplete="off" autocorrect="off" spellcheck="false" />
+
+    <div class="boutons">
+      <button id="copier">Copier le journal</button>
+      <button id="vider" class="sec">Vider</button>
+    </div>
+    <pre id="journal">(en attente de frappe…)</pre>
+
+    <script>
+      const journal = document.getElementById('journal');
+      const lignes = [];
+      const t0 = Date.now();
+      const esc = (v) => (v === null || v === undefined ? String(v) : JSON.stringify(String(v)));
+
+      function noter(champ, type, infos) {
+        const ms = String(Date.now() - t0).padStart(6, ' ');
+        lignes.push(`${ms}ms ${champ} ${type.padEnd(18)} ${infos}`);
+        journal.textContent = lignes.join('\n');
+        journal.scrollTop = journal.scrollHeight;
+      }
+
+      for (const id of ['c1', 'c2', 'c3']) {
+        const el = document.getElementById(id);
+        const val = () => `valeur=${esc(el.value)}`;
+        el.addEventListener('keydown', (e) =>
+          noter(id, 'keydown', `key=${esc(e.key)} code=${e.keyCode} composition=${e.isComposing} ${val()}`),
+        );
+        el.addEventListener('beforeinput', (e) =>
+          noter(id, 'beforeinput', `type=${e.inputType} data=${esc(e.data)} ${val()}`),
+        );
+        el.addEventListener('input', (e) =>
+          noter(id, 'input', `type=${e.inputType} data=${esc(e.data)} composition=${e.isComposing} ${val()}`),
+        );
+        for (const ev of ['compositionstart', 'compositionupdate', 'compositionend'])
+          el.addEventListener(ev, (e) => noter(id, ev, `data=${esc(e.data)} ${val()}`));
+      }
+
+      document.getElementById('vider').onclick = () => {
+        lignes.length = 0;
+        journal.textContent = '(vidé)';
+        for (const id of ['c1', 'c2', 'c3']) document.getElementById(id).value = '';
+      };
+      document.getElementById('copier').onclick = async () => {
+        const texte = `${navigator.userAgent}\n\n${lignes.join('\n')}`;
+        try {
+          await navigator.clipboard.writeText(texte);
+          document.getElementById('copier').textContent = 'Copié ✓';
+        } catch {
+          // repli : sélection manuelle
+          const z = document.createElement('textarea');
+          z.value = texte;
+          document.body.appendChild(z);
+          z.select();
+        }
+      };
+      noter('—', 'navigateur', navigator.userAgent);
+    </script>
+  </body>
+</html>

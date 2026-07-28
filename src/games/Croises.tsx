@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CROISES } from '../data/croises';
 import { genCroise } from '../lib/croisesgen';
-import { useSaisieTexte } from '../lib/saisie';
+import { ATTRS_SAISIE, useSaisieTexte } from '../lib/saisie';
 import type { GameProps } from './types';
 
 const N = 5;
@@ -250,16 +250,8 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
       <div className="cw-wrap">
         <input
           ref={inputRef}
-          className="saisie-cachee"
-          autoComplete="off"
-          autoCorrect="off"
+          {...ATTRS_SAISIE}
           autoCapitalize="characters"
-          spellCheck={false}
-          // Le clavier Samsung ignore autoCorrect/spellCheck et continue de
-          // prédire (il retire puis re-commet le mot entier à chaque touche,
-          // ce qui rejouait les lettres déjà saisies) ; la variante « e-mail »
-          // désactive la saisie prédictive tout en gardant les lettres.
-          inputMode="email"
           aria-label="Saisie de lettres"
           onInput={saisie}
           onKeyDown={(e) => {
