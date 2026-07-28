@@ -15,11 +15,11 @@ import { useEffect, useRef, type FormEvent } from 'react';
  * réveiller les gestionnaires de mots de passe (la saisie y passe déjà par les
  * événements clavier).
  */
-const TACTILE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+export const EST_TACTILE =typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
 export const ATTRS_SAISIE = {
   className: 'saisie-cachee',
-  type: TACTILE ? 'password' : 'text',
+  type: EST_TACTILE ? 'password' : 'text',
   autoComplete: 'off',
   autoCorrect: 'off',
   spellCheck: false,
