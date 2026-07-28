@@ -20,6 +20,11 @@ export default function Dactylo({ rng, difficile, onDone }: GameProps) {
   const [flash, setFlash] = useState(false);
   const doneRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Position et fautes suivies aussi en ref : un clavier virtuel peut livrer
+  // plusieurs caractères dans la même passe, chacun devant voir l'avancement
+  // du précédent (l'état React n'est à jour qu'au rendu suivant).
+  const posRef = useRef(0);
+  const typosRef = useRef(0);
   const saisie = useSaisieTexte((ch) => onChar(ch.toLowerCase()));
 
   useEffect(() => {
@@ -28,24 +33,28 @@ export default function Dactylo({ rng, difficile, onDone }: GameProps) {
 
   function onChar(ch: string) {
     if (doneRef.current) return;
-    if (ch === phrase[pos]) {
-      const next = pos + 1;
+    if (ch === phrase[posRef.current]) {
+      const next = posRef.current + 1;
+      posRef.current = next;
       setPos(next);
       if (next === phrase.length) {
         doneRef.current = true;
-        const adjustMs = typos === 0 ? -15000 : typos <= 5 ? -10000 : -5000;
+        const fautes = typosRef.current;
+        const adjustMs = fautes === 0 ? -15000 : fautes <= 5 ? -10000 : -5000;
         setTimeout(
           () =>
             onDone({
               adjustMs,
-              detail: typos === 0 ? 'recopié sans faute' : `recopié (${typos} faute${typos > 1 ? 's' : ''})`,
+              detail:
+                fautes === 0 ? 'recopié sans faute' : `recopié (${fautes} faute${fautes > 1 ? 's' : ''})`,
               status: 'success',
             }),
           500,
         );
       }
     } else {
-      setTypos((t) => t + 1);
+      typosRef.current++;
+      setTypos(typosRef.current);
       setFlash(true);
       setTimeout(() => setFlash(false), 180);
     }
@@ -67,6 +76,11 @@ export default function Dactylo({ rng, difficile, onDone }: GameProps) {
         autoCorrect="off"
         autoCapitalize="none"
         spellCheck={false}
+        // Le clavier Samsung ignore autoCorrect/spellCheck et continue de
+        // prédire (il retire puis re-commet le mot entier à chaque touche) ;
+        // la variante « e-mail » désactive la saisie prédictive tout en
+        // gardant une disposition de lettres avec barre d'espace.
+        inputMode="email"
         aria-label="Zone de frappe"
         placeholder="Tapez ici…"
         onInput={saisie}
