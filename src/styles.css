@@ -1785,11 +1785,22 @@ button.skip-pill.skip-ready:active {
   animation: shake 0.2s ease;
   border-color: var(--error);
 }
+/* Champ invisible mais de taille réelle : un champ de 1×1 px peut faire perdre
+   le fil aux claviers Android (suivi du curseur et de la zone de composition).
+   `font-size: 16px` évite le zoom automatique de Safari iOS au foyer. */
 .saisie-cachee {
   position: absolute;
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 16px;
+  color: transparent;
+  caret-color: transparent;
   opacity: 0.01;
-  height: 1px;
-  width: 1px;
+  pointer-events: none;
 }
 
 /* Échecs */
