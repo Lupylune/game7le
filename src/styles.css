@@ -1781,6 +1781,11 @@ button.skip-pill.skip-ready:active {
     background: color-mix(in srgb, var(--accent) 12%, transparent);
   }
 }
+/* Repli tactile : visible seulement tant que le champ de frappe n'a pas le
+   foyer (clavier virtuel fermé), donc au plus une fois en début d'épreuve. */
+.dactylo-clavier {
+  align-self: center;
+}
 .dactylo-phrase.err {
   animation: shake 0.2s ease;
   border-color: var(--error);
