@@ -35,8 +35,19 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
     (ch) => {
       if (/[a-zA-Z]/.test(ch)) setLetter(ch.toUpperCase());
     },
-    () => setLetter(''),
+    () => effacer(),
   );
+  // Case courante et grille suivies aussi en ref : un clavier virtuel peut
+  // livrer plusieurs caractères dans la même passe, chacun devant voir le
+  // déplacement du précédent (l'état React n'est à jour qu'au rendu suivant).
+  const selRef = useRef(sel);
+  const cellsRef = useRef(cells);
+  useEffect(() => {
+    selRef.current = sel;
+  }, [sel]);
+  useEffect(() => {
+    cellsRef.current = cells;
+  }, [cells]);
 
   function focusSaisie() {
     inputRef.current?.focus({ preventScroll: true });
@@ -135,23 +146,42 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
   }, [mots, flash]);
 
   function moveNext(r: number, c: number, dir: 'h' | 'v', delta: 1 | -1) {
-    const dr = dir === 'v' ? delta : 0;
-    const dc = dir === 'h' ? delta : 0;
-    let nr = r + dr;
-    let nc = c + dc;
-    if (isWhite(nr, nc)) setSel({ r: nr, c: nc, dir });
+    const nr = r + (dir === 'v' ? delta : 0);
+    const nc = c + (dir === 'h' ? delta : 0);
+    if (!isWhite(nr, nc)) return;
+    const s = { r: nr, c: nc, dir };
+    selRef.current = s;
+    setSel(s);
+  }
+
+  function ecrire(r: number, c: number, ch: string) {
+    const next = cellsRef.current.map((row) => row.slice());
+    next[r][c] = ch;
+    cellsRef.current = next;
+    setCells(next);
   }
 
   function setLetter(ch: string) {
-    const { r, c, dir } = sel;
+    const { r, c, dir } = selRef.current;
     if (!isWhite(r, c)) return;
-    setCells((prev) => {
-      const next = prev.map((row) => row.slice());
-      next[r][c] = ch;
-      return next;
-    });
-    if (ch) moveNext(r, c, dir, 1);
-    else moveNext(r, c, dir, -1);
+    ecrire(r, c, ch);
+    moveNext(r, c, dir, 1);
+  }
+
+  // Retour arrière : la lettre de la case courante s'efface sur place ; si la
+  // case est déjà vide, on recule et on efface la lettre précédente.
+  function effacer() {
+    const { r, c, dir } = selRef.current;
+    if (!isWhite(r, c)) return;
+    if (cellsRef.current[r][c]) {
+      ecrire(r, c, '');
+      return;
+    }
+    const pr = r - (dir === 'v' ? 1 : 0);
+    const pc = c - (dir === 'h' ? 1 : 0);
+    if (!isWhite(pr, pc)) return;
+    moveNext(r, c, dir, -1);
+    ecrire(pr, pc, '');
   }
 
   useEffect(() => {
@@ -162,7 +192,7 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
       if (!surSaisie && /^[a-zA-Z]$/.test(e.key)) setLetter(e.key.toUpperCase());
       else if (!surSaisie && e.key === 'Backspace') {
         e.preventDefault();
-        setLetter('');
+        effacer();
       } else if (e.key === 'ArrowRight') setSel((s) => (isWhite(s.r, s.c + 1) ? { ...s, c: s.c + 1, dir: 'h' } : s));
       else if (e.key === 'ArrowLeft') setSel((s) => (isWhite(s.r, s.c - 1) ? { ...s, c: s.c - 1, dir: 'h' } : s));
       else if (e.key === 'ArrowDown') setSel((s) => (isWhite(s.r + 1, s.c) ? { ...s, r: s.r + 1, dir: 'v' } : s));
@@ -199,11 +229,7 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
     if (!isWhite(r, c) || cells[r][c] === solution[r][c]) return;
     onAdjust(8000, 'Lettre révélée');
     setRevealed(true);
-    setCells((prev) => {
-      const next = prev.map((row) => row.slice());
-      next[r][c] = solution[r][c];
-      return next;
-    });
+    ecrire(r, c, solution[r][c]);
   }
 
   function verifier() {
@@ -229,13 +255,18 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
           autoCorrect="off"
           autoCapitalize="characters"
           spellCheck={false}
+          // Le clavier Samsung ignore autoCorrect/spellCheck et continue de
+          // prédire (il retire puis re-commet le mot entier à chaque touche,
+          // ce qui rejouait les lettres déjà saisies) ; la variante « e-mail »
+          // désactive la saisie prédictive tout en gardant les lettres.
+          inputMode="email"
           aria-label="Saisie de lettres"
           onInput={saisie}
           onKeyDown={(e) => {
             // champ vide : l'effacement n'émet pas d'événement input
             if (e.key === 'Backspace' && e.currentTarget.value === '') {
               e.preventDefault();
-              setLetter('');
+              effacer();
             }
           }}
         />
