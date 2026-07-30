@@ -23,7 +23,7 @@ export default function CommentJouer() {
           pendant les 3 secondes de transition entre deux épreuves (verdict + compte à rebours).
         </li>
         <li>
-          La plupart des jeux peuvent être <strong>passés</strong> après 30 secondes, moyennant une
+          La plupart des jeux peuvent être <strong>passés</strong> après 45 secondes, moyennant une
           pénalité de +90 s (sauf mention contraire).
         </li>
       </ul>
