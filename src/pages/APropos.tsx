@@ -53,7 +53,14 @@ export default function APropos() {
         <a href="https://database.lichess.org" target="_blank" rel="noopener noreferrer">
           base ouverte Lichess
         </a>{' '}
-        (licence CC0).
+        (licence CC0). Les articles masqués d'« Encyclo » sont les introductions
+        d'articles de{' '}
+        <a href="https://fr.wikipedia.org" target="_blank" rel="noopener noreferrer">
+          Wikipédia en français
+        </a>{' '}
+        (CC BY-SA 4.0), tirés de la sélection communautaire des « articles vitaux » ; les mots de
+        sens proche qu'il accepte (« monarque » pour « roi ») sont extraits des relations
+        lexicales du Wiktionnaire.
       </p>
     </div>
   );

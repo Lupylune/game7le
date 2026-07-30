@@ -15,6 +15,7 @@ import Dactylo from './Dactylo';
 import Echecs from './Echecs';
 import Pokedle from './Pokedle';
 import Atlas from './Atlas';
+import Encyclo from './Encyclo';
 
 export const JEUX: GameDef[] = [
   {
@@ -159,13 +160,25 @@ export const JEUX: GameDef[] = [
     skip: { apresS: 25, penaliteS: 90 },
     Component: Atlas,
   },
+  {
+    id: 'encyclo',
+    nom: 'Encyclo',
+    regles:
+      'Un article de Wikipédia entièrement masqué : proposez des mots pour le dévoiler et retrouvez son titre.',
+    reglesDifficile:
+      'Un article de Wikipédia moins connu, masqué jusqu’aux mots grammaticaux : dévoilez-le et retrouvez son titre.',
+    scoring:
+      'Titre trouvé en 8 mots ou moins : −20 s · 16 : −12 s · 30 : −6 s · au-delà : −3 s · indice : +15 s · échec au 40ᵉ mot : +60 s (défi difficile : +90 s)',
+    skip: { apresS: 30, penaliteS: 90 },
+    Component: Encyclo,
+  },
 ];
 
 export const JEU_PAR_ID = new Map(JEUX.map((j) => [j.id, j]));
 
 export const JEUX_PAR_JOUR = 7;
 
-/** Les 7 épreuves du jour, tirées au sort parmi les 14 (même tirage pour tous). */
+/** Les 7 épreuves du jour, tirées au sort parmi les 16 (même tirage pour tous). */
 export function jeuxDuJour(date: string): GameDef[] {
   return shuffle(seededRng(`game7le:${date}:selection`), JEUX).slice(0, JEUX_PAR_JOUR);
 }
@@ -173,12 +186,12 @@ export function jeuxDuJour(date: string): GameDef[] {
 /** Jeux exclus du défi difficile : pas de variante corsée pertinente. */
 const EXCLUS_DEFI = new Set(['paire', 'ratiole', 'trace', 'chromal', 'atlas']);
 
-/** Pool du défi hebdomadaire difficile (10 jeux). */
+/** Pool du défi hebdomadaire difficile (11 jeux). */
 export const JEUX_DEFI: GameDef[] = JEUX.filter((j) => !EXCLUS_DEFI.has(j.id));
 
 /**
  * Les 7 épreuves du défi difficile de la semaine (identifiée par son lundi),
- * tirées au sort parmi les 10 — même tirage pour tous.
+ * tirées au sort parmi les 11 — même tirage pour tous.
  */
 export function jeuxDefiSemaine(lundi: string): GameDef[] {
   return shuffle(seededRng(`game7le:defi:${lundi}:selection`), JEUX_DEFI).slice(0, JEUX_PAR_JOUR);

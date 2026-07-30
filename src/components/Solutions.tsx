@@ -9,6 +9,7 @@ import { generate as genSudoku } from '../games/Sudoku';
 import { generate as genReines } from '../games/Reines';
 import { generate as genNono } from '../games/Nonogramme';
 import { solutionEchecs } from '../games/Echecs';
+import { solutionEncyclo } from '../games/Encyclo';
 import { cibleDe } from '../games/Atlas';
 import { POKEMONS } from '../data/pokemon';
 import GameIcon, { SymCouronne } from './GameIcon';
@@ -99,6 +100,8 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
     }
     case 'echecs':
       return <p className="solution-mot">{solutionEchecs(rng, defi)}</p>;
+    case 'encyclo':
+      return <p className="solution-mot">{solutionEncyclo(rng, defi)}</p>;
     case 'atlas': {
       const { ville } = cibleDe(rng);
       return (

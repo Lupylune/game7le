@@ -11,7 +11,8 @@
     "test": "node scripts/smoke.mjs && node scripts/full-run.mjs",
     "lexique": "node scripts/build-lexique.mjs && node scripts/build-defs.mjs",
     "echecs": "node scripts/build-echecs.mjs",
-    "pokemon": "node scripts/build-pokemon.mjs"
+    "pokemon": "node scripts/build-pokemon.mjs",
+    "encyclo": "node scripts/build-encyclo.mjs && node scripts/build-proches.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.6",

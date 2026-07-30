@@ -5,12 +5,13 @@ import BadgeIcon from './BadgeIcon';
 
 /**
  * Icône « Nouveautés » de la barre du haut : ouvre un popin mettant en avant les
- * dernières fonctionnalités (champion de la semaine, Atlas, Pokédle, badges).
+ * dernières fonctionnalités (Encyclo, champion de la semaine, Atlas, Pokédle,
+ * badges).
  * Une pastille signale les nouveautés non encore vues ; l'ouverture du popin
  * marque la version comme vue (mémorisée en localStorage). Bumper `VERSION`
  * réaffiche la pastille après l'ajout d'autres nouveautés.
  */
-const VERSION = 'champion-atlas-badges-pokedle';
+const VERSION = 'champion-atlas-badges-pokedle-encyclo';
 const CLE = 'game7le:nouveautes-vues';
 
 function dejaVu(): boolean {
@@ -80,6 +81,18 @@ export default function Nouveautes() {
               </button>
             </div>
             <div className="nouveautes-liste">
+              <Link to="/entrainement/encyclo" className="nouveaute-item" onClick={() => setOuvert(false)}>
+                <span className="nouveaute-ico">
+                  <GameIcon id="encyclo" size={26} />
+                </span>
+                <span className="nouveaute-txt">
+                  <strong>Encyclo</strong>
+                  <span className="muted">
+                    Un nouveau mini-jeu : un article de Wikipédia entièrement masqué, dévoilez-le
+                    mot à mot pour retrouver son titre.
+                  </span>
+                </span>
+              </Link>
               <Link to="/classement" className="nouveaute-item" onClick={() => setOuvert(false)}>
                 <span className="nouveaute-ico">
                   <SymCouronne size={26} />

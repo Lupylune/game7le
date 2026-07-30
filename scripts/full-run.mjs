@@ -74,6 +74,7 @@ const actions = {
   Dactylo: () => skip(45),
   Échecs: () => skip(45),
   Pokédle: () => skip(45),
+  Encyclo: () => skip(45),
   // Atlas charge des libs/tuiles externes ; on ne joue pas, on passe.
   Atlas: () => skip(45),
 };

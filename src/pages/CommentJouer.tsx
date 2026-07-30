@@ -47,13 +47,14 @@ export default function CommentJouer() {
       <h2>Le défi difficile de la semaine</h2>
       <p>
         Chaque semaine (du lundi au dimanche), un second parcours vous attend : <strong>7 épreuves
-        corsées tirées au sort parmi {JEUX_DEFI.length} mini-jeux</strong> (sans Paire, Ratiole ni
-        Tracé), avec des variantes relevées — mot de 8 lettres, sudoku 9×9 avare en indices,
-        nonogramme 15×15, 8 reines, 16 cases au Chromal, mots croisés au vocabulaire plus rare,
-        phrase doublée à la Dactylo, mats d'échecs mieux cotés, Mélimélo à 8 lettres. Y passer une
+        corsées tirées au sort parmi {JEUX_DEFI.length} mini-jeux</strong> (sans Paire, Ratiole,
+        Tracé, Chromal ni Atlas), avec des variantes relevées — mot de 8 lettres, sudoku 9×9 avare
+        en indices, nonogramme 15×15, 8 reines, mots croisés au vocabulaire plus rare, phrase
+        doublée à la Dactylo, mats d'échecs mieux cotés, Mélimélo à 8 lettres, Pokédle toutes
+        générations, article moins connu et intégralement masqué à l'Encyclo. Y passer une
         épreuve coûte <strong>+3 min</strong> (contre +90 s au quotidien), et les pénalités
-        d'échec y sont ajustées (Le Mot raté : +90 s ; élimination au Chromal un peu plus
-        clémente, la case étant plus dure à repérer parmi 16). Même tirage pour tout le monde, un
+        d'échec y sont ajustées (Le Mot raté : +90 s ; Pokédle manqué : +3 min ; titre d'Encyclo
+        non trouvé : +90 s). Même tirage pour tout le monde, un
         classement dédié, et seule la première tentative de la semaine compte.
       </p>
 
