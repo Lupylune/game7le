@@ -157,29 +157,21 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
     }
   }, [grid, sol, onDone, N]);
 
-  /** Surligne les reines « en échec » : même ligne, colonne, région ou qui se touchent. */
+  /**
+   * Surligne les reines mal placées, c.-à-d. absentes de la solution — la
+   * grille est générée à solution unique, « mauvais endroit » est donc sans
+   * ambiguïté. Même principe que Sudoku / Nonogramme / Croisés : on ne pointe
+   * que les erreurs du joueur, jamais les reines correctes. L'ancien critère
+   * (reines « en échec » deux à deux) marquait aussi en rouge une reine bien
+   * posée dès qu'une intruse la menaçait.
+   */
   function verifier() {
     onAdjust(5000, 'Vérification');
     verifieRef.current = true;
-    const queens = grid.flatMap((v, i) => (v === 2 ? [i] : []));
     const w = new Set<number>();
-    for (let a = 0; a < queens.length; a++) {
-      for (let b = a + 1; b < queens.length; b++) {
-        const ra = Math.floor(queens[a] / N);
-        const ca = queens[a] % N;
-        const rb = Math.floor(queens[b] / N);
-        const cb = queens[b] % N;
-        const conflit =
-          ra === rb ||
-          ca === cb ||
-          regions[queens[a]] === regions[queens[b]] ||
-          (Math.abs(ra - rb) <= 1 && Math.abs(ca - cb) <= 1);
-        if (conflit) {
-          w.add(queens[a]);
-          w.add(queens[b]);
-        }
-      }
-    }
+    grid.forEach((v, i) => {
+      if (v === 2 && !sol.has(i)) w.add(i);
+    });
     setWrong(w);
     setTimeout(() => setWrong(new Set()), 2000);
   }
