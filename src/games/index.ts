@@ -23,7 +23,7 @@ export const JEUX: GameDef[] = [
     regles: 'Devinez le mot de 5 lettres en 6 essais maximum.',
     reglesDifficile: 'Devinez le mot de 8 lettres en 6 essais maximum.',
     scoring: 'Trouvé en 1–3 essais : −15 s · 4 essais : −10 s · 5 essais : −5 s · échec : +60 s',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: LeMot,
   },
   {
@@ -32,7 +32,7 @@ export const JEUX: GameDef[] = [
     regles: 'Remplissez la mini-grille de mots croisés.',
     reglesDifficile: 'Remplissez la mini-grille de mots croisés — vocabulaire plus rare.',
     scoring: 'Résolu sans aide : −10 s · lettre révélée : +8 s · vérification : +5 s',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Croises,
   },
   {
@@ -40,7 +40,7 @@ export const JEUX: GameDef[] = [
     nom: 'Paire',
     regles: '3 ★ et 3 ● par ligne et colonne, jamais 3 identiques à la suite. « = » impose l’égalité, « × » la différence.',
     scoring: 'Résolu : −10 s · vérification : +5 s',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Paire,
   },
   {
@@ -49,7 +49,7 @@ export const JEUX: GameDef[] = [
     regles: 'Chiffres 1 à 6 : une fois par ligne, colonne et bloc 2×3.',
     reglesDifficile: 'Chiffres 1 à 9 : une fois par ligne, colonne et bloc 3×3 — peu d’indices.',
     scoring: 'Résolu : −10 s · vérification : +5 s',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Sudoku,
   },
   {
@@ -59,7 +59,7 @@ export const JEUX: GameDef[] = [
     reglesDifficile:
       'Placez 8 reines : une par ligne, colonne et région colorée, jamais deux qui se touchent.',
     scoring: 'Résolu : −5 s · révélation : +30 s',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Reines,
   },
   {
@@ -67,7 +67,7 @@ export const JEUX: GameDef[] = [
     nom: 'Démineur',
     regles: 'Grille 12×12, 20 mines. Tout se déduit, aucun pari nécessaire.',
     scoring: 'Grille nettoyée : −15 s · mine touchée : de +120 s (dès le début) à +30 s (dégressif)',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Demineur,
   },
   {
@@ -77,7 +77,7 @@ export const JEUX: GameDef[] = [
     reglesDifficile:
       'Noircissez les cases selon les indices de chaque ligne et colonne — grille 15×15.',
     scoring: 'Résolu : −10 s · vérification : +5 s',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Nonogramme,
   },
   {
@@ -95,7 +95,7 @@ export const JEUX: GameDef[] = [
     reglesDifficile:
       'Huit lettres se révèlent une par une puis se masquent : retrouvez le mot qui les utilise toutes.',
     scoring: 'Trouvé : −8 s · +10 s par erreur ou revoir les lettres',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Melimelo,
   },
   {
@@ -105,7 +105,7 @@ export const JEUX: GameDef[] = [
     reglesDifficile:
       '10 niveaux : cliquez la case légèrement différente parmi les 16. Un mauvais clic = éliminé.',
     scoring: '10 niveaux : −15 s · éliminé : de +35 s (niveau 1) à −10 s (niveau 10)',
-    skip: { apresS: 30, penaliteS: 60 },
+    skip: { apresS: 45, penaliteS: 60 },
     Component: Chromal,
   },
   {
@@ -124,7 +124,7 @@ export const JEUX: GameDef[] = [
     reglesDifficile:
       'Recopiez la phrase (deux fois plus longue) le plus vite possible — seule la bonne lettre fait avancer.',
     scoring: 'Sans faute : −15 s · 5 fautes ou moins : −10 s · au-delà : −5 s',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Dactylo,
   },
   {
@@ -134,7 +134,7 @@ export const JEUX: GameDef[] = [
     reglesDifficile:
       'Un puzzle Lichess corsé : l’adversaire vient de jouer, menez l’attaque jusqu’au mat.',
     scoring: 'Mat trouvé : −15 s (davantage si plusieurs coups) · mauvais coup : +10 s · indice : +15 s',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Echecs,
   },
   {
@@ -146,7 +146,7 @@ export const JEUX: GameDef[] = [
       'Devinez le Pokémon (toutes générations) en 12 essais : chaque proposition révèle type, stade, couleur et génération.',
     scoring:
       'Trouvé en 1–3 essais : −15 s · 4–5 : −10 s · 6–8 : −5 s · échec : +60 s (défi difficile : 12 essais, paliers 1–4 / 5–8 / 9–12, échec +180 s)',
-    skip: { apresS: 30, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Pokedle,
   },
   {
@@ -156,7 +156,7 @@ export const JEUX: GameDef[] = [
       'Un panorama 360° d’un lieu du monde : explorez-le puis placez votre marqueur sur la carte pour deviner où vous êtes.',
     scoring:
       'Plus vous tombez juste, plus le bonus est grand : jusqu’à −35 s (< 100 m). Mauvaise réponse : de +2 min (validée d’emblée) à +1 min (dégressif)',
-    skip: { apresS: 25, penaliteS: 90 },
+    skip: { apresS: 45, penaliteS: 90 },
     Component: Atlas,
   },
 ];

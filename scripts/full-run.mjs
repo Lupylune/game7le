@@ -59,23 +59,23 @@ async function tripleCut() {
 
 // 7 épreuves tirées au sort chaque jour : on lit le nom affiché et on agit
 const actions = {
-  'Le Mot': () => skip(45),
-  'Mini Croisés': () => skip(45),
-  Paire: () => skip(45),
-  'Mini Sudoku': () => skip(45),
-  Reines: () => skip(45),
-  Démineur: () => skip(45),
-  Nonogramme: () => skip(45),
+  'Le Mot': () => skip(60),
+  'Mini Croisés': () => skip(60),
+  Paire: () => skip(60),
+  'Mini Sudoku': () => skip(60),
+  Reines: () => skip(60),
+  Démineur: () => skip(60),
+  Nonogramme: () => skip(60),
   Ratiole: tripleCut,
-  Mélimélo: () => skip(45),
-  Chromal: () => skip(30),
+  Mélimélo: () => skip(60),
+  Chromal: () => skip(60),
   // Tracé : le segment parcourt la forme (~3 s) avant que le dessin ne soit permis
   Tracé: () => dragAcross(4500),
-  Dactylo: () => skip(45),
-  Échecs: () => skip(45),
-  Pokédle: () => skip(45),
+  Dactylo: () => skip(60),
+  Échecs: () => skip(60),
+  Pokédle: () => skip(60),
   // Atlas charge des libs/tuiles externes ; on ne joue pas, on passe.
-  Atlas: () => skip(45),
+  Atlas: () => skip(60),
 };
 
 for (let step = 0; step < 7; step++) {
