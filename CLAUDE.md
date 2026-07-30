@@ -5,13 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Game7le — an unofficial French adaptation of [gauntle.com](https://gauntle.com): a daily challenge
-of **7 mini-games drawn at random each day out of a pool of 15**, chained under a single stopwatch.
+of **7 mini-games drawn at random each day out of a pool of 16**, chained under a single stopwatch.
 The draw and puzzles are identical for every player on a given day (seeded PRNG, no required
 backend). Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as
 possible.
 
 There is also a **weekly hard challenge** (`/defi`, « défi difficile ») : 7 games drawn from a
-10-game pool (the 15 minus Paire, Ratiole, Trace, Chromal and Atlas), played in harder variants
+11-game pool (the 16 minus Paire, Ratiole, Trace, Chromal and Atlas), played in harder variants
 via the `difficile` game prop. It is identified by the **Monday of the
 current week** (Europe/Paris) — seeds `game7le:defi:${lundi}:…` (`lundiStr()` in `src/lib/rng.ts`,
 `jeuxDefiSemaine()` in `src/games/index.ts`) — so everyone gets the same draw all week. It has its
@@ -36,6 +36,7 @@ npm test          # node scripts/smoke.mjs && node scripts/full-run.mjs
 npm run lexique   # regenerate src/data/{lexique,definitions}.ts from Lexique 3.83 + Wiktionary
 npm run echecs    # regenerate src/data/echecs.ts from the Lichess puzzle database
 npm run pokemon   # regenerate src/data/pokemon.ts from PokeAPI (all generations)
+npm run encyclo   # regenerate src/data/{encyclo,proches}.ts from Wikipédia FR + Wiktionary
 ```
 
 There is no unit test runner — `npm test` is two Playwright scripts (see Testing below). To run
@@ -53,7 +54,7 @@ string key, via `seededRng()` in `src/lib/rng.ts` (xmur3 hash → mulberry32). T
 mechanic and touches most of the app:
 
 - `jeuxDuJour(date)` in `src/games/index.ts` seeds on `game7le:${date}:selection` to shuffle the
-  14-entry `JEUX` array and take the first `JEUX_PAR_JOUR` (7) — this is the day's game order.
+  16-entry `JEUX` array and take the first `JEUX_PAR_JOUR` (7) — this is the day's game order.
 - Each individual game's RNG is seeded on `game7le:${date}:${jeu.id}` (see `RunPage.tsx`), so the
   puzzle content (word, grid, board…) is also fixed per day per game.
 - The fake global leaderboard (`src/lib/classement.ts`) is seeded the same way, purely for demo
@@ -73,7 +74,8 @@ registered as a `GameDef` in `src/games/index.ts` (see `src/games/types.ts`):
   choice, shuffling) so the game is reproducible for a given seed.
 - `difficile?: boolean` — hard variant for the weekly challenge (Croisés rare
   vocabulary, Dactylo 24 words, Echecs higher-rated mates in 2/3, LeMot & Mélimélo 8 letters,
-  Nonogramme 15×15, Reines 8×8, Sudoku 9×9 with 28 clues, Pokédle all generations over 12
+  Nonogramme 15×15, Reines 8×8, Sudoku 9×9 with 28 clues, Encyclo lesser-known article with
+  nothing pre-revealed, Pokédle all generations over 12
   attempts with a Génération clue column replacing Habitat and a +180 s fail penalty). **The
   `false`/absent path must keep the
   exact same `rng` call sequence as before** so existing daily puzzles don't change when touching
@@ -136,7 +138,7 @@ and rejects malformed or implausible payloads with an exception (swallowed by th
 `syncRun()`): pseudo format, date within launch date…today (Europe/Paris), bounded `total_ms`,
 `lines` = exactly 7 distinct known game ids with plausible per-game durations and bounded string
 fields, and `flawless` recomputed server-side from the lines (the client flag can only remove it).
-The 15 game ids — and the 10-id hard pool used when `p_defi` — are hardcoded in the function —
+The 16 game ids — and the 11-id hard pool used when `p_defi` — are hardcoded in the function —
 keep them in sync with `src/games/index.ts` (`JEUX` / `JEUX_DEFI`) when adding a game, and keep
 validation thresholds loose enough to never reject a legitimate run (a false positive is silently
 lost). `submit_run()` also rate-limits by client IP (from the
@@ -167,9 +169,9 @@ as an estimate in the UI.
 
 ### Content pipelines (generated, not hand-authored)
 
-`src/data/lexique.ts`, `src/data/definitions.ts`, `src/data/echecs.ts`, and `src/data/pokemon.ts`
-are **generated files** committed to the repo, not written by hand — regenerate them via `npm run
-lexique` / `npm run echecs` / `npm run pokemon` rather than editing directly:
+`src/data/lexique.ts`, `src/data/definitions.ts`, `src/data/echecs.ts`, `src/data/pokemon.ts`,
+`src/data/encyclo.ts`, and `src/data/proches.ts` are **generated files** committed to the repo, not written by hand — regenerate them via `npm run
+lexique` / `npm run echecs` / `npm run pokemon` / `npm run encyclo` rather than editing directly:
 
 - `scripts/build-lexique.mjs` downloads Lexique 3.83 (lexique.org) and derives word lists (Le Mot
   solutions/dictionary in 5 and 8 letters, Mélimélo anagram targets in 6 and 8, Croisés crossword
@@ -190,6 +192,42 @@ lexique` / `npm run echecs` / `npm run pokemon` rather than editing directly:
   computes them over the **full** chain. PokeAPI only defines `habitat` up to nº 386 (gens 1–3), so
   the hard Pokédle variant shows a **Génération** clue column instead of Habitat. Sprites for all
   1025 Pokémon are stored under `public/sprites/pokemon/`.
+- `scripts/build-encyclo.mjs` builds `src/data/encyclo.ts` (Encyclo's hidden articles) from French
+  Wikipedia (CC BY-SA 4.0): candidates are the community-curated **vital articles, level 4**
+  (~9.5k timeless topics, far better than the pageview top which tracks the news cycle), ranked by
+  actual traffic (`prop=pageviews`, 60-day average) into `ARTICLES` (most-read, daily) and
+  `ARTICLES_DIFFICILES` (next tier, hard challenge). Each entry keeps the title plus the first
+  sentences of the intro, cleaned (pronunciations, non-Latin scripts, bracketed notes) and cut on
+  a sentence boundary; an article is dropped unless every significant word of its title appears in
+  the kept text, otherwise the title would be unguessable. Batched, cached (`/tmp/encyclo-cache.json`)
+  and resumable — the MediaWiki API rate-limits anonymous callers hard (HTTP 429 with `Retry-After`,
+  which the script honours), so a full run takes ~20 min.
+- `scripts/build-proches.mjs` (run right after, by the same `npm run encyclo`) builds
+  `src/data/proches.ts`: the semantic near-misses Encyclo accepts (« compositeur » reveals
+  « musicien »), which plain radical matching cannot see. Embedding word vectors would cost >= 3 MB
+  client-side, so instead the words of the 1300 articles are lemmatised with Lexique 3.83 (which
+  also drops proper nouns, absent from it), their synonyms / quasi-synonyms / hyperonyms / hyponyms
+  are read off French Wiktionary (CC BY-SA), and only the **inverted** index ships — « word the
+  player may type » → « text forms to reveal », the only direction the game queries. ~92 KB for
+  ~4 000 entries (+32 KB gzipped).
+
+  Most of the quality comes from the filters, each of which cuts noise actually observed on the
+  first pass: Wiktionary « dérivés » are excluded (morphological, not semantic — « laiterie » under
+  « lait »); keys below `FREQ_MIN_CLE` in Lexique are dropped (nobody types « médersa » or
+  « zoobotanique » — this alone removed two thirds of the index); targets are limited to nouns and
+  adjectives (conjugated verbs produced absurd hops such as « trépasser » → « passions », via the
+  `passer` lemma); a relation is dropped when one word contains the other, compared in the singular
+  (« journaliste » under « jour », « bientôt » under « biens »); slurs and slang need an explicit
+  exclusion list (`CLES_EXCLUES`, « boche »/« fritz » for « allemand ») because the Wiktionary
+  register templates that would mark them are not kept in the cache; catch-all words revealing more
+  than 6 distinct forms are dropped. Same batching/cache/rate-limit story as above
+  (`/tmp/proches-cache.json`, ~1 h for a cold run over ~5 000 lemmas).
+
+  Known limits, should this be revisited: coverage is ~22 % of the maskable forms (Wiktionary
+  relations are unevenly filled — « artiste » or « œuvre » lead nowhere), the signal is binary with
+  no warm/hot gradient, and relations are only read from the *article side* — catching « artiste »
+  → « peintre » when only the « artiste » page carries the relation would mean querying the whole
+  common vocabulary (~30 k lemmas, ~6 h).
 
 ### Testing (`scripts/smoke.mjs`, `scripts/full-run.mjs`)
 

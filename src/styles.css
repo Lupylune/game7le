@@ -2438,3 +2438,125 @@ input[type='text'] {
     width: calc(100% - 2 * var(--sp-3));
   }
 }
+
+/* --- Encyclo (article masqué) -------------------------------------------- */
+.enc-article {
+  width: 100%;
+  max-width: 620px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4) var(--sp-5);
+}
+.enc-label {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.enc-titre {
+  margin: 2px 0 var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+  line-height: 2;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--sp-3);
+}
+.enc-texte {
+  margin: 0;
+  /* Police à pas fixe : la largeur des blocs masqués (en `ch`) correspond alors
+     exactement au nombre de lettres du mot caché. */
+  font-family: var(--font-mono);
+  font-size: clamp(0.9rem, 2.2vw, 1.02rem);
+  line-height: 2.1;
+  text-align: left;
+  white-space: pre-wrap;
+}
+.enc-mot {
+  border-radius: 3px;
+  padding: 1px 2px;
+}
+.enc-mot.ok {
+  color: var(--text);
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+}
+.enc-mot.famille {
+  color: var(--text);
+  background: color-mix(in srgb, var(--warning) 26%, transparent);
+}
+/* Mot complété par les indices : ni trouvé, ni caché. */
+.enc-mot.ind {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+/* Mot fraîchement dévoilé : un bref éclat pour le repérer dans le paragraphe. */
+.enc-mot.neuf {
+  animation: enc-eclat 0.9s ease;
+}
+@keyframes enc-eclat {
+  0%,
+  40% {
+    background: color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+}
+.enc-mot.cache {
+  padding: 0;
+  white-space: nowrap;
+}
+.enc-indice {
+  color: var(--accent);
+}
+.enc-bloc {
+  display: inline-block;
+  height: 1.05em;
+  vertical-align: -0.18em;
+  border-radius: 3px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+}
+.enc-saisie {
+  display: flex;
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 480px;
+}
+.enc-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+}
+.enc-historique {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  justify-content: center;
+  max-width: 620px;
+}
+.enc-essai {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: var(--text-sm);
+}
+.enc-essai.ok {
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+}
+.enc-essai.famille {
+  background: color-mix(in srgb, var(--warning) 26%, transparent);
+}
+.enc-essai.non {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.enc-essai b {
+  font-size: 0.8em;
+  opacity: 0.75;
+}

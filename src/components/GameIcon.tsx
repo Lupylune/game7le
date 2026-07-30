@@ -231,6 +231,15 @@ export default function GameIcon({ id, size = 20 }: { id: string; size?: number 
           <circle cx="18" cy="6.2" r="1.2" fill="var(--bg)" stroke="none" />
         </svg>
       );
+    case 'encyclo': // livre ouvert, une ligne de texte encore masquée
+      return (
+        <svg {...common}>
+          <path d="M12 7 C10 5.6 6.8 5 3.5 5.6 V18 C6.8 17.4 10 18 12 19.4 C14 18 17.2 17.4 20.5 18 V5.6 C17.2 5 14 5.6 12 7 Z" />
+          <path d="M12 7 V19.4" />
+          <path d="M5.8 9.6 H9.6 M14.4 9.6 H18.2" />
+          <rect x="5.8" y="12.4" width="3.8" height="2.2" rx="0.6" fill="currentColor" stroke="none" />
+        </svg>
+      );
     default:
       return (
         <svg {...common}>
