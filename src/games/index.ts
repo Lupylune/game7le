@@ -58,7 +58,7 @@ export const JEUX: GameDef[] = [
     regles: 'Placez 6 reines : une par ligne, colonne et région colorée, jamais deux qui se touchent.',
     reglesDifficile:
       'Placez 8 reines : une par ligne, colonne et région colorée, jamais deux qui se touchent.',
-    scoring: 'Résolu : −5 s · révélation : +30 s',
+    scoring: 'Résolu : −5 s · vérification : +5 s',
     skip: { apresS: 45, penaliteS: 90 },
     Component: Reines,
   },
