@@ -143,7 +143,7 @@ export default function Sudoku({ rng, difficile, onAdjust, onDone }: GameProps) 
   }, [grid, sol, onDone]);
 
   function verifier() {
-    onAdjust(5000, 'Vérification');
+    onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<number>();
     grid.forEach((v, i) => {
@@ -196,7 +196,7 @@ export default function Sudoku({ rng, difficile, onAdjust, onDone }: GameProps) 
       </div>
       <div className="game-actions">
         <button className="btn btn-sm" onClick={verifier}>
-          Vérifier (+5 s)
+          Vérifier (+20 s)
         </button>
       </div>
     </div>

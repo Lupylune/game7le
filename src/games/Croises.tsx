@@ -233,7 +233,7 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
   }
 
   function verifier() {
-    onAdjust(5000, 'Vérification');
+    onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<string>();
     for (let r = 0; r < N; r++)
@@ -326,7 +326,7 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
           Révéler une lettre (+8 s)
         </button>
         <button className="btn btn-sm" onClick={verifier}>
-          Vérifier (+5 s)
+          Vérifier (+20 s)
         </button>
       </div>
     </div>

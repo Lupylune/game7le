@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RNG } from '../lib/rng';
+import { useVerrou } from '../lib/useVerrou';
 import type { GameProps } from './types';
 
 const N = 6;
+/** « Vérifier » indisponible pendant les 30 premières secondes. */
+const VERROU_S = 30;
 type Cons = Map<string, 'e' | 'd'>; // '=' ou '×' entre deux cases adjacentes
 
 const SYM = ['★', '●'];
@@ -115,6 +118,7 @@ export default function Paire({ rng, onAdjust, onDone }: GameProps) {
   const doneRef = useRef(false);
   // Le joueur s'est-il servi de « Vérifier » ? signalé dans le verdict final
   const verifieRef = useRef(false);
+  const verrou = useVerrou(VERROU_S);
 
   function cycle(i: number) {
     if (givens.has(i)) return;
@@ -143,7 +147,8 @@ export default function Paire({ rng, onAdjust, onDone }: GameProps) {
   }, [grid, sol, onDone]);
 
   function verifier() {
-    onAdjust(5000, 'Vérification');
+    if (verrou > 0) return;
+    onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<number>();
     grid.forEach((v, i) => {
@@ -186,8 +191,8 @@ export default function Paire({ rng, onAdjust, onDone }: GameProps) {
         Clic sur une case : vide → ★ → ● → vide
       </p>
       <div className="game-actions">
-        <button className="btn btn-sm" onClick={verifier}>
-          Vérifier (+5 s)
+        <button className="btn btn-sm" onClick={verifier} disabled={verrou > 0}>
+          {verrou > 0 ? `Vérifier dans ${verrou} s` : 'Vérifier (+20 s)'}
         </button>
       </div>
     </div>

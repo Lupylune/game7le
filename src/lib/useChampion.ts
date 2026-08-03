@@ -8,26 +8,38 @@ function semainePrecedente(dateStr: string): string {
   return new Date(Date.UTC(y, m - 1, d - 7)).toISOString().slice(0, 10);
 }
 
+/** Classes d'effet sur le pseudo, dans l'ordre du podium : or, argent, bronze. */
+const CLASSES = ['lb-champion', 'lb-champion-argent', 'lb-champion-bronze'];
+
 /**
- * Pseudo du·de la « champion·ne en titre » : le·la n°1 du classement
- * hebdomadaire (moyenne des runs) de la **semaine précédente**. Il·elle
- * conserve un effet spécial sur son pseudo, partout où il apparaît, pendant
- * TOUTE la semaine en cours — jusqu'à être détrôné·e par le·la vainqueur de
- * cette semaine, qui recevra le privilège la semaine suivante.
+ * Podium de la **semaine précédente** : les pseudos des 3 premiers du
+ * classement hebdomadaire (moyenne des runs), dans l'ordre. Chacun conserve un
+ * effet spécial sur son pseudo, partout où il apparaît, pendant TOUTE la
+ * semaine en cours — jusqu'à être détrôné par le podium de cette semaine, qui
+ * recevra le privilège la semaine suivante.
  *
- * `null` tant que rien n'est chargé (ou semaine passée sans runs). Best-effort :
- * une petite requête au montage, comme les badges du classement.
+ * Tableau vide tant que rien n'est chargé (ou semaine passée sans runs).
+ * Best-effort : une petite requête au montage, comme les badges du classement.
  */
-export function useChampionSemaine(): string | null {
-  const [champion, setChampion] = useState<string | null>(null);
+export function usePodiumSemaine(): string[] {
+  const [podium, setPodium] = useState<string[]>([]);
   useEffect(() => {
     let vivant = true;
-    classementSemaine(semainePrecedente(todayStr()), 1).then(
-      (b) => vivant && setChampion(b.entries[0]?.pseudo ?? null),
+    classementSemaine(semainePrecedente(todayStr()), 3).then(
+      (b) => vivant && setPodium(b.entries.slice(0, 3).map((e) => e.pseudo)),
     );
     return () => {
       vivant = false;
     };
   }, []);
-  return champion;
+  return podium;
+}
+
+/**
+ * Classe CSS de l'effet podium pour un pseudo — `undefined` s'il n'y figure
+ * pas. Le n°1 garde le reflet doré, les n°2 et n°3 un reflet argent et bronze.
+ */
+export function classePodium(podium: string[], pseudo: string): string | undefined {
+  const i = podium.indexOf(pseudo);
+  return i === -1 ? undefined : CLASSES[i];
 }

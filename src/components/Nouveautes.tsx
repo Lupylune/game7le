@@ -85,10 +85,10 @@ export default function Nouveautes() {
                   <SymCouronne size={26} />
                 </span>
                 <span className="nouveaute-txt">
-                  <strong>Champion de la semaine</strong>
+                  <strong>Podium de la semaine</strong>
                   <span className="muted">
-                    Le n°1 de la semaine passée a le droit à un ramen et un reflet doré sur son pseudo, jusqu'à
-                    être détrôné.
+                    Le n°1 de la semaine passée a le droit à un ramen et un reflet doré sur son
+                    pseudo, les n°2 et n°3 un reflet argent et bronze, jusqu'à être détrônés.
                   </span>
                 </span>
               </Link>

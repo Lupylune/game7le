@@ -4,6 +4,7 @@ import { formatMs } from '../lib/time';
 import { SymEtincelle, SymEtoile } from './GameIcon';
 import { BadgePicto } from './BadgeIcon';
 import { parseToken } from '../lib/badges';
+import { classePodium } from '../lib/useChampion';
 import SplitsRun from './SplitsRun';
 
 /**
@@ -20,14 +21,14 @@ export default function LigneClassement({
   rank,
   deverrouille = true,
   messageVerrou,
-  champion,
+  podium,
 }: {
   e: Entry;
   rank: number;
   deverrouille?: boolean;
   messageVerrou?: string;
-  /** Pseudo du·de la champion·ne de la semaine : effet spécial sur son nom. */
-  champion?: string;
+  /** Podium de la semaine passée : effet spécial (or/argent/bronze) sur ces pseudos. */
+  podium?: string[];
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [verrouAffiche, setVerrouAffiche] = useState(false);
@@ -57,9 +58,7 @@ export default function LigneClassement({
         ) : (
           e.badge && <SymEtoile />
         )}{' '}
-        <span className={champion && e.pseudo === champion ? 'lb-champion' : undefined}>
-          {e.pseudo}
-        </span>
+        <span className={classePodium(podium ?? [], e.pseudo)}>{e.pseudo}</span>
         {e.me && ' (vous)'}
       </span>
       {e.jours != null && (

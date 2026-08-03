@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RNG } from '../lib/rng';
+import { useVerrou } from '../lib/useVerrou';
 import type { GameProps } from './types';
 
 const N_NORMAL = 8;
 const N_DIFFICILE = 15;
+/** « Vérifier » indisponible pendant les 30 premières secondes. */
+const VERROU_S = 30;
 
 function cluesOf(line: number[]): number[] {
   const out: number[] = [];
@@ -99,6 +102,7 @@ export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GamePro
   const doneRef = useRef(false);
   // Le joueur s'est-il servi de « Vérifier » ? signalé dans le verdict final
   const verifieRef = useRef(false);
+  const verrou = useVerrou(VERROU_S);
 
   // Indices barrés : un nombre est barré si, dans toutes les dispositions de la
   // ligne compatibles avec les cases posées (remplies/croix), son segment est
@@ -157,7 +161,8 @@ export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GamePro
   // La grille étant résoluble par pure logique, sa solution est unique :
   // on peut vérifier les cases remplies contre le motif d'origine.
   function verifier() {
-    onAdjust(5000, 'Vérification');
+    if (verrou > 0) return;
+    onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<number>();
     grid.forEach((v, i) => {
@@ -246,8 +251,8 @@ export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GamePro
         Clic = remplir · clic droit = croix · maintenez et glissez pour peindre plusieurs cases
       </p>
       <div className="game-actions">
-        <button className="btn btn-sm" onClick={verifier}>
-          Vérifier (+5 s)
+        <button className="btn btn-sm" onClick={verifier} disabled={verrou > 0}>
+          {verrou > 0 ? `Vérifier dans ${verrou} s` : 'Vérifier (+20 s)'}
         </button>
       </div>
     </div>
