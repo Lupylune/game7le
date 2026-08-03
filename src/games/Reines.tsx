@@ -166,7 +166,7 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
    * posée dès qu'une intruse la menaçait.
    */
   function verifier() {
-    onAdjust(5000, 'Vérification');
+    onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<number>();
     grid.forEach((v, i) => {
@@ -212,7 +212,7 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
       </p>
       <div className="game-actions">
         <button className="btn btn-sm" onClick={verifier}>
-          Vérifier (+5 s)
+          Vérifier (+20 s)
         </button>
       </div>
     </div>

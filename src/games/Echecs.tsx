@@ -87,6 +87,8 @@ export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) 
   const [flashSq, setFlashSq] = useState<number | null>(null);
   const [hintSq, setHintSq] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
+  // Incrémenté par « Réinitialiser » : rejoue l'ouverture de l'adversaire
+  const [manche, setManche] = useState(0);
   const doneRef = useRef(false);
 
   // L'adversaire joue son coup après un court délai
@@ -98,7 +100,7 @@ export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) 
       setReady(true);
     }, 800);
     return () => clearTimeout(t);
-  }, [puzzle]);
+  }, [puzzle, manche]);
 
   function finish(adjustMs: number, detail: string) {
     if (doneRef.current) return;
@@ -189,6 +191,23 @@ export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) 
     if (target !== null && target !== from) tenter(from, target);
   }
 
+  // Remet la position de départ et rejoue l'ouverture de l'adversaire, pour
+  // repartir proprement quand on s'est enferré. Aucune pénalité : la solution
+  // est une ligne forcée, revenir au début ne révèle rien et ne fait pas
+  // gagner de temps.
+  function reinitialiser() {
+    if (doneRef.current || !ready) return;
+    setBoard(initial.board);
+    setStep(0);
+    setLastMove(null);
+    setSel(null);
+    setFlashSq(null);
+    setHintSq(null);
+    setDrag(null);
+    setReady(false);
+    setManche((m) => m + 1);
+  }
+
   // orientation : les pièces du joueur en bas
   const ordre = useMemo(
     () => Array.from({ length: 64 }, (_, k) => (joueurBlanc ? k : 63 - k)),
@@ -252,6 +271,9 @@ export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) 
           }}
         >
           Indice (+15 s)
+        </button>
+        <button className="btn btn-sm" disabled={!ready} onClick={reinitialiser}>
+          Réinitialiser
         </button>
         <span className="muted" style={{ fontSize: 'var(--text-sm)', alignSelf: 'center' }}>
           Glissez la pièce (ou cliquez départ puis arrivée) · mauvais coup : +10 s

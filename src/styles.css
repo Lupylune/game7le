@@ -506,9 +506,11 @@ main.content {
   flex: 1;
   font-weight: 600;
 }
-/* Champion·ne de la semaine (n°1 du classement hebdomadaire) : reflet doré
-   animé sur le pseudo, partout où il apparaît. */
-.lb-champion {
+/* Podium de la semaine passée : reflet animé sur le pseudo, partout où il
+   apparaît — doré pour le n°1, argent pour le n°2, bronze pour le n°3. */
+.lb-champion,
+.lb-champion-argent,
+.lb-champion-bronze {
   font-weight: 700;
   /* Gradient horizontal aux extrémités identiques (#f29028) : les tuiles se
      raccordent sans couture. Déplacement d'exactement une tuile (200 %) par
@@ -528,6 +530,30 @@ main.content {
   color: transparent;
   animation: champion-shimmer 2s linear infinite;
 }
+/* Mêmes règles de raccord (extrémités identiques), reflet un peu plus lent
+   pour rester en retrait de l'or. */
+.lb-champion-argent {
+  background-image: linear-gradient(
+    90deg,
+    #8b929c 0%,
+    #c9d2dc 30%,
+    #ffffff 50%,
+    #c9d2dc 70%,
+    #8b929c 100%
+  );
+  animation-duration: 2.6s;
+}
+.lb-champion-bronze {
+  background-image: linear-gradient(
+    90deg,
+    #96551f 0%,
+    #cd8544 30%,
+    #f4c99b 50%,
+    #cd8544 70%,
+    #96551f 100%
+  );
+  animation-duration: 3.2s;
+}
 @keyframes champion-shimmer {
   from {
     background-position: 200% 0;
@@ -537,7 +563,9 @@ main.content {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lb-champion {
+  .lb-champion,
+  .lb-champion-argent,
+  .lb-champion-bronze {
     animation: none;
     background-position: 50% 0;
   }
