@@ -231,6 +231,15 @@ export default function GameIcon({ id, size = 20 }: { id: string; size?: number 
           <circle cx="18" cy="6.2" r="1.2" fill="var(--bg)" stroke="none" />
         </svg>
       );
+    case 'tempo': // métronome (durée à ressentir)
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 L4.5 20.5 H19.5 Z" />
+          <path d="M7.3 14 H16.7" />
+          <path d="M12 20 L17.8 6.8" />
+          <circle cx="16.1" cy="10.5" r="1.5" fill="currentColor" stroke="none" />
+        </svg>
+      );
     default:
       return (
         <svg {...common}>

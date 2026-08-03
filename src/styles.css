@@ -1844,6 +1844,163 @@ button.skip-pill.skip-ready:active {
   pointer-events: none;
 }
 
+/* Tempo — pulsation à mémoriser puis à reproduire en maintenant l'appui.
+   Le cercle se déploie au tout début de la durée cible et se rétracte pile à
+   sa fin : la fenêtre perçue reste exactement la durée à mémoriser, sans
+   apparition brutale. Le halo « respire » ensuite sur deux périodes premières
+   entre elles (1,7 s et 2,3 s) pour qu'aucun rythme comptable ne se dégage. */
+.tempo-manche {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.tempo-scene {
+  position: relative;
+  width: clamp(220px, 62vw, 300px);
+  height: clamp(220px, 62vw, 300px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px dashed var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+.tempo-scene.actif {
+  border-style: solid;
+  border-color: transparent;
+}
+.tempo-pulse {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.42);
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in srgb, var(--accent) 85%, white),
+    color-mix(in srgb, var(--accent) 55%, var(--surface))
+  );
+  box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+/* Déploiement (0,32 s) puis respiration : la respiration prend la main sur la
+   transformation à la fin du déploiement, qui garde l'opacité à 1. */
+.tempo-scene.actif .tempo-pulse {
+  animation:
+    tempo-entree 0.32s cubic-bezier(0.16, 0.9, 0.3, 1) both,
+    tempo-souffle 1.7s ease-in-out 0.32s infinite,
+    tempo-lueur 2.3s ease-in-out 0.32s infinite;
+}
+/* Rétraction (voir SORTIE_MS dans src/games/Tempo.tsx) : même courbe rapide au
+   départ que le déploiement, pour que l'instant de fin reste net à l'œil. */
+.tempo-scene.sortie .tempo-pulse {
+  animation: tempo-sortie 0.28s cubic-bezier(0.16, 0.9, 0.3, 1) both;
+}
+/* La reproduction du joueur se distingue de la pulsation à mémoriser */
+.tempo-scene.mien .tempo-pulse {
+  background: radial-gradient(
+    circle at 50% 45%,
+    color-mix(in srgb, var(--success) 80%, white),
+    color-mix(in srgb, var(--success) 50%, var(--surface))
+  );
+  box-shadow: 0 0 40px color-mix(in srgb, var(--success) 45%, transparent);
+}
+@keyframes tempo-entree {
+  0% {
+    opacity: 0;
+    transform: scale(0.42);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes tempo-sortie {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  55% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.42);
+  }
+}
+@keyframes tempo-souffle {
+  50% {
+    transform: scale(0.94);
+  }
+}
+@keyframes tempo-lueur {
+  50% {
+    filter: brightness(1.12);
+  }
+}
+/* Mouvement réduit : le cercle apparaît et disparaît net, sans respiration */
+@media (prefers-reduced-motion: reduce) {
+  .tempo-scene.actif .tempo-pulse {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .tempo-scene.sortie .tempo-pulse {
+    animation: none;
+  }
+}
+.tempo-texte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: clamp(1.3rem, 5vw, 1.8rem);
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+}
+.tempo-scene.actif .tempo-texte {
+  color: #fff;
+}
+.tempo-hint {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  opacity: 0.85;
+}
+.tempo-jauges {
+  display: flex;
+  gap: var(--sp-2);
+}
+.tempo-jauge {
+  min-width: 46px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  text-align: center;
+}
+.tempo-jauge.encours {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.tempo-jauge.faite {
+  border-color: var(--success);
+  color: var(--text);
+}
+
 /* Échecs */
 .chess-board {
   display: grid;
