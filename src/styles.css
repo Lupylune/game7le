@@ -977,6 +977,13 @@ button.skip-pill.skip-ready:active {
   color: var(--text-muted);
   white-space: nowrap;
 }
+/* Détail hebdomadaire : jour de la semaine sans run enregistré */
+.run-splits tr.vide {
+  opacity: 0.45;
+}
+.run-splits td .bonus {
+  font-size: var(--text-sm);
+}
 .flawless {
   font-size: 1.2rem;
   margin: var(--sp-3) 0;
