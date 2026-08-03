@@ -200,6 +200,9 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   const startRef = useRef(0);
   const gameStartRef = useRef(0);
   const adjustRef = useRef(0);
+  // Ajustements de l'épreuve en cours (intermédiaires + final) : ils composent
+  // le `adjustMs` de sa ligne, remis à zéro à chaque épreuve.
+  const gameAdjustRef = useRef(0);
   // Le chrono est en pause pendant les transitions : temps de pause cumulé
   const pausedRef = useRef(0);
   const pauseStartRef = useRef(0);
@@ -286,6 +289,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   const addAdjust = useCallback(
     (ms: number, label: string) => {
       adjustRef.current += ms;
+      gameAdjustRef.current += ms;
       setAdjustMs(adjustRef.current);
       pushToast(ms, label);
     },
@@ -300,10 +304,14 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   };
 
   const nextGame = useCallback(
-    (line: GameLine) => {
+    (line: Omit<GameLine, 'ms' | 'adjustMs'>) => {
       const now = performance.now();
       const dureeMs = now - gameStartRef.current;
-      const ligne = { ...line, ms: Math.round(dureeMs) };
+      // Le bilan de l'épreuve est la somme de TOUS ses ajustements : ceux
+      // signalés en cours de jeu (indice, vérification, erreur…) et le final.
+      // La somme des lignes égale ainsi la réserve affichée près du chrono.
+      const ligne: GameLine = { ...line, ms: Math.round(dureeMs), adjustMs: gameAdjustRef.current };
+      gameAdjustRef.current = 0;
       setRawMs(now - startRef.current - pausedRef.current);
       const finished = lines.length + 1 === jeux.length;
       setLines((prev) => [...prev, ligne]);
@@ -317,7 +325,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   const onDone = useCallback(
     (r: GameResult) => {
       if (r.adjustMs !== 0) addAdjust(r.adjustMs, r.adjustMs < 0 ? 'Bonus !' : 'Pénalité');
-      nextGame({ id: jeu.id, nom: jeu.nom, adjustMs: r.adjustMs, detail: r.detail, status: r.status });
+      nextGame({ id: jeu.id, nom: jeu.nom, detail: r.detail, status: r.status });
     },
     [jeu, addAdjust, nextGame],
   );
@@ -326,7 +334,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     if (!skipEff) return;
     const pen = skipEff.penaliteS * 1000;
     addAdjust(pen, 'Jeu passé');
-    nextGame({ id: jeu.id, nom: jeu.nom, adjustMs: pen, detail: 'passé', status: 'skip' });
+    nextGame({ id: jeu.id, nom: jeu.nom, detail: 'passé', status: 'skip' });
   }, [skipEff, jeu, addAdjust, nextGame]);
 
   // RNG seedé par jour (ou semaine du défi) + jeu : identique pour tous les joueurs

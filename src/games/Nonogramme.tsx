@@ -161,7 +161,7 @@ export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GamePro
   // La grille étant résoluble par pure logique, sa solution est unique :
   // on peut vérifier les cases remplies contre le motif d'origine.
   function verifier() {
-    if (verrou > 0) return;
+    if (doneRef.current || verrou > 0) return;
     onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<number>();

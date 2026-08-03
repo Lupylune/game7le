@@ -143,6 +143,7 @@ export default function Sudoku({ rng, difficile, onAdjust, onDone }: GameProps) 
   }, [grid, sol, onDone]);
 
   function verifier() {
+    if (doneRef.current) return;
     onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<number>();

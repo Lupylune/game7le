@@ -166,6 +166,7 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
    * posée dès qu'une intruse la menaçait.
    */
   function verifier() {
+    if (doneRef.current) return;
     onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<number>();

@@ -147,7 +147,7 @@ export default function Paire({ rng, onAdjust, onDone }: GameProps) {
   }, [grid, sol, onDone]);
 
   function verifier() {
-    if (verrou > 0) return;
+    if (doneRef.current || verrou > 0) return;
     onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<number>();

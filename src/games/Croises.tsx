@@ -226,13 +226,14 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
 
   function revealLetter() {
     const { r, c } = sel;
-    if (!isWhite(r, c) || cells[r][c] === solution[r][c]) return;
+    if (doneRef.current || !isWhite(r, c) || cells[r][c] === solution[r][c]) return;
     onAdjust(8000, 'Lettre révélée');
     setRevealed(true);
     ecrire(r, c, solution[r][c]);
   }
 
   function verifier() {
+    if (doneRef.current) return;
     onAdjust(20000, 'Vérification');
     verifieRef.current = true;
     const w = new Set<string>();
