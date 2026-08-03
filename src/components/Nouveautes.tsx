@@ -10,7 +10,7 @@ import BadgeIcon from './BadgeIcon';
  * marque la version comme vue (mémorisée en localStorage). Bumper `VERSION`
  * réaffiche la pastille après l'ajout d'autres nouveautés.
  */
-const VERSION = 'champion-atlas-badges-pokedle';
+const VERSION = 'champion-atlas-badges-pokedle-tempo';
 const CLE = 'game7le:nouveautes-vues';
 
 function dejaVu(): boolean {
@@ -80,6 +80,17 @@ export default function Nouveautes() {
               </button>
             </div>
             <div className="nouveautes-liste">
+              <Link to="/entrainement/tempo" className="nouveaute-item" onClick={() => setOuvert(false)}>
+                <span className="nouveaute-ico">
+                  <GameIcon id="tempo" size={26} />
+                </span>
+                <span className="nouveaute-txt">
+                  <strong>Tempo</strong>
+                  <span className="muted">
+                    Un nouveau mini-jeu : cinq durées pulsent, reproduisez-les de mémoire.
+                  </span>
+                </span>
+              </Link>
               <Link to="/classement" className="nouveaute-item" onClick={() => setOuvert(false)}>
                 <span className="nouveaute-ico">
                   <SymCouronne size={26} />

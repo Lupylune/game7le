@@ -72,6 +72,7 @@ const jeux = [
   ['dactylo', '.dactylo-phrase'],
   ['echecs', '.chess-board'],
   ['pokedle', '.pokedle-board'],
+  ['tempo', '.tempo-scene'],
 ];
 for (const [id, sel] of jeux) await check(`/entrainement/${id}`, sel, `Jeu : ${id}`);
 

@@ -1,4 +1,4 @@
-import type { GameDef } from './types';
+import type { Fenetre, GameDef } from './types';
 import { seededRng, shuffle } from '../lib/rng';
 import LeMot from './LeMot';
 import Croises from './Croises';
@@ -15,6 +15,29 @@ import Dactylo from './Dactylo';
 import Echecs from './Echecs';
 import Pokedle from './Pokedle';
 import Atlas from './Atlas';
+import Tempo from './Tempo';
+
+/**
+ * Dates repères de l'historique du tirage. Le tirage d'un jour n'utilise que
+ * les jeux présents ce jour-là (`GameDef.tirage` / `GameDef.defi`), si bien
+ * qu'ajouter ou retirer un mini-jeu ne rejoue jamais les archives : les jours
+ * déjà passés gardent exactement le tirage qu'ils ont eu.
+ *
+ * Deux règles à respecter en ajoutant un jeu :
+ * 1. **l'ajouter à la fin de `JEUX`** et ne jamais réordonner les entrées
+ *    existantes — le tirage est un mélange de ce tableau, tout déplacement
+ *    changerait les tirages passés ;
+ * 2. lui donner une fenêtre `tirage.depuis` (et `defi.depuis`) qui commence
+ *    **après** la mise en ligne : le jour en cours, déjà joué par certains, ne
+ *    doit pas changer.
+ *
+ * Les jeux arrivés avant ce mécanisme (Pokédle, Atlas) sont datés du lancement,
+ * et Chromal/Atlas n'ont pas de fenêtre `defi` du tout : les tirages passés
+ * restent alors ceux qu'affiche le site aujourd'hui. Le mécanisme ne vaut donc
+ * que pour les ajouts et retraits à venir, à partir de Tempo.
+ */
+const LANCEMENT = '2026-07-01'; // ouverture du jeu (voir LANCEMENT dans Archives.tsx)
+const DEFI_LANCEMENT = '2026-07-13'; // lundi de la semaine où le défi difficile est arrivé
 
 export const JEUX: GameDef[] = [
   {
@@ -24,6 +47,8 @@ export const JEUX: GameDef[] = [
     reglesDifficile: 'Devinez le mot de 8 lettres en 6 essais maximum.',
     scoring: 'Trouvé en 1–3 essais : −15 s · 4 essais : −10 s · 5 essais : −5 s · échec : +60 s',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: LeMot,
   },
   {
@@ -33,6 +58,8 @@ export const JEUX: GameDef[] = [
     reglesDifficile: 'Remplissez la mini-grille de mots croisés — vocabulaire plus rare.',
     scoring: 'Résolu sans aide : −10 s · lettre révélée : +8 s · vérification : +20 s',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Croises,
   },
   {
@@ -41,6 +68,7 @@ export const JEUX: GameDef[] = [
     regles: '3 ★ et 3 ● par ligne et colonne, jamais 3 identiques à la suite. « = » impose l’égalité, « × » la différence.',
     scoring: 'Résolu : −10 s · vérification : +20 s (disponible après 30 s)',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
     Component: Paire,
   },
   {
@@ -50,6 +78,8 @@ export const JEUX: GameDef[] = [
     reglesDifficile: 'Chiffres 1 à 9 : une fois par ligne, colonne et bloc 3×3 — peu d’indices.',
     scoring: 'Résolu : −10 s · vérification : +20 s',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Sudoku,
   },
   {
@@ -60,6 +90,8 @@ export const JEUX: GameDef[] = [
       'Placez 8 reines : une par ligne, colonne et région colorée, jamais deux qui se touchent.',
     scoring: 'Résolu : −5 s · vérification : +20 s',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Reines,
   },
   {
@@ -68,6 +100,8 @@ export const JEUX: GameDef[] = [
     regles: 'Grille 12×12, 20 mines. Tout se déduit, aucun pari nécessaire.',
     scoring: 'Grille nettoyée : −15 s · mine touchée : de +120 s (dès le début) à +30 s (dégressif)',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Demineur,
   },
   {
@@ -78,6 +112,8 @@ export const JEUX: GameDef[] = [
       'Noircissez les cases selon les indices de chaque ligne et colonne — grille 15×15.',
     scoring: 'Résolu : −10 s · vérification : +20 s (disponible après 30 s)',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Nonogramme,
   },
   {
@@ -86,6 +122,7 @@ export const JEUX: GameDef[] = [
     regles: 'Coupez chaque forme d’un trait droit pour atteindre son ratio cible — 3 formes à la suite.',
     scoring: 'Par coupe : de −7 s (parfait) à +15 s (très raté) · une seule tentative par forme',
     skip: null,
+    tirage: { depuis: LANCEMENT },
     Component: Ratiole,
   },
   {
@@ -96,6 +133,8 @@ export const JEUX: GameDef[] = [
       'Huit lettres se révèlent une par une puis se masquent : retrouvez le mot qui les utilise toutes.',
     scoring: 'Trouvé : −8 s · +10 s par erreur ou revoir les lettres',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Melimelo,
   },
   {
@@ -106,6 +145,8 @@ export const JEUX: GameDef[] = [
       '10 niveaux : cliquez la case légèrement différente parmi les 16. Un mauvais clic = éliminé.',
     scoring: '10 niveaux : −15 s · éliminé : de +35 s (niveau 1) à −10 s (niveau 10)',
     skip: { apresS: 45, penaliteS: 60 },
+    tirage: { depuis: LANCEMENT },
+    // Pas de `defi` : la case parmi 16 tient trop de la perception pour le défi
     Component: Chromal,
   },
   {
@@ -115,6 +156,7 @@ export const JEUX: GameDef[] = [
       'Un segment dessine la forme puis s’efface : reproduisez-la de mémoire, d’un seul trait.',
     scoring: 'De −40 s (100 % de précision) à +90 s (0 %) · une seule tentative · revoir +10 s',
     skip: null,
+    tirage: { depuis: LANCEMENT },
     Component: Trace,
   },
   {
@@ -125,6 +167,8 @@ export const JEUX: GameDef[] = [
       'Recopiez la phrase (deux fois plus longue) le plus vite possible — seule la bonne lettre fait avancer.',
     scoring: 'Sans faute : −15 s · 5 fautes ou moins : −10 s · au-delà : −5 s',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Dactylo,
   },
   {
@@ -135,6 +179,8 @@ export const JEUX: GameDef[] = [
       'Un puzzle Lichess corsé : l’adversaire vient de jouer, menez l’attaque jusqu’au mat.',
     scoring: 'Mat trouvé : −15 s (davantage si plusieurs coups) · mauvais coup : +10 s · indice : +15 s',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Echecs,
   },
   {
@@ -147,6 +193,8 @@ export const JEUX: GameDef[] = [
     scoring:
       'Trouvé en 1–3 essais : −15 s · 4–5 : −10 s · 6–8 : −5 s · échec : +60 s (défi difficile : 12 essais, paliers 1–4 / 5–8 / 9–12, échec +180 s)',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
+    defi: { depuis: DEFI_LANCEMENT },
     Component: Pokedle,
   },
   {
@@ -157,7 +205,22 @@ export const JEUX: GameDef[] = [
     scoring:
       'Plus vous tombez juste, plus le bonus est grand : jusqu’à −35 s (< 100 m). Mauvaise réponse : de +2 min (validée d’emblée) à +1 min (dégressif)',
     skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: LANCEMENT },
     Component: Atlas,
+  },
+  {
+    id: 'tempo',
+    nom: 'Tempo',
+    regles:
+      'Cinq durées pulsent une à une : reproduisez chacune de mémoire en maintenant l’appui (ou la barre d’espace).',
+    reglesDifficile:
+      'Cinq durées (0,5 à 6 s) pulsent une à une : reproduisez chacune de mémoire, à l’aveugle et sans compteur.',
+    scoring:
+      'Précision moyenne des 5 durées : de −30 s (100 %) à +45 s (0 %), neutre vers 60 % · une seule tentative par durée',
+    skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: '2026-08-04' },
+    defi: { depuis: '2026-08-10' },
+    Component: Tempo,
   },
 ];
 
@@ -165,21 +228,35 @@ export const JEU_PAR_ID = new Map(JEUX.map((j) => [j.id, j]));
 
 export const JEUX_PAR_JOUR = 7;
 
-/** Les 7 épreuves du jour, tirées au sort parmi les 14 (même tirage pour tous). */
-export function jeuxDuJour(date: string): GameDef[] {
-  return shuffle(seededRng(`game7le:${date}:selection`), JEUX).slice(0, JEUX_PAR_JOUR);
+const dans = (f: Fenetre | undefined, date: string) =>
+  !!f && f.depuis <= date && (!f.retire || date < f.retire);
+
+/**
+ * Le pool du tirage quotidien tel qu'il était (ou sera) à cette date, dans
+ * l'ordre de `JEUX` : c'est lui qu'on mélange, donc un jour passé retrouve
+ * exactement le pool — et donc le tirage — qu'il a connu.
+ */
+export function jeuxDuPool(date: string): GameDef[] {
+  return JEUX.filter((j) => dans(j.tirage, date));
 }
 
-/** Jeux exclus du défi difficile : pas de variante corsée pertinente. */
-const EXCLUS_DEFI = new Set(['paire', 'ratiole', 'trace', 'chromal', 'atlas']);
+/** Pool du défi hebdomadaire difficile pour la semaine du lundi donné. */
+export function poolDefi(lundi: string): GameDef[] {
+  return JEUX.filter((j) => dans(j.defi, lundi));
+}
 
-/** Pool du défi hebdomadaire difficile (10 jeux). */
-export const JEUX_DEFI: GameDef[] = JEUX.filter((j) => !EXCLUS_DEFI.has(j.id));
+/** Les 7 épreuves du jour, tirées au sort dans le pool du jour (même tirage pour tous). */
+export function jeuxDuJour(date: string): GameDef[] {
+  return shuffle(seededRng(`game7le:${date}:selection`), jeuxDuPool(date)).slice(0, JEUX_PAR_JOUR);
+}
 
 /**
  * Les 7 épreuves du défi difficile de la semaine (identifiée par son lundi),
- * tirées au sort parmi les 10 — même tirage pour tous.
+ * tirées au sort dans le pool de cette semaine — même tirage pour tous.
  */
 export function jeuxDefiSemaine(lundi: string): GameDef[] {
-  return shuffle(seededRng(`game7le:defi:${lundi}:selection`), JEUX_DEFI).slice(0, JEUX_PAR_JOUR);
+  return shuffle(seededRng(`game7le:defi:${lundi}:selection`), poolDefi(lundi)).slice(
+    0,
+    JEUX_PAR_JOUR,
+  );
 }

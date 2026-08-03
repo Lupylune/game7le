@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { JEUX, JEU_PAR_ID } from '../games';
+import { todayStr } from '../lib/rng';
 import type { GameResult } from '../games/types';
 import { seededRng } from '../lib/rng';
 import { formatAdjust, formatMs } from '../lib/time';
@@ -16,7 +17,10 @@ export function EntrainementListe() {
         rien n'est enregistré.
       </p>
       <div className="card-grid">
-        {JEUX.map((j) => (
+        {/* Tout le catalogue encore en service, y compris un jeu qui n'entre
+            dans le tirage que dans quelques jours : on peut s'y entraîner dès
+            son arrivée. Un jeu retiré reste jouable par son URL (archives). */}
+        {JEUX.filter((j) => !j.tirage.retire || todayStr() < j.tirage.retire).map((j) => (
           <Link className="game-card" to={`/entrainement/${j.id}`} key={j.id}>
             <strong>
               <GameIcon id={j.id} /> {j.nom}

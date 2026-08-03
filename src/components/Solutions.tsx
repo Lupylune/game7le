@@ -16,8 +16,8 @@ import GameIcon, { SymCouronne } from './GameIcon';
 /**
  * Solutions des épreuves du jour, régénérées depuis le même seed que le run —
  * rien n'est stocké. Certains jeux n'ont pas de solution affichable :
- * Chromal/Tracé/Ratiole/Dactylo (rien à révéler) et Démineur (la grille dépend
- * du premier clic du joueur).
+ * Chromal/Tracé/Ratiole/Dactylo/Tempo (rien à révéler) et Démineur (la grille
+ * dépend du premier clic du joueur).
  */
 
 const norm = (w: string) => w.split('').sort().join('');

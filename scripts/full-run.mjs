@@ -48,6 +48,28 @@ async function dragAcross(extraMs = 0) {
   await forward(2500);
 }
 
+/* Tempo : 5 durées à reproduire en maintenant l'appui. On avance l'horloge
+   simulée pour laisser la pulsation se terminer, puis on maintient — la durée
+   tenue est mesurée soit par l'horloge simulée, soit par l'attente réelle
+   (selon ce que `page.clock` remplace), les deux dépassant le seuil des 200 ms
+   sous lequel l'appui ne compte pas. */
+async function tempo() {
+  await forward(6000);
+  for (let m = 0; m < 5; m++) {
+    await forward(7000); // respiration + pulsation (jusqu'à 6 s au défi)
+    const scene = page.locator('.tempo-scene', { hasText: 'à vous' });
+    await scene.waitFor({ timeout: 5000 });
+    const box = await page.locator('.tempo-scene').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.clock.fastForward(1500);
+    await page.waitForTimeout(400);
+    await page.mouse.up();
+    await forward(1600); // verdict de la manche
+  }
+  await forward(2000); // bilan des 5 manches
+}
+
 // Ratiole : trois formes à couper l'une après l'autre
 async function tripleCut() {
   await forward(6000);
@@ -76,6 +98,7 @@ const actions = {
   Pokédle: () => skip(60),
   // Atlas charge des libs/tuiles externes ; on ne joue pas, on passe.
   Atlas: () => skip(60),
+  Tempo: tempo,
 };
 
 for (let step = 0; step < 7; step++) {

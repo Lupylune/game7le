@@ -17,6 +17,18 @@ export interface GameProps {
   onDone: (r: GameResult) => void;
 }
 
+/**
+ * Fenêtre de présence d'un jeu dans un tirage, en dates AAAA-MM-JJ : de
+ * `depuis` (inclus) à `retire` (exclu ; absent = toujours présent). Le tirage
+ * d'un jour donné ne considère que les jeux présents ce jour-là : ajouter ou
+ * retirer un mini-jeu ne change donc que les tirages postérieurs, jamais les
+ * archives déjà jouées.
+ */
+export interface Fenetre {
+  depuis: string;
+  retire?: string;
+}
+
 export interface GameDef {
   id: string;
   nom: string;
@@ -25,5 +37,9 @@ export interface GameDef {
   reglesDifficile?: string;
   scoring: string; // description du barème (page « Comment jouer »)
   skip: { apresS: number; penaliteS: number } | null;
+  /** Présence dans le tirage quotidien (comparée à la date du jour joué). */
+  tirage: Fenetre;
+  /** Présence dans le pool du défi hebdo (comparée au lundi de la semaine) ; absent = jamais. */
+  defi?: Fenetre;
   Component: ComponentType<GameProps>;
 }

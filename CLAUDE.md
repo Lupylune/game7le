@@ -5,13 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Game7le — an unofficial French adaptation of [gauntle.com](https://gauntle.com): a daily challenge
-of **7 mini-games drawn at random each day out of a pool of 15**, chained under a single stopwatch.
+of **7 mini-games drawn at random each day out of a pool of 16**, chained under a single stopwatch.
 The draw and puzzles are identical for every player on a given day (seeded PRNG, no required
 backend). Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as
 possible.
 
 There is also a **weekly hard challenge** (`/defi`, « défi difficile ») : 7 games drawn from a
-10-game pool (the 15 minus Paire, Ratiole, Trace, Chromal and Atlas), played in harder variants
+dated pool (`poolDefi()`, currently 10 games — Paire, Ratiole, Trace, Chromal and Atlas have no
+`defi` window; Tempo joins on Monday 2026-08-10), played in harder variants
 via the `difficile` game prop. It is identified by the **Monday of the
 current week** (Europe/Paris) — seeds `game7le:defi:${lundi}:…` (`lundiStr()` in `src/lib/rng.ts`,
 `jeuxDefiSemaine()` in `src/games/index.ts`) — so everyone gets the same draw all week. It has its
@@ -52,8 +53,8 @@ Everything that must be "the same puzzle for everyone today" is derived from a P
 string key, via `seededRng()` in `src/lib/rng.ts` (xmur3 hash → mulberry32). This is the core
 mechanic and touches most of the app:
 
-- `jeuxDuJour(date)` in `src/games/index.ts` seeds on `game7le:${date}:selection` to shuffle the
-  14-entry `JEUX` array and take the first `JEUX_PAR_JOUR` (7) — this is the day's game order.
+- `jeuxDuJour(date)` in `src/games/index.ts` seeds on `game7le:${date}:selection` to shuffle
+  `jeuxDuPool(date)` and take the first `JEUX_PAR_JOUR` (7) — this is the day's game order.
 - Each individual game's RNG is seeded on `game7le:${date}:${jeu.id}` (see `RunPage.tsx`), so the
   puzzle content (word, grid, board…) is also fixed per day per game.
 - The fake global leaderboard (`src/lib/classement.ts`) is seeded the same way, purely for demo
@@ -63,6 +64,23 @@ mechanic and touches most of the app:
 
 When adding a new game or changing draw logic, preserve this determinism: never call
 `Math.random()` directly in game logic — always thread the `rng: RNG` prop through.
+
+**Dated pools — adding/removing a game must not rewrite past draws.** Each `GameDef` carries a
+`tirage: Fenetre` (`{ depuis, retire? }`, `AAAA-MM-JJ`, `retire` exclusive) and an optional
+`defi: Fenetre` compared against the week's Monday; `jeuxDuPool(date)` / `poolDefi(lundi)` filter
+`JEUX` on those windows, and only that filtered pool is shuffled. A past day therefore reshuffles
+the pool it actually had, so archives (and `/jouer/:date` replays) stay identical forever. Two
+rules when touching `JEUX`:
+
+1. **append only, never reorder** existing entries — the draw is a shuffle of the array, so moving
+   an entry would change past draws even with correct windows (removals must be expressed with
+   `retire`, not by deleting the entry, which also keeps `JEU_PAR_ID` able to resolve old runs);
+2. start a new game's window **after** the day it ships (the current day is already being played),
+   and its `defi` window on a following Monday.
+
+Games that predate the mechanism (Pokédle, Atlas) are dated at launch, and Chromal/Atlas simply
+have no `defi` window, so every past draw stays the one the site currently shows — the windows only
+start doing real work with Tempo (daily from 2026-08-04, weekly from Monday 2026-08-10).
 
 ### Game plugin contract
 
@@ -74,7 +92,8 @@ registered as a `GameDef` in `src/games/index.ts` (see `src/games/types.ts`):
 - `difficile?: boolean` — hard variant for the weekly challenge (Croisés rare
   vocabulary, Dactylo 24 words, Echecs higher-rated mates in 2/3, LeMot & Mélimélo 8 letters,
   Nonogramme 15×15, Reines 8×8, Sudoku 9×9 with 28 clues, Pokédle all generations over 12
-  attempts with a Génération clue column replacing Habitat and a +180 s fail penalty). **The
+  attempts with a Génération clue column replacing Habitat and a +180 s fail penalty, Tempo 0.5–6 s
+  durations held blind — no live counter). **The
   `false`/absent path must keep the
   exact same `rng` call sequence as before** so existing daily puzzles don't change when touching
   a generator. `GameDef.reglesDifficile` overrides the rules line shown during hard play.
@@ -144,8 +163,10 @@ and rejects malformed or implausible payloads with an exception (swallowed by th
 `syncRun()`): pseudo format, date within launch date…today (Europe/Paris), bounded `total_ms`,
 `lines` = exactly 7 distinct known game ids with plausible per-game durations and bounded string
 fields, and `flawless` recomputed server-side from the lines (the client flag can only remove it).
-The 15 game ids — and the 10-id hard pool used when `p_defi` — are hardcoded in the function —
-keep them in sync with `src/games/index.ts` (`JEUX` / `JEUX_DEFI`) when adding a game, and keep
+The 16 game ids — and the 11 ever eligible to the hard pool when `p_defi` — are hardcoded in the
+function; they are the whole catalogue, not a dated pool (a run is only checked against known ids,
+never against the day's draw), so keep them in sync with `src/games/index.ts` `JEUX` (adding every
+new id to both arrays, and never removing one, so old runs stay accepted), and keep
 validation thresholds loose enough to never reject a legitimate run (a false positive is silently
 lost). `submit_run()` also rate-limits by client IP (from the
 Supabase-set `x-forwarded-for` header, tracked in the RLS-private `quota_ip` table, purged after
