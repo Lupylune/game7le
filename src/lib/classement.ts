@@ -115,7 +115,7 @@ export function classementDefiSimule(
  * Les 7 dates (AAAA-MM-JJ) de la semaine calendaire (lundi→dimanche) contenant
  * `date`. Arithmétique en UTC : indépendante du fuseau du navigateur.
  */
-function datesSemaine(date: string): string[] {
+export function datesSemaine(date: string): string[] {
   const [y, m, d] = date.split('-').map(Number);
   const depuisLundi = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 0 = lundi … 6 = dimanche
   const out: string[] = [];
