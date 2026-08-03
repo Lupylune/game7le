@@ -105,6 +105,9 @@ export default function Classement() {
             ms: mesRunsSemaine.reduce((s, r) => s + r.totalMs, 0) / mesRunsSemaine.length,
             jours: mesRunsSemaine.length,
             flawless: mesRunsSemaine.every((r) => r.flawless),
+            semaine: [...mesRunsSemaine]
+              .sort((x, y) => x.date.localeCompare(y.date))
+              .map((r) => ({ date: r.date, ms: r.totalMs, flawless: r.flawless })),
             me: true,
           }
         : null

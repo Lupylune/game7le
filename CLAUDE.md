@@ -163,6 +163,12 @@ backend being configured or reachable. `RunPage.tsx` calls `syncRun()` right aft
 `src/lib/classement.ts`'s `classementJour(date, n)` reads real `runs` rows for that day (public
 SELECT, no auth needed) and falls back to the seeded fake peloton (`classementSimule`) when the
 backend is absent or nobody has played yet that day — used by `Home.tsx` and `Classement.tsx`.
+`classementSemaine(date, n)` is the weekly board (live runs of the calendar week averaged per
+pseudo, ranked by days played then average) behind `/classement?onglet=semaine` and Home's weekly
+top 5. An `Entry` carries either `lines` (per-game splits, rendered by `SplitsRun`, gated behind
+`deverrouille` since they spoil the day's puzzle) or `semaine` (per-day runs, rendered by
+`SplitsSemaine` over the full lundi→dimanche week, never gated — it only shows times);
+`LigneClassement` picks the right one.
 
 `src/lib/useHistorique.ts`'s `useHistorique(pseudo)` hook is the shared way pages read "my run
 history": it fetches by pseudo via `sync.ts`'s `fetchRunsParPseudo()` (so history follows the

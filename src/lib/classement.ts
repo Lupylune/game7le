@@ -2,6 +2,13 @@ import { seededRng, randInt, shuffle } from './rng';
 import type { GameLine } from './storage';
 import { supabase } from './supabase';
 
+/** Un run de la semaine, pour le détail dépliable du classement hebdomadaire. */
+export interface JourSemaine {
+  date: string;
+  ms: number;
+  flawless?: boolean;
+}
+
 export interface Entry {
   pseudo: string;
   ms: number;
@@ -12,6 +19,8 @@ export interface Entry {
   jours?: number;
   /** Splits par mini-jeu (runs réels uniquement — absent pour le peloton simulé). */
   lines?: GameLine[];
+  /** Détail jour par jour (classement hebdomadaire uniquement). */
+  semaine?: JourSemaine[];
 }
 
 export interface Board {
@@ -126,6 +135,7 @@ export function datesSemaine(date: string): string[] {
 
 interface RunSemaine {
   pseudo: string;
+  date: string;
   total_ms: number;
   flawless: boolean;
 }
@@ -141,18 +151,19 @@ export async function classementSemaine(date: string, n = 5): Promise<Board> {
   if (supabase) {
     const { data, error } = await supabase
       .from('runs')
-      .select('pseudo, total_ms, flawless')
+      .select('pseudo, date, total_ms, flawless')
       .eq('en_direct', true)
       .eq('defi', false)
       .in('date', dates);
     if (!error && data) {
       // en_direct est unique par (pseudo, date) : on peut cumuler sans dédoublonner.
-      const agg = new Map<string, { total: number; jours: number; flawless: number }>();
+      const agg = new Map<string, { total: number; jours: number; flawless: number; runs: JourSemaine[] }>();
       for (const r of data as RunSemaine[]) {
-        const a = agg.get(r.pseudo) ?? { total: 0, jours: 0, flawless: 0 };
+        const a = agg.get(r.pseudo) ?? { total: 0, jours: 0, flawless: 0, runs: [] };
         a.total += r.total_ms;
         a.jours += 1;
         if (r.flawless) a.flawless += 1;
+        a.runs.push({ date: r.date, ms: r.total_ms, flawless: r.flawless });
         agg.set(r.pseudo, a);
       }
       const entries: Entry[] = [...agg.entries()]
@@ -161,6 +172,7 @@ export async function classementSemaine(date: string, n = 5): Promise<Board> {
           ms: a.total / a.jours,
           jours: a.jours,
           flawless: a.jours > 0 && a.flawless === a.jours,
+          semaine: a.runs.sort((x, y) => x.date.localeCompare(y.date)),
         }))
         .sort((x, y) => (y.jours! - x.jours!) || (x.ms - y.ms))
         .slice(0, n);
@@ -188,14 +200,21 @@ export function classementSemaineSimule(
 ): { entries: Entry[]; avgMs: number; runs: number } {
   const rng = seededRng(`game7le:semaine:${datesSemaine(date)[0]}`);
   const noms = shuffle(rng, PSEUDOS).slice(0, n);
+  // Jours déjà passés de la semaine : le faux peloton ne court pas dans le futur.
+  const passes = datesSemaine(date).filter((d) => d <= date);
   let ms = randInt(rng, 85000, 105000);
   const entries: Entry[] = noms.map((pseudo, i) => {
+    // Les mieux classés ont joué tous les jours, les suivants en ont manqué un.
+    const runs: JourSemaine[] = passes
+      .slice(i < 3 || passes.length < 2 ? 0 : 1) // le lundi, tout le monde n'a qu'un jour
+      .map((d) => ({ date: d, ms: ms + randInt(rng, -12000, 12000), flawless: rng() < 0.12 }));
     const e: Entry = {
       pseudo,
-      ms,
-      jours: i < 3 ? 7 : 6,
+      ms: runs.reduce((s, r) => s + r.ms, 0) / runs.length,
+      jours: runs.length,
       badge: rng() < 0.3 ? '★' : undefined,
-      flawless: rng() < 0.12,
+      flawless: runs.every((r) => r.flawless),
+      semaine: runs,
     };
     ms += randInt(rng, 3000, i < 2 ? 8000 : 15000);
     return e;

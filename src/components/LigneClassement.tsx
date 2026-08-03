@@ -6,6 +6,7 @@ import { BadgePicto } from './BadgeIcon';
 import { parseToken } from '../lib/badges';
 import { classePodium } from '../lib/useChampion';
 import SplitsRun from './SplitsRun';
+import SplitsSemaine from './SplitsSemaine';
 
 /**
  * Ligne d'un classement (top 5 de l'accueil, classement complet). Si le run
@@ -32,8 +33,10 @@ export default function LigneClassement({
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [verrouAffiche, setVerrouAffiche] = useState(false);
-  const depliable = !!e.lines?.length;
-  const verrouille = depliable && !deverrouille;
+  const depliable = !!e.lines?.length || !!e.semaine?.length;
+  // Seuls les splits par mini-jeu sont sous verrou (ils dévoilent le défi du
+  // jour) ; le détail hebdomadaire ne montre que des temps, jamais de puzzle.
+  const verrouille = !!e.lines?.length && !deverrouille;
 
   useEffect(() => {
     if (!verrouAffiche) return;
@@ -116,6 +119,7 @@ export default function LigneClassement({
           {messageVerrou ?? 'Terminez le défi pour voir le détail des temps.'}
         </div>
       )}
+      {ouvert && !verrouille && e.semaine?.length ? <SplitsSemaine jours={e.semaine} /> : null}
       {ouvert && !verrouille && e.lines && <SplitsRun lines={e.lines} />}
     </li>
   );
