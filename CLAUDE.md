@@ -105,6 +105,14 @@ Notable mechanics:
 - The global stopwatch pauses during the 3-second transition screen shown between games (verdict
   of the previous game + countdown to the next) — `pausedRef`/`trans` track this so paused time is
   excluded from `rawMs`.
+- The stopwatch (`rawMs`) is pure elapsed time; bonuses/penalties live in a separate reserve
+  (`adjustRef`/`adjustMs`, shown next to the timer) and are only folded in via
+  `totalMs = rawMs + adjustMs`. Every adjustment goes through `addAdjust()`, which also accumulates
+  into `gameAdjustRef` — the per-game total that `nextGame()` writes as the line's `adjustMs` before
+  resetting it. So `GameLine.adjustMs` covers **both** the in-game `onAdjust` calls (hint, check,
+  penalized error) and the final `onDone` adjustment, the sum of the lines equals the run's
+  reserve, and SANS-FAUTE (`every(l => l.status === 'success' && l.adjustMs <= 0)`, recomputed
+  identically server-side) is broken by any penalized help or error.
 - `RunPage` also drives `/jouer/:date` (replay any past day) — same draw/seed logic keyed by the
   URL date instead of today — and `/defi` (`<RunPage defi />`, keyed in `App.tsx` so a daily run's
   state is never recycled), where `date` is the current week's Monday and results go through

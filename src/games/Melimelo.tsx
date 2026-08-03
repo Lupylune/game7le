@@ -103,6 +103,7 @@ export default function Melimelo({ rng, difficile, onAdjust, onDone }: GameProps
           <button
             className="btn btn-sm"
             onClick={() => {
+              if (doneRef.current) return;
               onAdjust(10000, 'Lettres revues');
               setErrors((e) => e + 1);
               setRevealIdx(0);
