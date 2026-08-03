@@ -394,6 +394,7 @@ main.content {
 /* Onglets défi du jour / défi difficile */
 .lb-tabs {
   display: flex;
+  flex-wrap: wrap; /* trois onglets : on passe à la ligne sur petit écran */
   justify-content: center;
   gap: var(--sp-2);
   margin-bottom: var(--sp-4);

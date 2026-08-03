@@ -15,13 +15,7 @@ import { usePodiumSemaine } from '../lib/useChampion';
 import { usePseudo } from '../lib/usePseudo';
 
 const TAGLINES = [
-  'Merci le C',
   'ゲーム、セット、スタート。',
-  'Regardez 86.',
-  'Mieux que TFT (peut-être pas)',
-  'Le temps que le rer b arrive',
-  'Mieux que GD (peut-être pas)',
-  'SCS ?',
 ];
 
 export default function Home() {
@@ -162,6 +156,9 @@ export default function Home() {
             <p className="global-avg">
               Moyenne de la semaine, classé par régularité.
             </p>
+            <Link to="/classement?onglet=semaine" className="see-more">
+              Voir le classement complet →
+            </Link>
           </>
         ) : (
           <ol aria-hidden className="lb-skeleton">
