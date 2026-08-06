@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import GameIcon, { SymCouronne } from './GameIcon';
+import GameIcon, { SymCouronne, SymGraphe } from './GameIcon';
 import BadgeIcon from './BadgeIcon';
 
 /**
  * Icône « Nouveautés » de la barre du haut : ouvre un popin mettant en avant les
- * dernières fonctionnalités (champion de la semaine, Atlas, Pokédle, badges).
+ * dernières fonctionnalités (statistiques, champion de la semaine, Atlas, Pokédle, badges).
  * Une pastille signale les nouveautés non encore vues ; l'ouverture du popin
  * marque la version comme vue (mémorisée en localStorage). Bumper `VERSION`
  * réaffiche la pastille après l'ajout d'autres nouveautés.
  */
-const VERSION = 'champion-atlas-badges-pokedle-tempo';
+const VERSION = 'champion-atlas-badges-pokedle-tempo-stats';
 const CLE = 'game7le:nouveautes-vues';
 
 function dejaVu(): boolean {
@@ -80,6 +80,18 @@ export default function Nouveautes() {
               </button>
             </div>
             <div className="nouveautes-liste">
+              <Link to="/statistiques" className="nouveaute-item" onClick={() => setOuvert(false)}>
+                <span className="nouveaute-ico">
+                  <SymGraphe size={26} />
+                </span>
+                <span className="nouveaute-txt">
+                  <strong>Statistiques</strong>
+                  <span className="muted">
+                    Records, moyennes et pire temps par épreuve, distribution des temps de run et
+                    courbes jour après jour — le tout comparé à vos propres chiffres.
+                  </span>
+                </span>
+              </Link>
               <Link to="/entrainement/tempo" className="nouveaute-item" onClick={() => setOuvert(false)}>
                 <span className="nouveaute-ico">
                   <GameIcon id="tempo" size={26} />

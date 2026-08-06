@@ -81,6 +81,37 @@ export function SymEtoile({ size = 14 }: { size?: number }) {
   );
 }
 
+/**
+ * Courbe de distribution sur ses axes (page Statistiques). La courbe reprend la
+ * teinte « communauté » des graphes, le repère vertical la teinte « vous ».
+ */
+export function SymGraphe({ size = 22 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden className="sym">
+      <path
+        d="M3.5 19 C6.5 19 6.5 5.5 10.5 5.5 C14.5 5.5 15 15.5 21.5 15.5 L21.5 19 Z"
+        fill="var(--chart-com)"
+        opacity="0.4"
+      />
+      <path
+        d="M3.5 19 C6.5 19 6.5 5.5 10.5 5.5 C14.5 5.5 15 15.5 21.5 15.5"
+        fill="none"
+        stroke="var(--chart-com)"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
+      <path d="M12.4 3.5 V19" stroke="var(--chart-moi)" strokeWidth="2.6" strokeLinecap="round" />
+      <path
+        d="M2.5 2.5 V21.5 H22"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Pioche (mode creuser du démineur). */
 export function SymPioche({ size = 16 }: { size?: number }) {
   return (

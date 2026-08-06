@@ -37,6 +37,16 @@
   --warning: #b57a3b;
   --error: #c04040;
   --link-accent: #6b7f46;
+  /* Graphes (page Statistiques) : bleu = la communauté, terracotta = vous.
+     Couple validé sur la surface des cartes (#e6d2c1) — bande de clarté,
+     plancher de chroma, séparation protanope/deutéranope ΔE 15,1 (25,8 en vision
+     normale) et contraste ≥ 3:1. Ne pas retoucher à l'œil. */
+  --chart-com: #0d6a99;
+  --chart-moi: #c05a3c;
+  --chart-aire: 0.22;
+  /* Lavis : une teinte plus claire et plus franche que le trait, sinon le fond
+     chaud du thème clair renvoie un gris. Le trait, lui, garde la teinte validée. */
+  --chart-aire-fond: #2f95cf;
   /* Le Mot : touche non jouée vs lettre éliminée (voir le thème sombre) */
   --lemot-touche: var(--surface-elevated);
   --lemot-touche-texte: var(--text);
@@ -59,6 +69,11 @@
   --warning: #c8924b;
   --error: #d05858;
   --link-accent: #db886f;
+  /* Graphes : mêmes teintes, remontées d'un cran pour le fond sombre (#1e2028) —
+     ΔE 15,3 sous CVD, 21,3 en vision normale, contraste ≥ 3:1. */
+  --chart-com: #4f9ecb;
+  --chart-moi: #d07a61;
+  --chart-aire: 0.14;
   /* Le Mot : en sombre, la lettre encore disponible est la plus claire et la
      lettre éliminée s'efface vers le fond (l'inverse du gris unique clair). */
   --lemot-touche: #5c6070;
@@ -359,6 +374,10 @@ main.content {
 }
 .nouveaute-ico {
   display: flex;
+  align-items: center;
+  /* Sans ça, le picto se fait écraser par le texte de la nouveauté (une image
+     SVG est compressible en flex) et finit deux fois plus petit que prévu. */
+  flex: 0 0 auto;
   color: var(--accent);
 }
 .nouveaute-txt {
@@ -1204,6 +1223,307 @@ button.skip-pill.skip-ready:active {
   color: var(--text-muted);
   min-width: 3.5em;
   text-align: right;
+}
+
+/* ===== Statistiques globales (/statistiques) ===== */
+.tris {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-size: var(--text-sm);
+  margin-bottom: var(--sp-3);
+}
+.tris .tri {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  padding: 2px var(--sp-3);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: border-color 0.15s, color 0.15s;
+}
+.tris .tri.actif {
+  color: var(--text);
+  border-color: var(--accent);
+}
+/* Le tableau par épreuve peut déborder : on le laisse défiler plutôt que
+   comprimer les colonnes au point de les rendre illisibles. */
+.table-scroll {
+  overflow-x: auto;
+  margin-bottom: var(--sp-3);
+}
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.stats-table th,
+.stats-table td {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.stats-table thead th {
+  text-align: right;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.stats-table thead th:first-child,
+.stats-table tbody th {
+  text-align: left;
+  font-family: inherit;
+}
+.stats-table tbody th {
+  font-weight: 600;
+}
+.stats-table tbody tr:last-child th,
+.stats-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.stats-table .nom {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.stats-table .sous {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.stats-table .moi,
+.stats-jeux .temps.moi {
+  color: var(--accent);
+}
+/* Répartition réussies / passées / ratées */
+.issues {
+  display: flex;
+  width: 64px;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--border);
+}
+.issues .ok {
+  background: var(--success);
+}
+.issues .skip {
+  background: var(--warning);
+}
+.issues .ko {
+  background: var(--error);
+}
+@media (max-width: 640px) {
+  /* Colonnes secondaires : sacrifiées avant de faire défiler le tableau */
+  .stats-table .opt,
+  .stats-jeux .opt {
+    display: none;
+  }
+  .stats-table {
+    font-size: 0.8rem;
+  }
+  .stats-table th,
+  .stats-table td {
+    padding: var(--sp-2);
+  }
+  /* Le libellé de l'épreuve se replie sur deux lignes : la colonne rétrécit et
+     le tableau tient sans défilement horizontal. */
+  .stats-table tbody th {
+    white-space: normal;
+  }
+}
+.stats-jeux .temps {
+  white-space: nowrap;
+}
+
+/* ===== Graphes (page Statistiques) ===== */
+.graphe {
+  margin: var(--sp-5) 0 var(--sp-6);
+}
+.graphe figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--sp-2);
+}
+.graphe .g-titre {
+  font-weight: 600;
+}
+.graphe .g-sous,
+.graphe .g-note {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.graphe .g-note {
+  margin: var(--sp-2) 0 0;
+}
+.g-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--sp-2);
+}
+.g-cle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+/* Le cadre porte l'infobulle en position absolue au-dessus du SVG. */
+.g-cadre {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-2);
+}
+.g-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.g-svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* Grille et axes : filets pleins d'un cran sur le fond, jamais en pointillés */
+.g-grille,
+.g-axe {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.g-tick,
+.g-axe-nom,
+.g-fin {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--text-muted);
+}
+.g-fin {
+  fill: var(--text);
+}
+.g-axe-nom {
+  font-family: var(--font-body);
+}
+/* Aire sous la courbe de distribution : un lavis, jamais un bloc saturé.
+   Un peu plus dense en thème clair, où le fond chaud avale le bleu. */
+.g-aire {
+  fill: var(--chart-aire-fond, var(--chart-com));
+  opacity: var(--chart-aire, 0.14);
+}
+/* Tranche survolée : simple bande de surface, la courbe reste la marque */
+.g-bande {
+  fill: var(--text);
+  opacity: 0.06;
+}
+.g-repere {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+}
+.g-repere.moi {
+  stroke: var(--chart-moi);
+  stroke-width: 2;
+}
+.g-tick.moi {
+  fill: var(--chart-moi);
+}
+/* Étiquette de repère : liseré de fond dessous, pour rester lisible quand le
+   trait tombe sur une barre (le texte garde sa couleur d'encre). */
+.g-etiq {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.g-viseur {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+}
+.g-ligne {
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  fill: none;
+}
+.g-ligne.com {
+  stroke: var(--chart-com);
+}
+.g-ligne.moi {
+  stroke: var(--chart-moi);
+}
+/* Anneau de 2 px à la couleur du fond : les points restent lisibles superposés */
+.g-point {
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+.g-point.com {
+  fill: var(--chart-com);
+}
+.g-point.moi {
+  fill: var(--chart-moi);
+}
+.g-bulle {
+  position: absolute;
+  top: var(--sp-2);
+  transform: translateX(-50%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface-elevated);
+  backdrop-filter: blur(3px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  max-width: 90%;
+}
+.g-bulle strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.g-bulle-date,
+.g-bulle-ligne {
+  color: var(--text-muted);
+}
+.g-bulle-ligne strong {
+  color: var(--text);
+}
+.g-donnees {
+  margin-top: var(--sp-3);
+  font-size: var(--text-sm);
+}
+.g-donnees summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.g-choix {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+  margin-bottom: var(--sp-2);
+}
+.g-choix select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-1) var(--sp-2);
+  font-family: inherit;
+  font-size: var(--text-sm);
 }
 
 /* ===== Solutions (écran de résultats) ===== */
