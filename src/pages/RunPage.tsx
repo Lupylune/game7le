@@ -7,10 +7,14 @@ import { formatAdjust, formatDateFr, formatMs } from '../lib/time';
 import {
   aDefiEnDirect,
   aRunEnDirect,
+  clearEnCours,
+  loadEnCours,
   loadSettings,
   saveDefi,
+  saveEnCours,
   saveRun,
   type GameLine,
+  type RunEnCours,
 } from '../lib/storage';
 import { syncRun } from '../lib/sync';
 import { useChronoVisible } from '../lib/usePseudo';
@@ -191,6 +195,14 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   // difficile (identiques pour tous)
   const jeux = useMemo(() => (defi ? jeuxDefiSemaine(date) : jeuxDuJour(date)), [date, defi]);
 
+  // Run interrompu à reprendre : même jour, même type et même tirage (sinon la
+  // sauvegarde est périmée et on repart de zéro).
+  const [reprise, setReprise] = useState<RunEnCours | null>(() => {
+    const c = loadEnCours(date, defi);
+    if (!c || c.lines.length > jeux.length) return null;
+    return c.ids.join() === jeux.map((j) => j.id).join() ? c : null;
+  });
+
   const [phase, setPhase] = useState<'intro' | 'playing' | 'results'>('intro');
   const [index, setIndex] = useState(0);
   const [lines, setLines] = useState<GameLine[]>([]);
@@ -208,6 +220,9 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   // Ajustements de l'épreuve en cours (intermédiaires + final) : ils composent
   // le `adjustMs` de sa ligne, remis à zéro à chaque épreuve.
   const gameAdjustRef = useRef(0);
+  // Temps déjà passé sur l'épreuve en cours avant une reprise (elle recommence
+  // au début, mais son compteur de passe repart de là où il en était).
+  const gameOffsetRef = useRef(0);
   // Le chrono est en pause pendant les transitions : temps de pause cumulé
   const pausedRef = useRef(0);
   const pauseStartRef = useRef(0);
@@ -266,8 +281,10 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
         setTrans({ ...trans, count: trans.count - 1 });
       } else {
         pausedRef.current += performance.now() - pauseStartRef.current;
-        gameStartRef.current = performance.now();
-        setGameElapsedS(0);
+        // `gameOffsetRef` n'est non nul qu'après une reprise : l'épreuve garde
+        // alors le temps déjà passé dessus avant l'interruption.
+        gameStartRef.current = performance.now() - gameOffsetRef.current;
+        setGameElapsedS(gameOffsetRef.current / 1000);
         setTrans(null);
       }
     }, 1000);
@@ -302,10 +319,42 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   );
 
   const start = () => {
+    // Aucune reprise en attente ici (sinon l'intro propose de reprendre), mais on
+    // repart d'une ardoise propre par sécurité.
+    clearEnCours(date, defi);
     startRef.current = performance.now();
     gameStartRef.current = performance.now();
     setPhase('playing');
     beginTransition(null, null, 0); // « Prêt ? » avant la première épreuve
+  };
+
+  /**
+   * Reprise d'un run interrompu : on restaure les épreuves bouclées, le chrono
+   * et la réserve, puis on replonge dans l'épreuve en cours — depuis son début,
+   * après le même décompte de 3 s qu'au lancement.
+   */
+  const reprendre = () => {
+    const c = reprise;
+    if (!c) return;
+    setLines(c.lines);
+    setIndex(Math.min(c.index, jeux.length - 1));
+    adjustRef.current = c.adjustMs;
+    setAdjustMs(c.adjustMs);
+    gameAdjustRef.current = c.gameAdjustMs;
+    gameOffsetRef.current = c.gameMs;
+    startRef.current = performance.now() - c.rawMs;
+    pausedRef.current = 0;
+    setRawMs(c.rawMs);
+    setGameElapsedS(c.gameMs / 1000);
+    if (c.lines.length === jeux.length) {
+      // Run bouclé mais quitté avant l'écran de résultats : on y va directement
+      // pour que le temps soit enfin enregistré.
+      setPhase('results');
+      return;
+    }
+    gameStartRef.current = performance.now() - c.gameMs;
+    setPhase('playing');
+    beginTransition(null, null, 0);
   };
 
   const nextGame = useCallback(
@@ -317,6 +366,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
       // La somme des lignes égale ainsi la réserve affichée près du chrono.
       const ligne: GameLine = { ...line, ms: Math.round(dureeMs), adjustMs: gameAdjustRef.current };
       gameAdjustRef.current = 0;
+      gameOffsetRef.current = 0;
       setRawMs(now - startRef.current - pausedRef.current);
       const finished = lines.length + 1 === jeux.length;
       setLines((prev) => [...prev, ligne]);
@@ -356,6 +406,40 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     if (phase === 'playing' && jeux.some((j) => j.id === 'atlas')) prewarmAtlas(date, defi);
   }, [phase, jeux, date, defi]);
 
+  // Sauvegarde du run en cours (chaque seconde, au démontage et à la fermeture
+  // de l'onglet) : quitter la page ne perd plus la partie. Le temps stocké est
+  // l'écoulé, donc le temps passé hors de la page ne compte pas.
+  const sauveEnCours = useCallback(() => {
+    const now = performance.now();
+    const pause = pausedRef.current + (trans ? now - pauseStartRef.current : 0);
+    saveEnCours({
+      date,
+      defi,
+      ids: jeux.map((j) => j.id),
+      index,
+      lines,
+      rawMs: Math.max(0, now - startRef.current - pause),
+      adjustMs: adjustRef.current,
+      gameAdjustMs: gameAdjustRef.current,
+      // Pendant une transition, l'épreuve suivante n'a pas encore commencé
+      gameMs: trans ? gameOffsetRef.current : Math.max(0, now - gameStartRef.current),
+      majAt: Date.now(),
+    });
+  }, [trans, date, defi, jeux, index, lines]);
+
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    sauveEnCours();
+    const t = setInterval(sauveEnCours, 1000);
+    // `pagehide` couvre la fermeture d'onglet et le retour arrière mobile
+    window.addEventListener('pagehide', sauveEnCours);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('pagehide', sauveEnCours);
+      sauveEnCours();
+    };
+  }, [phase, sauveEnCours]);
+
   const totalMs = Math.max(0, rawMs + adjustMs);
 
   // Résultats
@@ -367,6 +451,8 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   useEffect(() => {
     if (phase === 'results' && !savedRef.current && lines.length === jeux.length) {
       savedRef.current = true;
+      clearEnCours(date, defi); // le run a abouti : plus rien à reprendre
+      setReprise(null);
       const run = {
         date,
         totalMs,
@@ -425,6 +511,9 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   }, [phase, adjustMs]);
 
   if (phase === 'intro') {
+    // Run interrompu : on reprend à l'épreuve en cours plutôt que de tout refaire
+    const fini = reprise != null && reprise.lines.length === jeux.length;
+    const jeuReprise = jeux[Math.min(reprise?.index ?? 0, jeux.length - 1)];
     return (
       <div className="interstitial">
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-h2)' }}>
@@ -433,14 +522,40 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
         <p className="muted mt-4">
           {defi ? `Semaine du ${formatDateFr(date)}` : formatDateFr(date)}
         </p>
-        <p className="mt-4" style={{ maxWidth: 420, margin: 'var(--sp-4) auto 0' }}>
-          {defi
-            ? `${JEUX_PAR_JOUR} épreuves corsées tirées au sort de la semaine, enchaînées sous un seul chrono. Les bonus font gagner du temps, les pénalités en ajoutent. Prêt·e ?`
-            : `${JEUX_PAR_JOUR} épreuves tirées au sort du jour, enchaînées sous un seul chrono. Les bonus font gagner du temps, les pénalités en ajoutent. Prêt·e ?`}
-        </p>
-        <button className="btn btn-primary btn-lg mt-6" onClick={start}>
-          Lancer le chrono
-        </button>
+        {reprise ? (
+          <>
+            <p className="mt-4" style={{ maxWidth: 440, margin: 'var(--sp-4) auto 0' }}>
+              {fini ? (
+                <>
+                  Votre run est arrivé au bout mais n'a pas été enregistré : reprenez pour voir le
+                  résultat.
+                </>
+              ) : (
+                <>
+                  Vous avez un run en cours, arrêté à l'épreuve {reprise.index + 1} /{' '}
+                  {jeux.length} (<GameIcon id={jeuReprise.id} /> <strong>{jeuReprise.nom}</strong>).
+                  Elle recommencera depuis le début, mais le temps déjà écoulé
+                  {chronoVisible ? ` (${formatMs(reprise.rawMs)})` : ''} et les pénalités déjà
+                  encaissées restent comptés.
+                </>
+              )}
+            </p>
+            <button className="btn btn-primary btn-lg mt-6" onClick={reprendre}>
+              {fini ? 'Voir le résultat' : 'Reprendre le run'}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="mt-4" style={{ maxWidth: 420, margin: 'var(--sp-4) auto 0' }}>
+              {defi
+                ? `${JEUX_PAR_JOUR} épreuves corsées tirées au sort de la semaine, enchaînées sous un seul chrono. Les bonus font gagner du temps, les pénalités en ajoutent. Prêt·e ?`
+                : `${JEUX_PAR_JOUR} épreuves tirées au sort du jour, enchaînées sous un seul chrono. Les bonus font gagner du temps, les pénalités en ajoutent. Prêt·e ?`}
+            </p>
+            <button className="btn btn-primary btn-lg mt-6" onClick={start}>
+              Lancer le chrono
+            </button>
+          </>
+        )}
       </div>
     );
   }
