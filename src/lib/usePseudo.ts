@@ -19,3 +19,8 @@ export function usePseudo(): string {
 export function useBadgeChoisi(): string {
   return useSyncExternalStore(abonne, () => loadSettings().badge);
 }
+
+/** Le chrono et les bonus/malus sont-ils affichés pendant un run ? Réactif. */
+export function useChronoVisible(): boolean {
+  return useSyncExternalStore(abonne, () => loadSettings().chrono);
+}

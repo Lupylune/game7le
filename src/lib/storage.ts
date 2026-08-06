@@ -28,6 +28,9 @@ export interface Settings {
   /** Badge choisi comme picto affiché à gauche du pseudo. Token `id` ou
    *  `id:niveau` (voir `lib/badges`). Vide = aucun. */
   badge: string;
+  /** Afficher le chrono et les bonus/malus pendant un run. Masqué, on joue à
+   *  l'aveugle : le temps n'est révélé qu'à l'écran de résultats. */
+  chrono: boolean;
 }
 
 const K_RUNS = 'game7le:runs';
@@ -122,7 +125,12 @@ export function loadSettings(): Settings {
   } catch {
     /* défauts */
   }
-  return { theme: s.theme ?? 'dark', pseudo: s.pseudo ?? 'Vous', badge: s.badge ?? '' };
+  return {
+    theme: s.theme ?? 'dark',
+    pseudo: s.pseudo ?? 'Vous',
+    badge: s.badge ?? '',
+    chrono: s.chrono ?? true,
+  };
 }
 
 /** Émis à chaque enregistrement des réglages, pour que les pages déjà montées
