@@ -136,6 +136,10 @@ Notable mechanics:
   URL date instead of today — and `/defi` (`<RunPage defi />`, keyed in `App.tsx` so a daily run's
   state is never recycled), where `date` is the current week's Monday and results go through
   `saveDefi()`/`syncRun(pseudo, run, true)` instead.
+- The `Settings.chrono` toggle (« Chrono pendant le run » in `/parametres`, default on, read via the
+  reactive `useChronoVisible()` hook) only hides the display — stopwatch, adjustment toasts and the
+  transition recap's figures. Timing, penalties and SANS-FAUTE are computed exactly the same, so a
+  blind run is a normal run.
 - Results are persisted via `saveRun()` (`src/lib/storage.ts`, localStorage key `game7le:runs`),
   keeping the best time per day **and per type** (`enDirect`). Live = the **first attempt on the
   puzzle's day**; every replay — archives or same-day regrind — goes to the archive slot and never

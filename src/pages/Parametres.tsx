@@ -42,6 +42,22 @@ export default function Parametres() {
       </div>
       <div className="settings-row">
         <label>
+          Chrono pendant le run
+          <span className="hint">
+            Masqué, on joue à l'aveugle : ni chrono ni bonus/malus, le temps n'apparaît qu'aux
+            résultats.
+          </span>
+        </label>
+        <select
+          value={settings.chrono ? 'oui' : 'non'}
+          onChange={(e) => update({ chrono: e.target.value === 'oui' })}
+        >
+          <option value="oui">Affiché</option>
+          <option value="non">Masqué</option>
+        </select>
+      </div>
+      <div className="settings-row">
+        <label>
           Effacer mes données
           <span className="hint">Temps, historique et réglages (localStorage uniquement).</span>
         </label>

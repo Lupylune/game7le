@@ -13,6 +13,7 @@ import {
   type GameLine,
 } from '../lib/storage';
 import { syncRun } from '../lib/sync';
+import { useChronoVisible } from '../lib/usePseudo';
 import GameIcon, { SymEtincelle } from '../components/GameIcon';
 import { prewarmAtlas } from '../games/Atlas';
 import Solutions from '../components/Solutions';
@@ -181,6 +182,10 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   // Défi hebdomadaire difficile : identifié par le lundi de la semaine en cours
   const date = defi ? lundiStr() : params.date ?? todayStr();
   const isToday = date === todayStr();
+  // Réglage « Chrono pendant le run » : masqué, on joue à l'aveugle (pas de
+  // chrono, pas de toasts d'ajustement, pas de bilan chiffré aux transitions).
+  // Le décompte tourne toujours : seul l'affichage change.
+  const chronoVisible = useChronoVisible();
 
   // Les 7 épreuves, tirées au sort parmi les 13 du jour ou les 10 du défi
   // difficile (identiques pour tous)
@@ -492,11 +497,16 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
 
   return (
     <div>
-      {toasts.map((t) => (
-        <div key={t.id} className="toast-adjust" style={{ color: t.ms < 0 ? 'var(--success)' : 'var(--error)' }}>
-          {formatAdjust(t.ms)} · {t.label}
-        </div>
-      ))}
+      {chronoVisible &&
+        toasts.map((t) => (
+          <div
+            key={t.id}
+            className="toast-adjust"
+            style={{ color: t.ms < 0 ? 'var(--success)' : 'var(--error)' }}
+          >
+            {formatAdjust(t.ms)} · {t.label}
+          </div>
+        ))}
       <div className="run-header">
         <div>
           <div className="game-name">
@@ -506,13 +516,19 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
             Épreuve {index + 1} / {jeux.length}
           </div>
         </div>
-        <Chrono
-          startRef={startRef}
-          pausedRef={pausedRef}
-          pauseStartRef={pauseStartRef}
-          paused={!!trans}
-          adjustMs={adjustMs}
-        />
+        {/* Placeholder quand le chrono est masqué : la grille garde ses trois
+            colonnes, donc le contrôle de passe reste aligné à droite. */}
+        {chronoVisible ? (
+          <Chrono
+            startRef={startRef}
+            pausedRef={pausedRef}
+            pauseStartRef={pauseStartRef}
+            paused={!!trans}
+            adjustMs={adjustMs}
+          />
+        ) : (
+          <div />
+        )}
         <SkipControl skip={skipEff} elapsedS={gameElapsedS} paused={!!trans} onSkip={onSkip} />
       </div>
       {trans && trans.phase === 'recap' && trans.verdict && trans.line ? (
@@ -524,28 +540,30 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
             <GameIcon id={trans.line.id} /> {trans.line.nom}
           </p>
           {trans.line.detail && <p className="muted">{trans.line.detail}</p>}
-          <div className="recap-stats">
-            <div className="recap-stat">
-              <span className="recap-label">Temps sur l'épreuve</span>
-              <span className="recap-val">{formatMs(trans.dureeMs)}</span>
+          {chronoVisible && (
+            <div className="recap-stats">
+              <div className="recap-stat">
+                <span className="recap-label">Temps sur l'épreuve</span>
+                <span className="recap-val">{formatMs(trans.dureeMs)}</span>
+              </div>
+              <div className="recap-stat">
+                <span className="recap-label">
+                  {trans.line.adjustMs < 0
+                    ? 'Temps gagné'
+                    : trans.line.adjustMs > 0
+                      ? 'Temps perdu'
+                      : 'Ajustement'}
+                </span>
+                <span
+                  className={`recap-val ${
+                    trans.line.adjustMs < 0 ? 'bonus' : trans.line.adjustMs > 0 ? 'malus' : ''
+                  }`}
+                >
+                  {trans.line.adjustMs === 0 ? '—' : formatAdjust(trans.line.adjustMs)}
+                </span>
+              </div>
             </div>
-            <div className="recap-stat">
-              <span className="recap-label">
-                {trans.line.adjustMs < 0
-                  ? 'Temps gagné'
-                  : trans.line.adjustMs > 0
-                    ? 'Temps perdu'
-                    : 'Ajustement'}
-              </span>
-              <span
-                className={`recap-val ${
-                  trans.line.adjustMs < 0 ? 'bonus' : trans.line.adjustMs > 0 ? 'malus' : ''
-                }`}
-              >
-                {trans.line.adjustMs === 0 ? '—' : formatAdjust(trans.line.adjustMs)}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       ) : trans ? (
         <div className="transition">
