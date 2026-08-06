@@ -52,6 +52,7 @@ export default function Layout() {
         <Link to="/entrainement">Entraînement</Link>
         <Link to="/archives">Archives</Link>
         <Link to="/classement">Classement</Link>
+        <Link to="/statistiques">Statistiques</Link>
         <Link to="/parametres">Paramètres</Link>
       </footer>
     </div>

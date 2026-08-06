@@ -58,6 +58,16 @@ await check('/parametres', '.settings-row', 'Paramètres');
 // `.badges-grid` n'apparaît qu'avec au moins un run (sinon écran « aucun run ») ;
 // on cible le titre, toujours présent, pour tester le chargement de /profil.
 await check('/profil', '.profil-titre', 'Profil');
+// Sans run enregistré, la page affiche l'état vide (balle de foin) au lieu des
+// graphes et du tableau par épreuve (les tableaux des graphes sont repliés, donc
+// invisibles : on cible `.par-jeu`).
+await check('/statistiques', '.stats-table.par-jeu, .hay-scene', 'Statistiques');
+await check('/statistiques', '.graphe svg, .hay-scene', 'Statistiques — graphes');
+await check(
+  '/statistiques?onglet=defi',
+  '.stats-table.par-jeu, .hay-scene',
+  'Statistiques — défi difficile',
+);
 await check('/entrainement', '.game-card', 'Entraînement (liste)');
 
 const jeux = [

@@ -219,6 +219,37 @@ is unavailable, returning a `Record<date, RunPourStats>`. Used by `Home.tsx`/`Cl
 profile) still compares against the simulated peloton only, by design — it's explicitly labeled
 as an estimate in the UI.
 
+`src/lib/statsGlobales.ts` backs `/statistiques` (`Statistiques.tsx`, tab `?onglet=defi` for the
+weekly challenge): it paginates **every** live run *with its `lines`* out of Supabase and reduces
+them client-side in the pure `calculeStatsGlobales(runs, pseudo, reel)` — overview tiles (runs,
+players, average/median run, best & slowest run with author, flawless share, success/skip/fail
+rates, cumulated bonus vs penalties, fastest/hardest day) plus one row per mini-game (average,
+record, worst, per-player best average = « spécialiste », your own average/record). Per-game times
+and records only count **successful** attempts with a known `GameLine.ms` (a skipped or failed
+épreuve is not a chronometrable performance), which is why the numbers there don't match the run
+totals. With no backend it degrades to the browser's own runs and says so (`reel: false`).
+
+The same reducer also emits the chart series: `distribution` (run totals bucketed on a round step by
+`distribue()` — one minute is the finest step, and the ~26-bucket target is calibrated so the daily
+spread lands on it; a much wider spread like the weekly challenge's steps up instead of crumbling
+the curve, and the chart's subtitle always states the step in use — **plus** the smoothed `courbe` from `lisse()` — a Gaussian KDE, Silverman bandwidth
+floored at half a bucket, scaled to "runs per bucket" so curve and buckets share one y axis),
+`moiPercentileP`, and `serieRuns` / `serieParJeu` (per-day community average + your own time). They
+are drawn by `src/components/Graphes.tsx` — `CourbeDistribution` (continuous density curve à la
+humanbenchmark: 2px line + area wash, median and your-average reference rules, hovered bucket
+banded; the smoothing never replaces the raw data, the tooltip and the table give real per-bucket
+counts) and `CourbeJours` — hand-rolled inline SVG (no charting dependency). Conventions to
+preserve when touching them: **`--chart-com` (blue) is always
+the community and `--chart-moi` (terracotta) always you** — the pair is *computed*, not eyeballed
+(lightness band, chroma floor, protan/deutan ΔE ≥ 15, ≥ 3:1 on the card surface, in both themes),
+so don't hand-tune the hex values; thin marks (2px lines, r=4 dots ringed with 2px of background,
+bars ≤ 24px with a 2px background gap and a rounded top only), solid hairline grid in `--border`,
+direct labels only on series ends (with a collision guard) and reference lines, `tabular-nums` text
+in ink tokens — never in a series color. Every chart ships a hover tooltip **and** ←/→ keyboard
+browsing **and** a foldable data table, so no value is reachable by hover alone; `dimensions()`
+switches to a tighter viewBox under 640px so axis text keeps its apparent size instead of
+shrinking with the SVG.
+
 ### Content pipelines (generated, not hand-authored)
 
 `src/data/lexique.ts`, `src/data/definitions.ts`, `src/data/echecs.ts`, and `src/data/pokemon.ts`

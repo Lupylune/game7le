@@ -130,7 +130,9 @@ export default function Profil() {
       )}
 
       <p className="muted mt-6" style={{ fontSize: 'var(--text-sm)' }}>
-        Changer de pseudo ? Direction les <Link to="/parametres">paramètres</Link>.
+        Comment vous situez-vous ? Les <Link to="/statistiques">statistiques globales</Link>{' '}
+        comparent chaque épreuve à celles de tous les joueurs. Changer de pseudo ? Direction les{' '}
+        <Link to="/parametres">paramètres</Link>.
       </p>
     </div>
   );
