@@ -140,6 +140,16 @@ Notable mechanics:
   reactive `useChronoVisible()` hook) only hides the display — stopwatch, adjustment toasts and the
   transition recap's figures. Timing, penalties and SANS-FAUTE are computed exactly the same, so a
   blind run is a normal run.
+- A run interrupted mid-way (tab closed, reload, navigation) is resumable: an effect snapshots
+  progress every second — and on unmount/`pagehide` — into `game7le:encours` (`saveEnCours()`,
+  one entry per `date`+`defi` so an archive replay or the weekly challenge never clobbers the day's
+  run in progress, purged after 8 days), and the intro screen turns into « Reprendre le run » —
+  there is no way to restart the day from scratch. The snapshot is discarded once the run reaches
+  the results screen. The
+  **current épreuve restarts from scratch** (a mini-game's internal state isn't serializable) but
+  its elapsed time (`gameOffsetRef`, so the skip timer resumes where it was) and already-charged
+  penalties (`gameAdjustMs`) stay due; only elapsed time is stored, so time spent away from the page
+  is not counted. A run quit during the final recap resumes straight to `results`, which saves it.
 - Results are persisted via `saveRun()` (`src/lib/storage.ts`, localStorage key `game7le:runs`),
   keeping the best time per day **and per type** (`enDirect`). Live = the **first attempt on the
   puzzle's day**; every replay — archives or same-day regrind — goes to the archive slot and never

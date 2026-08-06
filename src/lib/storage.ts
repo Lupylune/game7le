@@ -36,6 +36,7 @@ export interface Settings {
 const K_RUNS = 'game7le:runs';
 const K_DEFIS = 'game7le:defis';
 const K_SETTINGS = 'game7le:settings';
+const K_ENCOURS = 'game7le:encours';
 
 /** Clé de stockage : une entrée par jour ET par type (direct / archive), pour
  *  qu'un meilleur temps rejoué en archive n'écrase jamais le run du jour même. */
@@ -118,6 +119,77 @@ export function saveDefi(run: RunRecord): void {
   }
 }
 
+/* ===== Run interrompu — reprise là où le joueur en était ===== */
+
+/**
+ * Instantané d'un run interrompu (onglet fermé, navigation, rechargement…),
+ * effacé dès que le run aboutit à l'écran de résultats. L'épreuve courante
+ * repart de son début (l'état interne d'un mini-jeu n'est pas sérialisable),
+ * mais le temps déjà écoulé et les pénalités déjà encaissées restent dus. Le
+ * temps passé hors de la page, lui, n'est pas compté.
+ */
+export interface RunEnCours {
+  date: string; // jour du run, ou lundi de la semaine pour le défi
+  defi: boolean;
+  /** Ids du tirage à l'enregistrement : une reprise incohérente est ignorée. */
+  ids: string[];
+  /** Index de l'épreuve en cours */
+  index: number;
+  /** Épreuves déjà bouclées */
+  lines: GameLine[];
+  /** Chrono brut écoulé (hors pauses de transition) */
+  rawMs: number;
+  /** Réserve de bonus/malus cumulée sur le run */
+  adjustMs: number;
+  /** Ajustements déjà encaissés sur l'épreuve en cours (elle recommence, mais
+   *  ils comptent toujours dans sa ligne) */
+  gameAdjustMs: number;
+  /** Temps déjà passé sur l'épreuve en cours (barème de passe) */
+  gameMs: number;
+  majAt: number;
+}
+
+/** Une sauvegarde par run (jour + type) : lancer un rejeu d'archive ou le défi
+ *  n'écrase pas le run du jour laissé en cours. */
+function cleEnCours(date: string, defi: boolean): string {
+  return `${defi ? 'defi:' : ''}${date}`;
+}
+
+/** Les sauvegardes plus vieilles que ça sont purgées (le défi court une semaine). */
+const ENCOURS_TTL_MS = 8 * 24 * 3600 * 1000;
+
+function chargeEnCours(): Record<string, RunEnCours> {
+  try {
+    const brut: Record<string, RunEnCours> = JSON.parse(localStorage.getItem(K_ENCOURS) || '{}');
+    const now = Date.now();
+    const vivants: Record<string, RunEnCours> = {};
+    for (const [k, c] of Object.entries(brut)) {
+      if (!c || !Array.isArray(c.lines) || !Array.isArray(c.ids)) continue;
+      if (now - (c.majAt ?? 0) < ENCOURS_TTL_MS) vivants[k] = c;
+    }
+    return vivants;
+  } catch {
+    return {};
+  }
+}
+
+/** Reprise disponible pour ce run (même jour, même type) ? */
+export function loadEnCours(date: string, defi: boolean): RunEnCours | null {
+  return chargeEnCours()[cleEnCours(date, defi)] ?? null;
+}
+
+export function saveEnCours(c: RunEnCours): void {
+  const tout = chargeEnCours();
+  tout[cleEnCours(c.date, c.defi)] = c;
+  localStorage.setItem(K_ENCOURS, JSON.stringify(tout));
+}
+
+export function clearEnCours(date: string, defi: boolean): void {
+  const tout = chargeEnCours();
+  delete tout[cleEnCours(date, defi)];
+  localStorage.setItem(K_ENCOURS, JSON.stringify(tout));
+}
+
 export function loadSettings(): Settings {
   let s: Partial<Settings> = {};
   try {
@@ -153,6 +225,7 @@ export function saveSettings(s: Settings): void {
 export function resetAll(): void {
   localStorage.removeItem(K_RUNS);
   localStorage.removeItem(K_DEFIS);
+  localStorage.removeItem(K_ENCOURS);
   localStorage.removeItem(K_SETTINGS);
   localStorage.removeItem('game7le:theme');
 }

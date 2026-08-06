@@ -8,7 +8,7 @@ import { classementJour, classementSemaine, type Board, type Entry } from '../li
 import { lundiStr, seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
 import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
-import { loadSettings } from '../lib/storage';
+import { loadEnCours, loadSettings } from '../lib/storage';
 import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
 import { useBadgesJoueurs } from '../lib/useBadges';
 import { usePodiumSemaine } from '../lib/useChampion';
@@ -50,6 +50,9 @@ export default function Home() {
   // Défi difficile de la semaine : temps officiel (première tentative)
   const lundi = lundiStr();
   const myDefi = useHistoriqueDefis(pseudo).find((r) => r.date === lundi && estEnDirect(r));
+  // Run laissé en cours (page quittée en pleine partie) : l'appel à l'action le dit
+  const enCours = loadEnCours(date, false);
+  const enCoursDefi = loadEnCours(lundi, true);
 
   return (
     <div>
@@ -67,7 +70,7 @@ export default function Home() {
             </div>
           ) : (
             <Link to="/jouer" className="btn btn-primary btn-lg">
-              Lancer le Game7le du jour
+              {enCours ? 'Reprendre le Game7le du jour' : 'Lancer le Game7le du jour'}
             </Link>
           )}
           <span className="hero-date">
@@ -94,7 +97,8 @@ export default function Home() {
             </div>
           ) : (
             <Link to="/defi" className="btn btn-defi">
-              <SymFlamme size={18} /> Défi difficile <SymFlamme size={18} />
+              <SymFlamme size={18} /> {enCoursDefi ? 'Reprendre le défi' : 'Défi difficile'}{' '}
+              <SymFlamme size={18} />
             </Link>
           )}
         </div>
