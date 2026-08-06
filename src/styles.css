@@ -2172,6 +2172,53 @@ input[type='text'] {
   padding: var(--sp-2) var(--sp-3);
 }
 
+/* Interrupteur d'un réglage booléen (bouton role="switch") : libellé d'état +
+   piste dont la pastille glisse à droite et prend l'accent quand c'est actif. */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.switch.actif {
+  color: var(--text);
+}
+.switch-piste {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  transition: background 0.15s, border-color 0.15s;
+}
+.switch-pastille {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s;
+}
+.switch.actif .switch-piste {
+  background: color-mix(in srgb, var(--accent) 26%, var(--surface-elevated));
+  border-color: var(--accent);
+}
+.switch.actif .switch-pastille {
+  transform: translateX(20px);
+  background: var(--accent);
+}
+
 .center {
   text-align: center;
 }
