@@ -1,13 +1,10 @@
 import { Link } from 'react-router-dom';
-import { todayStr } from '../lib/rng';
+import { LANCEMENT, todayStr } from '../lib/rng';
 import { formatDateFr, formatMs } from '../lib/time';
 import { meilleurParDate } from '../lib/stats';
 import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
 import { SymEtincelle } from '../components/GameIcon';
-
-/** Date de « lancement » de la réplique : les archives remontent jusque-là. */
-const LANCEMENT = '2026-07-01';
 
 function listDates(): string[] {
   const out: string[] = [];

@@ -29,6 +29,15 @@ export function formatLong(ms: number): string {
   return `${m} min ${String(s).padStart(2, '0')} s`;
 }
 
+export const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+/** Jour de la semaine capitalisé d'une date AAAA-MM-JJ (arithmétique en UTC). */
+export function nomJour(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const jour = JOURS[(new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7];
+  return jour.charAt(0).toUpperCase() + jour.slice(1);
+}
+
 /** Date française lisible : « dimanche 13 juillet 2026 ». */
 export function formatDateFr(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
