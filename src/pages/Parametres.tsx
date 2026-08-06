@@ -41,20 +41,26 @@ export default function Parametres() {
         />
       </div>
       <div className="settings-row">
-        <label>
+        <label id="label-chrono">
           Chrono pendant le run
           <span className="hint">
             Masqué, on joue à l'aveugle : ni chrono ni bonus/malus, le temps n'apparaît qu'aux
             résultats.
           </span>
         </label>
-        <select
-          value={settings.chrono ? 'oui' : 'non'}
-          onChange={(e) => update({ chrono: e.target.value === 'oui' })}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={settings.chrono}
+          aria-labelledby="label-chrono"
+          className={`switch${settings.chrono ? ' actif' : ''}`}
+          onClick={() => update({ chrono: !settings.chrono })}
         >
-          <option value="oui">Affiché</option>
-          <option value="non">Masqué</option>
-        </select>
+          <span className="switch-etat">{settings.chrono ? 'Affiché' : 'Masqué'}</span>
+          <span className="switch-piste" aria-hidden>
+            <span className="switch-pastille" />
+          </span>
+        </button>
       </div>
       <div className="settings-row">
         <label>
