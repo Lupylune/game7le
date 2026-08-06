@@ -2,9 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   classementDefi,
+  classementGeneral,
   classementJour,
+  classementMois,
   classementSemaine,
+  compareAgrege,
   datesSemaine,
+  DETAIL_MAX,
   type Board,
   type Entry,
 } from '../lib/classement';
@@ -18,12 +22,58 @@ import { usePseudo } from '../lib/usePseudo';
 import BalleDeFoin from '../components/BalleDeFoin';
 import LigneClassement from '../components/LigneClassement';
 
-type Onglet = 'jour' | 'semaine' | 'defi';
+type Onglet = 'jour' | 'semaine' | 'mois' | 'general' | 'defi';
 
-const ONGLETS: { id: Onglet; label: string; titre: string }[] = [
-  { id: 'jour', label: 'Défi du jour', titre: 'Classement du jour' },
-  { id: 'semaine', label: 'Semaine', titre: 'Classement de la semaine' },
-  { id: 'defi', label: 'Défi difficile', titre: 'Classement du défi difficile' },
+const ONGLETS: {
+  id: Onglet;
+  label: string;
+  titre: string;
+  /** Fin de la phrase « Classement basé sur les runs réels … ». */
+  source: string;
+  /** Invitation affichée quand on n'a pas encore couru la période. */
+  invite: string;
+  lien: string;
+}[] = [
+  {
+    id: 'jour',
+    label: 'Défi du jour',
+    titre: 'Classement du jour',
+    source: 'du jour',
+    invite: "Vous n'avez pas encore couru aujourd'hui.",
+    lien: '/jouer',
+  },
+  {
+    id: 'semaine',
+    label: 'Semaine',
+    titre: 'Classement de la semaine',
+    source: 'de la semaine',
+    invite: "Vous n'avez couru aucun jour de cette semaine.",
+    lien: '/jouer',
+  },
+  {
+    id: 'mois',
+    label: 'Mois',
+    titre: 'Classement du mois',
+    source: 'du mois',
+    invite: "Vous n'avez couru aucun jour de ce mois.",
+    lien: '/jouer',
+  },
+  {
+    id: 'general',
+    label: 'Général',
+    titre: 'Classement général',
+    source: 'depuis le lancement',
+    invite: "Vous n'avez encore jamais couru.",
+    lien: '/jouer',
+  },
+  {
+    id: 'defi',
+    label: 'Défi difficile',
+    titre: 'Classement du défi difficile',
+    source: 'du défi de la semaine',
+    invite: "Vous n'avez pas encore relevé le défi de la semaine.",
+    lien: '/defi',
+  },
 ];
 
 export default function Classement() {
@@ -32,15 +82,24 @@ export default function Classement() {
   const pseudo = usePseudo();
   const [params, setParams] = useSearchParams();
   const p = params.get('onglet');
-  const onglet: Onglet = p === 'defi' ? 'defi' : p === 'semaine' ? 'semaine' : 'jour';
+  const onglet: Onglet = ONGLETS.some((o) => o.id === p) ? (p as Onglet) : 'jour';
+  // Semaine, mois et général agrègent plusieurs jours : même règle de tri
+  // (régularité puis temps moyen) et même détail dépliable côté « moi ».
+  const agregat = onglet === 'semaine' || onglet === 'mois' || onglet === 'general';
   const semaine = useMemo(() => datesSemaine(date), [date]);
   // Seul le run en direct (première tentative du jour / de la semaine) compte.
   const historique = useHistorique(pseudo);
   const myRunJour = historique.find((r) => r.date === date && estEnDirect(r));
   const myDefi = useHistoriqueDefis(pseudo).find((r) => r.date === lundi && estEnDirect(r));
-  const mesRunsSemaine = historique.filter((r) => estEnDirect(r) && semaine.includes(r.date));
+  const mesRunsAgreges = useMemo(() => {
+    if (!agregat) return [];
+    const direct = historique.filter(estEnDirect);
+    if (onglet === 'semaine') return direct.filter((r) => semaine.includes(r.date));
+    if (onglet === 'mois') return direct.filter((r) => r.date.slice(0, 7) === date.slice(0, 7));
+    return direct;
+  }, [agregat, historique, onglet, semaine, date]);
   const myRun = onglet === 'defi' ? myDefi : myRunJour;
-  const aCouru = onglet === 'semaine' ? mesRunsSemaine.length > 0 : !!myRun;
+  const aCouru = agregat ? mesRunsAgreges.length > 0 : !!myRun;
   const [board, setBoard] = useState<Board | null>(null);
   const badges = useBadgesJoueurs(board ? board.entries.map((e) => e.pseudo) : []);
   const podium = usePodiumSemaine();
@@ -54,14 +113,18 @@ export default function Classement() {
         ? classementDefi(lundi, 100)
         : onglet === 'semaine'
           ? classementSemaine(date, 100)
-          : classementJour(date, 100);
+          : onglet === 'mois'
+            ? classementMois(date, 100)
+            : onglet === 'general'
+              ? classementGeneral(100)
+              : classementJour(date, 100);
     promesse.then((b) => vivant && setBoard(b));
     return () => {
       vivant = false;
     };
   }, [date, lundi, onglet]);
 
-  const titre = ONGLETS.find((o) => o.id === onglet)!.titre;
+  const infos = ONGLETS.find((o) => o.id === onglet)!;
 
   const onglets = (
     <div className="lb-tabs" role="tablist">
@@ -82,7 +145,7 @@ export default function Classement() {
   if (!board) {
     return (
       <div className="lb" style={{ marginTop: 0 }}>
-        <h2>{titre}</h2>
+        <h2>{infos.titre}</h2>
         {onglets}
         <ol aria-hidden className="lb-skeleton mt-4">
           {Array.from({ length: 8 }, (_, i) => (
@@ -96,53 +159,43 @@ export default function Classement() {
   let all: Entry[] = board.entries.map((e) => ({ ...e, me: e.pseudo === pseudo }));
   // Si l'utilisateur a couru mais n'apparaît pas (peloton simulé, ou sync
   // Supabase absente/échouée), on l'ajoute depuis son historique local — pour
-  // la semaine, en agrégeant ses runs comme le fait `classementSemaine()`.
-  const monEntree: Entry | null =
-    onglet === 'semaine'
-      ? mesRunsSemaine.length > 0
-        ? {
-            pseudo,
-            ms: mesRunsSemaine.reduce((s, r) => s + r.totalMs, 0) / mesRunsSemaine.length,
-            jours: mesRunsSemaine.length,
-            flawless: mesRunsSemaine.every((r) => r.flawless),
-            semaine: [...mesRunsSemaine]
-              .sort((x, y) => x.date.localeCompare(y.date))
-              .map((r) => ({ date: r.date, ms: r.totalMs, flawless: r.flawless })),
-            me: true,
-          }
-        : null
-      : myRun
-        ? { pseudo, ms: myRun.totalMs, flawless: myRun.flawless, lines: myRun.lines, me: true }
-        : null;
+  // les périodes, en agrégeant ses runs comme le font les classements agrégés.
+  const monEntree: Entry | null = agregat
+    ? mesRunsAgreges.length > 0
+      ? {
+          pseudo,
+          ms: mesRunsAgreges.reduce((s, r) => s + r.totalMs, 0) / mesRunsAgreges.length,
+          jours: mesRunsAgreges.length,
+          flawless: mesRunsAgreges.every((r) => r.flawless),
+          ...(onglet === 'semaine'
+            ? {
+                semaine: [...mesRunsAgreges]
+                  .sort((x, y) => x.date.localeCompare(y.date))
+                  .map((r) => ({ date: r.date, ms: r.totalMs, flawless: r.flawless })),
+              }
+            : {
+                periode: [...mesRunsAgreges]
+                  .sort((x, y) => x.totalMs - y.totalMs)
+                  .slice(0, DETAIL_MAX)
+                  .map((r) => ({ date: r.date, ms: r.totalMs, flawless: r.flawless })),
+              }),
+          me: true,
+        }
+      : null
+    : myRun
+      ? { pseudo, ms: myRun.totalMs, flawless: myRun.flawless, lines: myRun.lines, me: true }
+      : null;
   if (monEntree && !all.some((e) => e.me)) {
-    all = [...all, monEntree].sort(
-      onglet === 'semaine'
-        ? (x, y) => (y.jours ?? 0) - (x.jours ?? 0) || x.ms - y.ms
-        : (x, y) => x.ms - y.ms,
-    );
+    all = [...all, monEntree].sort(agregat ? compareAgrege : (x, y) => x.ms - y.ms);
   }
 
   return (
     <div className="lb" style={{ marginTop: 0 }}>
-      <h2>{titre}</h2>
+      <h2>{infos.titre}</h2>
       {onglets}
       {!aCouru && (
         <p className="note">
-          {onglet === 'defi' ? (
-            <>
-              Vous n'avez pas encore relevé le défi de la semaine.{' '}
-              <Link to="/defi">C'est par ici →</Link>
-            </>
-          ) : onglet === 'semaine' ? (
-            <>
-              Vous n'avez couru aucun jour de cette semaine.{' '}
-              <Link to="/jouer">C'est par ici →</Link>
-            </>
-          ) : (
-            <>
-              Vous n'avez pas encore couru aujourd'hui. <Link to="/jouer">C'est par ici →</Link>
-            </>
-          )}
+          {infos.invite} <Link to={infos.lien}>C'est par ici →</Link>
         </p>
       )}
       {all.length === 0 && <BalleDeFoin />}
@@ -165,11 +218,7 @@ export default function Classement() {
       {(!board.reel || all.length > 0) && (
         <p className="note">
           {board.reel
-            ? onglet === 'defi'
-              ? 'Classement basé sur les runs réels du défi de la semaine.'
-              : onglet === 'semaine'
-                ? 'Classement basé sur les runs réels de la semaine.'
-                : 'Classement basé sur les runs réels du jour.'
+            ? `Classement basé sur les runs réels ${infos.source}.`
             : "Version démo hors-ligne : les autres joueurs sont simulés (déterministes). Seul votre temps est réel."}
         </p>
       )}

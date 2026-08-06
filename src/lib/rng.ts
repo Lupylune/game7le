@@ -48,6 +48,9 @@ export function shuffle<T>(rng: RNG, arr: readonly T[]): T[] {
   return a;
 }
 
+/** Ouverture du jeu : premier jour jouable, borne basse des archives. */
+export const LANCEMENT = '2026-07-01';
+
 /** Date locale au format YYYY-MM-DD. */
 const fmtParis = new Intl.DateTimeFormat('fr-CA', {
   timeZone: 'Europe/Paris',

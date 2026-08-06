@@ -1,10 +1,8 @@
 import type { CSSProperties } from 'react';
 import type { JourSemaine } from '../lib/classement';
 import { datesSemaine } from '../lib/classement';
-import { formatMs } from '../lib/time';
+import { formatMs, JOURS } from '../lib/time';
 import { SymEtincelle } from './GameIcon';
-
-const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
 /**
  * Détail jour par jour d'une entrée du classement hebdomadaire : les 7 jours de

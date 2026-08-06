@@ -1,5 +1,5 @@
 import type { Fenetre, GameDef } from './types';
-import { seededRng, shuffle } from '../lib/rng';
+import { LANCEMENT, seededRng, shuffle } from '../lib/rng';
 import LeMot from './LeMot';
 import Croises from './Croises';
 import Paire from './Paire';
@@ -36,7 +36,6 @@ import Tempo from './Tempo';
  * restent alors ceux qu'affiche le site aujourd'hui. Le mécanisme ne vaut donc
  * que pour les ajouts et retraits à venir, à partir de Tempo.
  */
-const LANCEMENT = '2026-07-01'; // ouverture du jeu (voir LANCEMENT dans Archives.tsx)
 const DEFI_LANCEMENT = '2026-07-13'; // lundi de la semaine où le défi difficile est arrivé
 
 export const JEUX: GameDef[] = [
