@@ -150,6 +150,119 @@ h3 {
   display: flex;
   flex-direction: column;
 }
+
+/* ===== Braises de fond (composant Braises, monté par le Layout) =====
+   Couche fixe en z-index négatif : elle se peint au-dessus du fond de page
+   (propagé de body au canvas) mais sous tout le contenu, sans avoir à empiler
+   quoi que ce soit dans .page.
+
+   Trois mouvements superposés pour que ça vive sans se répéter : la montée
+   (élément externe, linéaire, sur toute la durée), la dérive latérale et le
+   scintillement (élément interne, sur des cycles plus courts et déphasés).
+
+   `.braises-on` (accueil) allume, son retrait éteint. Le fondu passe par
+   `filter` et non par `opacity` : les deux opacités sont déjà pilotées par des
+   keyframes, et une animation gagne toujours contre une transition. */
+.braises {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  /* une fois toutes les braises éteintes, plus rien à peindre (le délai couvre
+     le fondu le plus tardif : 1,8 s de retard + 1,6 s de transition) */
+  visibility: hidden;
+  transition: visibility 0s linear 3.4s;
+}
+.braises-on {
+  visibility: visible;
+  transition-delay: 0s;
+}
+.braise {
+  position: absolute;
+  bottom: -8vh;
+  animation: braise-monte linear infinite;
+  will-change: transform;
+}
+.braise-i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  /* cœur incandescent qui se dilue en halo */
+  background: radial-gradient(circle, var(--braise-coeur) 0%, var(--braise-bord) 55%, transparent 78%);
+  box-shadow: 0 0 6px 1px var(--braise-halo);
+  animation: braise-derive ease-in-out infinite alternate, braise-scintille ease-in-out infinite
+    alternate;
+  will-change: transform, opacity;
+  /* éteinte par défaut : elle refroidit (brightness) en même temps qu'elle
+     s'efface, et chaque braise a son propre retard (--fondu) */
+  filter: opacity(0) brightness(0.3);
+  transition: filter 1.6s ease var(--fondu);
+}
+.braises-on .braise-i {
+  filter: opacity(1) brightness(1);
+}
+.braise-t1 {
+  --braise-coeur: color-mix(in srgb, var(--accent) 85%, #fff);
+  --braise-bord: var(--accent);
+  --braise-halo: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.braise-t2 {
+  --braise-coeur: color-mix(in srgb, var(--warning) 80%, #fff);
+  --braise-bord: var(--warning);
+  --braise-halo: color-mix(in srgb, var(--warning) 35%, transparent);
+}
+/* En thème clair, un cœur éclairci s'efface dans le fond beige : on garde la
+   teinte pleine et on assombrit le bord au lieu de compter sur le halo. */
+:root[data-theme='light'] .braise-t1 {
+  --braise-coeur: var(--accent);
+  --braise-bord: color-mix(in srgb, var(--accent) 65%, #7a2f14);
+}
+:root[data-theme='light'] .braise-t2 {
+  --braise-coeur: var(--warning);
+  --braise-bord: color-mix(in srgb, var(--warning) 65%, #7a4a14);
+}
+/* Montée + cycle de vie : la braise s'allume en bas, refroidit avant le haut. */
+@keyframes braise-monte {
+  from {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  70% {
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(-112dvh);
+    opacity: 0;
+  }
+}
+@keyframes braise-derive {
+  from {
+    transform: translateX(calc(var(--derive) * -1)) scale(1);
+  }
+  to {
+    transform: translateX(var(--derive)) scale(0.8);
+  }
+}
+@keyframes braise-scintille {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Décor pur : on l'enlève complètement plutôt que de le figer à mi-course
+   (la règle globale plus bas coupe les animations sans repositionner). */
+@media (prefers-reduced-motion: reduce) {
+  .braises {
+    display: none;
+  }
+}
 .top-bar {
   display: flex;
   justify-content: space-between;
