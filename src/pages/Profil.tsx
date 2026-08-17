@@ -4,7 +4,8 @@ import { calculeStats, estEnDirect, statsParJeu, formatHeures, formatDateCourte 
 import { rangsReels } from '../lib/classement';
 import { useHistorique } from '../lib/useHistorique';
 import { classePodium, usePodiumSemaine } from '../lib/useChampion';
-import { usePseudo, useBadgeChoisi } from '../lib/usePseudo';
+import { usePseudo } from '../lib/usePseudo';
+import { useBadgeEpingle } from '../lib/useBadges';
 import GameIcon, { SymFlamme } from '../components/GameIcon';
 import { BadgePicto } from '../components/BadgeIcon';
 import BadgesGrille from '../components/BadgesGrille';
@@ -23,7 +24,7 @@ function Tuile({ label, valeur, sous }: { label: string; valeur: React.ReactNode
 
 export default function Profil() {
   const pseudo = usePseudo();
-  const badge = useBadgeChoisi();
+  const badge = useBadgeEpingle(pseudo);
   const podium = usePodiumSemaine();
   // Seuls les runs joués le jour même comptent — pas les archives rejouées.
   const runsLive = useHistorique(pseudo).filter(estEnDirect);

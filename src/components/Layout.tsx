@@ -1,7 +1,7 @@
 import { Link, Outlet } from 'react-router-dom';
 import { loadSettings, saveSettings } from '../lib/storage';
 import { usePseudo } from '../lib/usePseudo';
-import { useRestaureBadge } from '../lib/useBadges';
+import { useBadgeEpingle } from '../lib/useBadges';
 import Nouveautes from './Nouveautes';
 import PseudoModal from './PseudoModal';
 
@@ -12,8 +12,9 @@ function toggleTheme() {
 }
 
 export default function Layout() {
-  // Restaure le badge épinglé au pseudo depuis le serveur (nouvel appareil).
-  useRestaureBadge(usePseudo());
+  // Charge le badge épinglé au pseudo depuis le serveur dès l'ouverture de
+  // l'app (la BDD fait foi ; les pages qui l'affichent partagent ce store).
+  useBadgeEpingle(usePseudo());
   return (
     <div className="page">
       <PseudoModal />

@@ -14,9 +14,8 @@ import {
 } from '../lib/classement';
 import { lundiStr, todayStr } from '../lib/rng';
 import { estEnDirect } from '../lib/stats';
-import { loadSettings } from '../lib/storage';
 import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
-import { useBadgesJoueurs } from '../lib/useBadges';
+import { useBadgeEpingle, useBadgesJoueurs } from '../lib/useBadges';
 import { usePodiumSemaine } from '../lib/useChampion';
 import { usePseudo } from '../lib/usePseudo';
 import BalleDeFoin from '../components/BalleDeFoin';
@@ -103,7 +102,7 @@ export default function Classement() {
   const [board, setBoard] = useState<Board | null>(null);
   const badges = useBadgesJoueurs(board ? board.entries.map((e) => e.pseudo) : []);
   const podium = usePodiumSemaine();
-  const monBadge = loadSettings().badge;
+  const monBadge = useBadgeEpingle(pseudo);
 
   useEffect(() => {
     let vivant = true;
