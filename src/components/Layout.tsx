@@ -2,6 +2,7 @@ import { Link, Outlet } from 'react-router-dom';
 import { loadSettings, saveSettings } from '../lib/storage';
 import { usePseudo } from '../lib/usePseudo';
 import { useBadgeEpingle } from '../lib/useBadges';
+import Braises from './Braises';
 import Nouveautes from './Nouveautes';
 import PseudoModal from './PseudoModal';
 
@@ -17,6 +18,7 @@ export default function Layout() {
   useBadgeEpingle(usePseudo());
   return (
     <div className="page">
+      <Braises />
       <PseudoModal />
       <header className="top-bar">
         <Link to="/" style={{ fontFamily: 'var(--font-display)', textDecoration: 'none', color: 'var(--accent)', fontSize: '1.1rem' }}>
