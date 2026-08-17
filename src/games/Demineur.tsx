@@ -90,6 +90,20 @@ function solvable(mines: boolean[], start: number): boolean {
   return open.filter(Boolean).length === N * N - MINES;
 }
 
+/**
+ * Case de départ, tirée au sort mais identique pour tous : c'est elle qui fixe
+ * la grille (les mines sont placées autour d'elle, et la solvabilité est
+ * vérifiée depuis elle), donc tout le monde déminera exactement les mêmes 20
+ * mines. Elle est marquée dans la grille et le premier coup doit s'y faire —
+ * sinon le placement dépendrait de l'endroit cliqué, comme avant.
+ * Tirée hors des deux rangs de bord : l'ouverture initiale y est plus large.
+ */
+function caseDepart(rng: RNG): number {
+  const r = 2 + Math.floor(rng() * (N - 4));
+  const c = 2 + Math.floor(rng() * (N - 4));
+  return r * N + c;
+}
+
 function placeMines(rng: RNG, start: number): boolean[] {
   const safe = new Set([start, ...neighbors(start)]);
   const candidates = Array.from({ length: N * N }, (_, i) => i).filter((i) => !safe.has(i));
@@ -107,15 +121,19 @@ function placeMines(rng: RNG, start: number): boolean[] {
 type CellState = 'hidden' | 'open' | 'flag';
 
 export default function Demineur({ rng, onDone }: GameProps) {
-  const [mines, setMines] = useState<boolean[] | null>(null);
+  // Grille tirée au montage (et non au premier clic) : elle ne dépend plus de
+  // ce que le joueur touche, elle est donc la même pour tout le monde.
+  const { depart, mines } = useMemo(() => {
+    const d = caseDepart(rng);
+    return { depart: d, mines: placeMines(rng, d) };
+  }, [rng]);
   const adj = useMemo(
-    () =>
-      mines
-        ? Array.from({ length: N * N }, (_, i) => neighbors(i).filter((n) => mines[n]).length)
-        : null,
+    () => Array.from({ length: N * N }, (_, i) => neighbors(i).filter((n) => mines[n]).length),
     [mines],
   );
   const [states, setStates] = useState<CellState[]>(() => new Array(N * N).fill('hidden'));
+  /** La case de départ est creusée : la grille s'ouvre au reste des clics. */
+  const commence = states[depart] === 'open';
   const [mode, setMode] = useState<'dig' | 'flag'>('dig');
   const [boom, setBoom] = useState<number | null>(null);
   const doneRef = useRef(false);
@@ -167,14 +185,11 @@ export default function Demineur({ rng, onDone }: GameProps) {
 
   function onCell(i: number, flagAction: boolean) {
     if (doneRef.current) return;
-    let m = mines;
-    let a = adj;
-    if (!m) {
-      if (flagAction) return;
-      m = placeMines(rng, i);
-      a = Array.from({ length: N * N }, (_, k) => neighbors(k).filter((n) => m![n]).length);
-      setMines(m);
-    }
+    // Tant que la case de départ n'est pas creusée, elle seule répond : la
+    // grille est garantie sûre et déductible depuis là, pas d'ailleurs.
+    if (!commence && (i !== depart || flagAction)) return;
+    const m = mines;
+    const a = adj;
     setStates((prev) => {
       const st = prev.slice();
       if (flagAction) {
@@ -203,8 +218,11 @@ export default function Demineur({ rng, onDone }: GameProps) {
         {states.map((s, i) => (
           <div
             key={i}
-            className={`cell ${s === 'open' ? 'open' : ''} ${boom === i ? 'boom' : ''}`}
-            style={s === 'open' && adj && !mines?.[i] && adj[i] > 0 ? { color: MS_COLORS[adj[i]] } : undefined}
+            className={`cell ${s === 'open' ? 'open' : ''} ${boom === i ? 'boom' : ''} ${
+              !commence && i === depart ? 'ms-depart' : ''
+            }`}
+            style={s === 'open' && !mines[i] && adj[i] > 0 ? { color: MS_COLORS[adj[i]] } : undefined}
+            title={!commence && i === depart ? 'Commencez par cette case' : undefined}
             onClick={() => onCell(i, mode === 'flag' && s !== 'open')}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -216,7 +234,11 @@ export default function Demineur({ rng, onDone }: GameProps) {
                 <SymDrapeau />
               </span>
             ) : s === 'open' ? (
-              mines?.[i] ? <SymMine size={16} /> : adj && adj[i] > 0 ? adj[i] : ''
+              mines[i] ? <SymMine size={16} /> : adj[i] > 0 ? adj[i] : ''
+            ) : !commence && i === depart ? (
+              <svg className="ms-croix" viewBox="0 0 24 24" aria-hidden>
+                <path d="M4 4 L20 20 M20 4 L4 20" />
+              </svg>
             ) : (
               ''
             )}
@@ -229,7 +251,9 @@ export default function Demineur({ rng, onDone }: GameProps) {
           {mode === 'dig' ? 'creuser' : 'drapeau'}
         </button>
         <span className="muted" style={{ fontSize: 'var(--text-sm)', alignSelf: 'center' }}>
-          {MINES - states.filter((s) => s === 'flag').length} mines restantes · clic droit = drapeau
+          {commence
+            ? `${MINES - states.filter((s) => s === 'flag').length} mines restantes · clic droit = drapeau`
+            : 'Creusez la case marquée pour ouvrir la grille'}
         </span>
       </div>
     </div>
