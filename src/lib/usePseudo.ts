@@ -15,11 +15,6 @@ export function usePseudo(): string {
   return useSyncExternalStore(abonne, () => loadSettings().pseudo);
 }
 
-/** Badge épinglé courant (token), réactif comme `usePseudo`. */
-export function useBadgeChoisi(): string {
-  return useSyncExternalStore(abonne, () => loadSettings().badge);
-}
-
 /** Le chrono et les bonus/malus sont-ils affichés pendant un run ? Réactif. */
 export function useChronoVisible(): boolean {
   return useSyncExternalStore(abonne, () => loadSettings().chrono);

@@ -1,8 +1,5 @@
 import { Link } from 'react-router-dom';
-import { loadSettings, saveSettings } from '../lib/storage';
-import { syncBadge } from '../lib/sync';
-import { useBadgeChoisi } from '../lib/usePseudo';
-import { useBadges } from '../lib/useBadges';
+import { choisisBadge, useBadgeEpingle, useBadges } from '../lib/useBadges';
 import { NIVEAUX, tokenBadge, type EtatBadge, type Niveau } from '../lib/badges';
 import BadgeIcon, { couleurNiveau } from './BadgeIcon';
 
@@ -41,15 +38,13 @@ function progression(e: EtatBadge): string {
  */
 export default function BadgesGrille({ pseudo }: { pseudo: string }) {
   const etats = useBadges(pseudo);
-  const choix = useBadgeChoisi();
+  const choix = useBadgeEpingle(pseudo);
   const nbDebloques = etats.filter((e) => e.debloque).length;
 
   function choisir(e: EtatBadge) {
     if (!e.debloque) return;
     const token = tokenBadge(e.def.id, e.niveau);
-    const prochain = choix === token ? '' : token; // re-clic = retirer le picto
-    saveSettings({ ...loadSettings(), badge: prochain });
-    syncBadge(pseudo, prochain);
+    choisisBadge(pseudo, choix === token ? '' : token); // re-clic = retirer le picto
   }
 
   return (

@@ -8,9 +8,9 @@ import { classementJour, classementSemaine, type Board, type Entry } from '../li
 import { lundiStr, seededRng, todayStr, pick } from '../lib/rng';
 import { formatLong, formatMs } from '../lib/time';
 import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
-import { loadEnCours, loadSettings } from '../lib/storage';
+import { loadEnCours } from '../lib/storage';
 import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
-import { useBadgesJoueurs } from '../lib/useBadges';
+import { useBadgeEpingle, useBadgesJoueurs } from '../lib/useBadges';
 import { usePodiumSemaine } from '../lib/useChampion';
 import { usePseudo } from '../lib/usePseudo';
 
@@ -37,7 +37,7 @@ export default function Home() {
     ...(semaine?.entries ?? []),
   ].map((e) => e.pseudo));
   const podium = usePodiumSemaine();
-  const monBadge = loadSettings().badge;
+  const monBadge = useBadgeEpingle(pseudo);
   const avecBadge = (e: Entry): Entry => ({
     ...e,
     badge: e.pseudo === pseudo ? monBadge || undefined : badges[e.pseudo] ?? e.badge,
