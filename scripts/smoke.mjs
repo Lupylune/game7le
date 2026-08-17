@@ -115,17 +115,27 @@ try {
   console.log('✗ Défi difficile — la première épreuve ne démarre pas', errors.join(' | '));
 }
 
-// Interactions rapides : sudoku (clic + pavé), démineur (premier clic génère)
+// Interactions rapides : sudoku (clic + pavé), démineur (case de départ imposée)
 await page.goto(BASE + '/entrainement/sudoku', { waitUntil: 'networkidle' });
 await page.waitForSelector('.sudoku-grid .cell');
 const givens = await page.locator('.sudoku-grid .cell.given').count();
 console.log(givens >= 10 && givens <= 20 ? `✓ Sudoku : ${givens} indices` : `✗ Sudoku : ${givens} indices (attendu ~14)`);
 
 await page.goto(BASE + '/entrainement/demineur', { waitUntil: 'networkidle' });
-await page.click('.ms-grid .cell >> nth=66');
+await page.waitForSelector('.ms-grid .cell.ms-depart');
+// Un clic ailleurs qu'à la case marquée ne doit rien ouvrir
+await page.click('.ms-grid .cell >> nth=0');
+await page.waitForTimeout(200);
+const avant = await page.locator('.ms-grid .cell.open').count();
+if (avant === 0) console.log('✓ Démineur : la grille reste fermée hors de la case de départ');
+else {
+  failures++;
+  console.log(`✗ Démineur : ${avant} cases ouvertes avant le clic sur la case de départ`);
+}
+await page.click('.ms-grid .cell.ms-depart');
 await page.waitForTimeout(300);
 const open = await page.locator('.ms-grid .cell.open').count();
-console.log(open > 5 ? `✓ Démineur : ${open} cases ouvertes après le premier clic` : `✗ Démineur : ${open} cases ouvertes`);
+console.log(open > 5 ? `✓ Démineur : ${open} cases ouvertes après le clic sur la case de départ` : `✗ Démineur : ${open} cases ouvertes`);
 
 await browser.close();
 console.log(failures ? `\n${failures} ÉCHEC(S)` : '\nTOUT EST VERT');

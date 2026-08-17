@@ -96,7 +96,8 @@ export const JEUX: GameDef[] = [
   {
     id: 'demineur',
     nom: 'Démineur',
-    regles: 'Grille 12×12, 20 mines. Tout se déduit, aucun pari nécessaire.',
+    regles:
+      'Grille 12×12, 20 mines. Creusez la case marquée en premier : la grille est la même pour tous. Tout se déduit ensuite, aucun pari nécessaire.',
     scoring: 'Grille nettoyée : −15 s · mine touchée : de +120 s (dès le début) à +30 s (dégressif)',
     skip: { apresS: 45, penaliteS: 90 },
     tirage: { depuis: LANCEMENT },
