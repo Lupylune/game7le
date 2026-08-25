@@ -260,9 +260,19 @@ lexique` / `npm run echecs` / `npm run pokemon` rather than editing directly:
   solutions/dictionary in 5 and 8 letters, Mélimélo anagram targets in 6 and 8, Croisés crossword
   vocabulary) filtered by frequency and cleanliness. The Croisés pool is split by frequency:
   `CROISES5` (common words, daily grids) vs `CROISES5_RARE` (rarer words, hard-challenge grids).
-- `scripts/build-defs.mjs` fetches French Wiktionary definitions (batched, cached, resumable) for
-  both Croisés pools, used as crossword clues; `src/lib/croisesgen.ts` assembles actual 5×5
-  grids from that word+clue pool at runtime (via the seeded RNG), not from a fixed grid set.
+- `scripts/build-defs.mjs` derives the crossword clues of both Croisés pools from the
+  wiktextract dump of the French Wiktionary (kaikki.org, ~366 MB gzipped, cached in `/tmp`), which
+  exposes **every** sense of a lemma as plain text. Rather than taking the page's first definition,
+  it scores all senses — and the prefixes obtained by cutting them at safe syntactic boundaries —
+  to pick the shortest self-contained wording of the word's *main* sense (homograph entries are
+  ranked by translation count, since the dump's own order is not by prominence), then masks the
+  answer inside its own clue. `src/lib/croisesgen.ts` assembles actual 5×5 grids from that
+  word+clue pool at runtime (via the seeded RNG), not from a fixed grid set.
+  **The set of keys in `DEFS5` is frozen**: `croisesgen.ts` builds its grids from
+  `CROISES5 ∩ DEFS5`, so adding or removing a word would reshuffle every past day's grid. The
+  script therefore keeps exactly the previously published key set (a word whose senses are all
+  rejected keeps its old clue) and only reports the words it could add; `--elargir` lifts that,
+  and must be treated like a pool change.
 - `scripts/build-echecs.mjs` pulls a byte-range slice of the Lichess puzzle database (CC0),
   filtering to no-promotion, rated mate puzzles: `PUZZLES` (mates in 1–2, 700–1600 Elo, daily) and
   `PUZZLES_DIFFICILES` (mates in 2 at 1600–2400 Elo plus mates in 3, hard challenge).
