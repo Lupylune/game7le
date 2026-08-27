@@ -14,6 +14,11 @@
   --font-body: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Chivo Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --font-display: 'Rubik Mono One', 'Impact', sans-serif;
+  /* Rubik Mono One est une display à chasse fixe : son espace a la même avance
+     qu'une capitale, ce qui creuse des trous entre les mots (« LE  GAME7LE  DU
+     JOUR », « PRÊT·E  ? »). On la resserre partout où la fonte porte plus d'un
+     mot — appliqué par sélecteur, faute de pouvoir cibler une famille en CSS. */
+  --display-mots: -0.34em;
   --text-sm: 0.875rem;
   --text-body: clamp(15px, 1rem, 17px);
   --text-h2: clamp(1.5rem, 2.5vw, 2rem);
@@ -82,6 +87,17 @@
   --lemot-absent-texte: #d5d5d5a6;
 }
 :root {
+  /* Reflet doré du podium, réutilisé par la célébration SANS-FAUTE. Teintes
+     d'origine, indépendantes du thème. Extrémités identiques (#f29028) : les
+     tuiles se raccordent sans couture. */
+  --podium-or: linear-gradient(
+    90deg,
+    #f29028 0%,
+    #fcd040 30%,
+    #fffaf0 50%,
+    #fcd040 70%,
+    #f29028 100%
+  );
   --wordle-correct: #3a7e5e;
   --wordle-present: #b57a3b;
   --wordle-absent: #7a7a7a66;
@@ -298,6 +314,25 @@ main.content {
   margin: 0 auto;
   padding: var(--sp-4) var(--sp-4) var(--sp-7);
 }
+/* Entrée de page : court et discret, juste de quoi que la navigation ne soit
+   pas un saut sec. Le conteneur doit rester transparent au layout, sans quoi il
+   casserait le centrage des interstitiels et les hauteurs en pourcentage. */
+.page-entree {
+  display: contents;
+}
+main.content > .page-entree > * {
+  animation: page-in 0.18s ease-out both;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 .footer {
   display: flex;
   flex-wrap: wrap;
@@ -510,6 +545,7 @@ main.content {
 }
 .nouveaute-txt strong {
   font-family: var(--font-display);
+  word-spacing: var(--display-mots);
   font-size: var(--text-sm);
 }
 .nouveaute-txt .muted {
@@ -658,14 +694,7 @@ main.content {
   /* Gradient horizontal aux extrémités identiques (#f29028) : les tuiles se
      raccordent sans couture. Déplacement d'exactement une tuile (200 %) par
      cycle → boucle parfaite du reflet. */
-  background-image: linear-gradient(
-    90deg,
-    #f29028 0%,
-    #fcd040 30%,
-    #fffaf0 50%,
-    #fcd040 70%,
-    #f29028 100%
-  );
+  background-image: var(--podium-or);
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -961,12 +990,22 @@ button.skip-pill.skip-ready:active {
     transform: translate(-50%, -10px);
   }
 }
+/* Les écrans d'attente d'un run (intro, reprise) prennent la hauteur libre et
+   se centrent dedans : c'est le temps fort de l'app, pas un entête tassé en
+   haut d'une page vide. `safe` pour qu'un contenu plus haut que la place
+   disponible déborde vers le bas plutôt que d'être rogné en haut ; les
+   navigateurs qui ignorent le mot-clé retombent sur l'ancrage en haut. */
+main.content:has(.interstitial) {
+  display: grid;
+  align-content: safe center;
+}
 .interstitial {
   text-align: center;
   padding: var(--sp-7) 0;
 }
 .interstitial h2 {
   font-size: var(--text-h1);
+  word-spacing: var(--display-mots);
 }
 
 /* ===== Transition entre épreuves ===== */
@@ -977,9 +1016,15 @@ button.skip-pill.skip-ready:active {
   flex-direction: column;
   align-items: center;
   gap: var(--sp-3);
+  /* Écran vu six fois par run : il occupe la place laissée sous l'entête et se
+     centre dedans, au lieu de flotter en haut d'un grand vide. Le plafond en
+     rem évite qu'un très grand écran étire la transition à l'excès. */
+  min-height: min(58vh, 30rem);
+  justify-content: safe center;
 }
 .transition .verdict {
   font-family: var(--font-display);
+  word-spacing: var(--display-mots);
   font-size: var(--text-h1);
   animation: verdict-in 0.35s ease-out both;
 }
@@ -1028,6 +1073,7 @@ button.skip-pill.skip-ready:active {
 }
 .transition .recap-jeu {
   font-family: var(--font-display);
+  word-spacing: var(--display-mots);
   font-size: var(--text-h3);
 }
 .transition .recap-jeu .gicon {
@@ -1069,6 +1115,10 @@ button.skip-pill.skip-ready:active {
   max-width: 560px;
   margin: 0 auto;
   text-align: center;
+}
+.results h1,
+.results .verdict {
+  word-spacing: var(--display-mots);
 }
 .results .total {
   font-family: var(--font-mono);
@@ -1129,6 +1179,74 @@ button.skip-pill.skip-ready:active {
 .flawless {
   font-size: 1.2rem;
   margin: var(--sp-3) 0;
+}
+/* SANS-FAUTE : l'accomplissement rare du jeu (8 % des runs) s'affichait en
+   texte plat, sous un chrono lui-même animé. Il reçoit la braise du logotype et
+   un reflet qui balaie le mot **une seule fois** — une célébration, pas un
+   clignotant. Les étincelles éclosent ensuite, décalées, pour que la séquence
+   se lise. Le bloc `prefers-reduced-motion` global neutralise le mouvement ;
+   le dégradé reste, ce n'en est pas. */
+.results .flawless {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-3) auto;
+  animation: flawless-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both;
+}
+.results .flawless .texte {
+  /* Mêmes teintes que le reflet du podium : elles sont déjà calibrées pour
+     rester lisibles sur le fond des deux thèmes. */
+  background-image: var(--podium-or);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: flawless-reflet 1.5s ease-out 0.9s both;
+}
+.results .flawless > .sym {
+  animation: flawless-etincelle 0.45s ease-out both;
+}
+.results .flawless > .sym:first-child {
+  animation-delay: 0.7s;
+}
+.results .flawless > .sym:last-child {
+  animation-delay: 0.85s;
+}
+@keyframes flawless-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes flawless-reflet {
+  from {
+    background-position: 220% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@keyframes flawless-etincelle {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-25deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25) rotate(6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
 }
 
 /* Entrée en translation depuis la gauche (classement + résultats), décalée ligne à ligne */
@@ -1266,6 +1384,7 @@ button.skip-pill.skip-ready:active {
 }
 .pseudo-modal h2 {
   font-family: var(--font-display);
+  word-spacing: var(--display-mots);
   font-size: 1.3rem;
 }
 .pseudo-modal input {
@@ -1281,7 +1400,11 @@ button.skip-pill.skip-ready:active {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  /* 170px plutôt que 140 : à la largeur de la colonne de texte ça donne quatre
+     colonnes, et les onze tuiles se répartissent 4-4-3 au lieu de laisser une
+     veuve seule sur une troisième ligne. Les libellés ont aussi la place de
+     tenir sur moins de lignes. */
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: var(--sp-3);
   margin-top: var(--sp-5);
 }
@@ -1297,12 +1420,22 @@ button.skip-pill.skip-ready:active {
 .stat-tile .label {
   font-size: var(--text-sm);
   color: var(--text-muted);
+  /* Deux lignes réservées : que le libellé se replie ou non, le chiffre
+     dessous démarre à la même hauteur dans toute la rangée. C'est lui qu'on
+     lit en balayant la grille, il lui faut une ligne de base commune.
+     (Retenu plutôt que `grid-template-rows: subgrid`, qui alignerait les trois
+     lignes mais imposerait à l'intérieur des tuiles la gouttière de la grille
+     parente — le rythme interne serait perdu.) */
+  min-height: 3em;
 }
 .stat-tile .valeur {
   font-family: var(--font-mono);
   font-size: 1.35rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  /* L'espace insécable avant l'unité est rendue à la chasse de la mono, très
+     large : on la resserre pour que « 48,5 s » reste un bloc. */
+  word-spacing: -0.2em;
 }
 .stat-tile .sous {
   font-size: var(--text-sm);
@@ -1398,6 +1531,10 @@ button.skip-pill.skip-ready:active {
   color: var(--text-muted);
   font-weight: 600;
 }
+.stats-table thead .unite {
+  font-weight: 400;
+  opacity: 0.75;
+}
 .stats-table thead th:first-child,
 .stats-table tbody th {
   text-align: left;
@@ -1426,7 +1563,14 @@ button.skip-pill.skip-ready:active {
 .stats-jeux .temps.moi {
   color: var(--accent);
 }
-/* Répartition réussies / passées / ratées */
+.stats-table td,
+.stats-jeux .temps,
+.recap-val,
+.done-card .compte-a-rebours strong {
+  word-spacing: -0.2em;
+}
+/* Répartition réussies / passées / ratées. Une légende accompagne le tableau,
+   pour que les trois teintes soient au moins nommées quelque part. */
 .issues {
   display: flex;
   width: 64px;
@@ -1435,14 +1579,37 @@ button.skip-pill.skip-ready:active {
   overflow: hidden;
   background: var(--border);
 }
-.issues .ok {
+.issues .ok,
+.issues-legende .pastille.ok {
   background: var(--success);
 }
-.issues .skip {
+.issues .skip,
+.issues-legende .pastille.skip {
   background: var(--warning);
 }
-.issues .ko {
+.issues .ko,
+.issues-legende .pastille.ko {
   background: var(--error);
+}
+/* Légende du tableau : mêmes pastilles, mêmes hachures. */
+.issues-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  margin-bottom: var(--sp-3);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.issues-legende span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.issues-legende .pastille {
+  width: 14px;
+  height: 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 @media (max-width: 640px) {
   /* Colonnes secondaires : sacrifiées avant de faire défiler le tableau */
@@ -1530,9 +1697,6 @@ button.skip-pill.skip-ready:active {
 .g-fin {
   font-family: var(--font-mono);
   font-size: 11px;
-  fill: var(--text-muted);
-}
-.g-fin {
   fill: var(--text);
 }
 .g-axe-nom {
@@ -1846,8 +2010,8 @@ button.skip-pill.skip-ready:active {
   align-items: flex-start;
 }
 .cw-grid .cell {
-  width: clamp(44px, 11vw, 56px);
-  height: clamp(44px, 11vw, 56px);
+  width: clamp(44px, 15vw, 56px);
+  height: clamp(44px, 15vw, 56px);
   font-size: 1.3rem;
   text-transform: uppercase;
 }
@@ -1866,6 +2030,11 @@ button.skip-pill.skip-ready:active {
 .cw-clues {
   font-size: var(--text-sm);
   max-width: 260px;
+}
+/* Rappel de la définition en cours : utile seulement quand la liste complète
+   passe sous le clavier virtuel (cf. la règle mobile plus bas). */
+.cw-actif {
+  display: none;
 }
 .cw-clues h4 {
   margin: var(--sp-2) 0 var(--sp-1);
@@ -2619,6 +2788,22 @@ button.skip-pill.skip-ready:active {
   font-family: var(--font-mono);
 }
 
+/* État vide d'une page : un bloc assumé (surface, cadre, respiration) plutôt
+   qu'un texte et un bouton centrés au milieu d'une page alignée à gauche —
+   l'axe mixte donnait l'impression d'un contenu tombé là par accident. */
+.etat-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-top: var(--sp-6);
+  padding: var(--sp-7) var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
 /* Paramètres */
 .settings-row {
   display: flex;
@@ -2710,6 +2895,16 @@ input[type='text'] {
   .cw-wrap {
     flex-direction: column;
     align-items: center;
+  }
+  .cw-actif {
+    display: block;
+    max-width: 22rem;
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    text-align: center;
   }
   /* Place étroite : nom + contrôle de passe sur une ligne, compteur centré en dessous
      (évite que la pastille de passe chevauche le compteur). */
@@ -3037,8 +3232,13 @@ input[type='text'] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  /* !important nécessaire : la règle globale plus haut force toutes les
+     animations à 0,01 ms, ce qui figeait complètement l'indicateur de
+     chargement — un spinner immobile n'indique plus rien. On lui rend un tour
+     lent, seule animation qu'on conserve volontairement ici. */
   .atlas-spin {
-    animation-duration: 2s;
+    animation-duration: 2s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 /* Carte de devine, en bas à droite, superposée et agrandie au survol/focus. */

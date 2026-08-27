@@ -10,7 +10,7 @@ import {
   type StatsJeuGlobal,
 } from '../lib/statsGlobales';
 import { formatDateCourte, formatHeures } from '../lib/stats';
-import { formatAdjust, formatMs, formatSec } from '../lib/time';
+import { formatAdjust, formatMs, formatSec, formatSecNu } from '../lib/time';
 import { usePseudo } from '../lib/usePseudo';
 
 type Onglet = 'quotidien' | 'defi';
@@ -63,6 +63,25 @@ function BarreIssues({ j }: { j: StatsJeuGlobal }) {
           <span key={p.cle} className={p.classe} style={{ flexGrow: p.n }} />
         ))}
     </span>
+  );
+}
+
+/** Légende des barres d'issues : la teinte n'est jamais la seule information. */
+function LegendeIssues() {
+  return (
+    <p className="issues-legende opt">
+      Issues :
+      {[
+        ['ok', 'réussies'],
+        ['skip', 'passées'],
+        ['ko', 'ratées'],
+      ].map(([classe, label]) => (
+        <span key={classe}>
+          <span className={`pastille ${classe}`} aria-hidden />
+          {label}
+        </span>
+      ))}
+    </p>
   );
 }
 
@@ -188,7 +207,7 @@ export default function Statistiques() {
               {s.flawless} <SymEtincelle size={18} />
             </>
           }
-          sous={`${Math.round((s.flawless / s.runs) * 100)} % des runs`}
+          sous={`${Math.round((s.flawless / s.runs) * 100)}\u00a0% des runs`}
         />
         <Tuile
           label="Épreuve moyenne"
@@ -197,8 +216,8 @@ export default function Statistiques() {
         />
         <Tuile
           label="Issues"
-          valeur={`${s.tauxReussiteP} %`}
-          sous={`réussite · ${s.tauxPasseP} % passées · ${s.tauxEchecP} % ratées`}
+          valeur={`${s.tauxReussiteP}\u00a0%`}
+          sous={`réussite · ${s.tauxPasseP}\u00a0% passées · ${s.tauxEchecP}\u00a0% ratées`}
         />
         <Tuile
           label="Bilan bonus / malus"
@@ -227,6 +246,8 @@ export default function Statistiques() {
         tranches={s.distribution.tranches}
         courbe={s.distribution.courbe}
         pas={s.distribution.pas}
+        debordement={s.distribution.debordement}
+        borne={s.distribution.borne}
         medianeMs={s.medianeRunMs}
         moiMs={s.moiMoyenneRunMs}
         moiPercentileP={s.moiPercentileP}
@@ -279,15 +300,26 @@ export default function Statistiques() {
         {trieur('parties', 'Parties')}
         {trieur('nom', 'Nom')}
       </div>
+      <LegendeIssues />
       <div className="table-scroll">
         <table className="stats-table par-jeu">
           <thead>
             <tr>
               <th>Épreuve</th>
-              <th>Moyenne</th>
-              <th>Record</th>
-              <th className="opt">Pire</th>
-              <th>Vous</th>
+              {/* L'unité est portée une fois par l'en-tête : seize lignes de
+                  « 10,8 s » alignaient seize unités pour rien. */}
+              <th>
+                Moyenne <span className="unite">(s)</span>
+              </th>
+              <th>
+                Record <span className="unite">(s)</span>
+              </th>
+              <th className="opt">
+                Pire <span className="unite">(s)</span>
+              </th>
+              <th>
+                Vous <span className="unite">(s)</span>
+              </th>
               <th className="opt">Issues</th>
             </tr>
           </thead>
@@ -303,11 +335,11 @@ export default function Statistiques() {
                     {j.ajustMoyenMs !== 0 && <> · {formatAdjust(j.ajustMoyenMs)} en moyenne</>}
                   </span>
                 </th>
-                <td>{j.moyenneMs != null ? formatSec(j.moyenneMs) : '—'}</td>
+                <td>{j.moyenneMs != null ? formatSecNu(j.moyenneMs) : '—'}</td>
                 <td>
                   {j.meilleur ? (
                     <>
-                      {formatSec(j.meilleur.ms)}
+                      {formatSecNu(j.meilleur.ms)}
                       <span className="sous">{j.meilleur.pseudo}</span>
                     </>
                   ) : (
@@ -317,7 +349,7 @@ export default function Statistiques() {
                 <td className="opt">
                   {j.pire ? (
                     <>
-                      {formatSec(j.pire.ms)}
+                      {formatSecNu(j.pire.ms)}
                       <span className="sous">{j.pire.pseudo}</span>
                     </>
                   ) : (
@@ -327,8 +359,8 @@ export default function Statistiques() {
                 <td className={j.moi.moyenneMs != null ? 'moi' : ''}>
                   {j.moi.moyenneMs != null ? (
                     <>
-                      {formatSec(j.moi.moyenneMs)}
-                      <span className="sous">record {formatSec(j.moi.meilleurMs!)}</span>
+                      {formatSecNu(j.moi.moyenneMs)}
+                      <span className="sous">record {formatSecNu(j.moi.meilleurMs!)}</span>
                     </>
                   ) : (
                     '—'

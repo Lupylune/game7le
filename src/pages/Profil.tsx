@@ -67,9 +67,9 @@ export default function Profil() {
         runs enregistrés sous ce pseudo.
       </p>
       {s.runs === 0 ? (
-        <div className="center mt-6">
+        <div className="etat-vide">
           <p className="muted">Aucun run pour l'instant.</p>
-          <Link className="btn btn-primary mt-4" to="/jouer" style={{ marginTop: 'var(--sp-4)' }}>
+          <Link className="btn btn-primary" to="/jouer">
             Lancer le Game7le du jour
           </Link>
         </div>

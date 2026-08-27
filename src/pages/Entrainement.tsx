@@ -74,6 +74,11 @@ export function EntrainementJeu() {
           </div>
           <div className="step">Entraînement libre</div>
         </div>
+        {/* Même calage que dans le run : l'entête est une grille de trois
+            colonnes (titre / chrono / contrôle). Sans ce placeholder, le lien
+            se logeait dans la colonne du milieu et flottait au centre de la
+            page au lieu d'être aligné à droite. */}
+        <div />
         <Link className="btn btn-sm" to="/entrainement">
           ← Tous les jeux
         </Link>

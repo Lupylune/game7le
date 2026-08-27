@@ -580,7 +580,9 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
         )}
         {flawless && (
           <p className="flawless">
-            <SymEtincelle size={18} /> SANS-FAUTE <SymEtincelle size={18} />
+            <SymEtincelle size={20} />
+            <span className="texte">SANS-FAUTE</span>
+            <SymEtincelle size={20} />
           </p>
         )}
         <p className="muted">

@@ -127,7 +127,7 @@ export default function Home() {
             </ol>
             <p className="global-avg">
               Moyenne du jour : {formatLong(board.avgMs)} sur{' '}
-              {board.runs.toLocaleString('fr-FR')} runs.
+              {board.runs.toLocaleString('fr-FR')} run{board.runs > 1 ? 's' : ''}.
             </p>
             <Link to="/classement" className="see-more">
               Voir le classement complet →

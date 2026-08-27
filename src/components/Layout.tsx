@@ -1,4 +1,4 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { loadSettings, saveSettings } from '../lib/storage';
 import { usePseudo } from '../lib/usePseudo';
 import { useBadgeEpingle } from '../lib/useBadges';
@@ -16,6 +16,12 @@ export default function Layout() {
   // Charge le badge épinglé au pseudo depuis le serveur dès l'ouverture de
   // l'app (la BDD fait foi ; les pages qui l'affichent partagent ce store).
   useBadgeEpingle(usePseudo());
+  // Le pathname sert de clé au conteneur de page : React remonte le nœud à
+  // chaque navigation, ce qui rejoue l'animation d'entrée. Tout le reste de
+  // l'app est animé, le changement de page était le seul saut sec — et la
+  // query (?onglet=…) est volontairement exclue, changer d'onglet dans une même
+  // page ne doit pas la faire réapparaître.
+  const { pathname } = useLocation();
   return (
     <div className="page">
       <Braises />
@@ -46,7 +52,9 @@ export default function Layout() {
         </div>
       </header>
       <main className="content">
-        <Outlet />
+        <div className="page-entree" key={pathname}>
+          <Outlet />
+        </div>
       </main>
       <footer className="footer">
         <Link to="/profil">Profil</Link>

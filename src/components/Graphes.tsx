@@ -31,12 +31,18 @@ import { formatMs } from '../lib/time';
  * (720 unités ≈ 1 unité par pixel), en dessous on resserre le cadre pour que
  * les graduations gardent leur taille apparente au lieu de rétrécir avec lui.
  */
-function dimensions(compact: boolean) {
+/**
+ * Géométrie du graphe. `etiqFin` réserve à droite la place des étiquettes
+ * directes de fin de série : posées dans la marge plutôt que dans l'aire de
+ * tracé, elles ne peuvent plus croiser la courbe ni buter contre le bord.
+ */
+function dimensions(compact: boolean, etiqFin = false) {
   const W = compact ? 400 : 720;
   const H = compact ? 230 : 250;
+  const droite = etiqFin ? (compact ? 40 : 50) : compact ? 12 : 16;
   const M = compact
-    ? { haut: 12, droite: 12, bas: 30, gauche: 42 }
-    : { haut: 14, droite: 16, bas: 36, gauche: 54 };
+    ? { haut: 12, droite, bas: 30, gauche: 42 }
+    : { haut: 14, droite, bas: 36, gauche: 54 };
   return { W, H, M, PW: W - M.gauche - M.droite, PH: H - M.haut - M.bas };
 }
 
@@ -61,6 +67,23 @@ function graduations(max: number, cible = 4): number[] {
   const pas = [1, 2, 5, 10].map((m) => m * mag).find((p) => p >= brut) ?? mag * 10;
   const out: number[] = [];
   for (let v = 0; v <= max + pas / 2; v += pas) out.push(v);
+  return out;
+}
+
+/**
+ * Paliers de durée que l'œil lit comme des durées, pour un axe de temps :
+ * `graduations` raisonne en pas décimaux et sortait des repères du genre 8:20
+ * (500 s), qu'on ne rattache à rien. Le dernier palier dépasse toujours le
+ * maximum, sinon la courbe sortirait par le haut du cadre.
+ */
+const PAS_TEMPS_MS = [5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600].map((s) => s * 1000);
+function graduationsTemps(maxMs: number, cible = 4): number[] {
+  if (maxMs <= 0) return [0];
+  const brut = maxMs / cible;
+  const pas = PAS_TEMPS_MS.find((p) => p >= brut) ?? PAS_TEMPS_MS[PAS_TEMPS_MS.length - 1];
+  const out: number[] = [];
+  for (let v = 0; v <= maxMs; v += pas) out.push(v);
+  if (out[out.length - 1] < maxMs) out.push(out[out.length - 1] + pas);
   return out;
 }
 
@@ -161,6 +184,8 @@ export function CourbeDistribution({
   tranches,
   courbe,
   pas,
+  debordement,
+  borne,
   medianeMs,
   moiMs,
   moiPercentileP,
@@ -169,6 +194,9 @@ export function CourbeDistribution({
   tranches: Tranche[];
   courbe: PointDensite[];
   pas: number;
+  /** Runs au-delà du domaine affiché (queue tronquée) — annoncés, pas masqués. */
+  debordement: number;
+  borne: number;
   medianeMs: number;
   moiMs: number | null;
   moiPercentileP: number | null;
@@ -221,7 +249,10 @@ export function CourbeDistribution({
   };
 
   const t = actif != null ? tranches[actif] : null;
-  const total = tranches.reduce((s, tr) => s + tr.n, 0);
+  // Effectif complet : les tranches n'en couvrent qu'une partie quand le domaine
+  // est tronqué, alors que la courbe est estimée sur tout l'échantillon — et un
+  // pourcentage se lit par rapport au total, pas au sous-ensemble affiché.
+  const total = tranches.reduce((s, tr) => s + tr.n, 0) + debordement;
   const etiquettes = indicesEtiquettes(tranches.length, compact ? 5 : 8);
 
   return (
@@ -231,6 +262,14 @@ export function CourbeDistribution({
         <span className="g-sous">
           Courbe lissée des {total} runs — hauteur = nombre de runs par tranche de {axeTemps(pas)}.
           Repères : médiane de la communauté{moiMs != null && <> et votre moyenne</>}.
+          {debordement > 0 && (
+            <>
+              {' '}
+              L'axe s'arrête à {axeTemps(borne)} : {debordement} run
+              {debordement > 1 ? 's' : ''} plus lent{debordement > 1 ? 's' : ''} ne{' '}
+              {debordement > 1 ? 'sont' : 'est'} pas représenté{debordement > 1 ? 's' : ''}.
+            </>
+          )}
         </span>
       </figcaption>
       <div className="g-cadre">
@@ -380,14 +419,14 @@ export function CourbeJours({
   const [actif, setActif] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const compact = useCompact();
-  const d = dimensions(compact);
+  const d = dimensions(compact, true);
   const { W, H, M, PW, PH } = d;
   if (points.length === 0) return null;
 
   const aMoi = points.some((p) => p.moiMs != null);
   const valeurs = [...points.map((p) => p.ms), ...points.flatMap((p) => (p.moiMs != null ? [p.moiMs] : []))];
   const maxV = Math.max(...valeurs);
-  const ticks = graduations(maxV, 4);
+  const ticks = graduationsTemps(maxV, 4);
   const hautTick = ticks[ticks.length - 1];
   const y = (v: number) => M.haut + PH - (v / hautTick) * PH;
   const x = (i: number) =>
@@ -407,31 +446,30 @@ export function CourbeJours({
     });
     return segments.join(' ');
   };
-  // Points assez peu nombreux pour porter un marqueur sans se marcher dessus
-  const marqueurs = points.length <= 40;
+  // Marqueurs dès que l'écart horizontal entre deux jours laisse la place à un
+  // point cerné (r=4 + 2px d'anneau de chaque côté). Un seuil sur le nombre de
+  // jours se périmait : à 42 jours d'historique la courbe perdait ses points
+  // alors qu'ils tenaient encore largement.
+  const pitch = points.length > 1 ? PW / (points.length - 1) : PW;
+  const marqueurs = pitch >= 12;
   const dernierMoi = aMoi ? points.reduce((acc, p, i) => (p.moiMs != null ? i : acc), -1) : -1;
-  // Étiquettes de fin : quand les deux séries finissent sur la même colonne, la
-  // plus haute prend l'étiquette au-dessus et l'autre en dessous — elles
-  // s'écartent au lieu de converger, et restent chacune collée à sa courbe.
+  // Étiquettes de fin : posées dans la marge de droite, à hauteur du dernier
+  // point de leur série. L'ancien placement (au-dessus du point, dans l'aire de
+  // tracé) tombait sur la courbe dès que la série montait en fin de période, et
+  // butait contre le bord droit.
   const memeFin = dernierMoi === points.length - 1;
-  const comDessus = !memeFin || y(points[points.length - 1].ms) <= y(points[dernierMoi].moiMs!);
-  const etiqCom = {
-    x: x(points.length - 1) - 6,
-    y: y(points[points.length - 1].ms) + (comDessus ? -12 : 22),
-  };
-  const etiqMoi =
-    dernierMoi >= 0
-      ? {
-          x: x(dernierMoi) - 6,
-          y: y(points[dernierMoi].moiMs!) + (memeFin && !comDessus ? -12 : memeFin ? 22 : -12),
-        }
-      : null;
-  // Dernière garde-fou : si les deux étiquettes se chevauchent malgré tout (les
-  // séries ne finissent pas le même jour, par exemple), la vôtre s'efface — la
-  // légende, l'infobulle et le tableau la portent déjà.
-  const afficheEtiqMoi =
-    etiqMoi != null &&
-    (Math.abs(etiqCom.x - etiqMoi.x) > 44 || Math.abs(etiqCom.y - etiqMoi.y) > 14);
+  const etiqCom = { x: x(points.length - 1) + 6, y: y(points[points.length - 1].ms) + 4 };
+  const etiqMoi = memeFin ? { x: etiqCom.x, y: y(points[dernierMoi].moiMs!) + 4 } : null;
+  // Deux étiquettes à la même hauteur : on les écarte de part et d'autre.
+  if (etiqMoi && Math.abs(etiqCom.y - etiqMoi.y) < 14) {
+    const comHaut = etiqCom.y <= etiqMoi.y;
+    etiqCom.y += comHaut ? -7 : 7;
+    etiqMoi.y += comHaut ? 7 : -7;
+  }
+  // Une série « vous » qui ne va pas jusqu'au bout n'a pas d'étiquette : la
+  // poser en pleine aire de tracé recréerait le chevauchement qu'on corrige.
+  // La légende, l'infobulle et le tableau portent déjà la valeur.
+  const afficheEtiqMoi = etiqMoi != null;
 
   const bouge = (e: React.PointerEvent) => {
     const svg = svgRef.current;
@@ -523,11 +561,11 @@ export function CourbeJours({
             )}
           {/* Étiquettes directes : le dernier point de chaque série, rien d'autre —
               l'axe, l'infobulle et le tableau portent les autres valeurs. */}
-          <text x={etiqCom.x} y={etiqCom.y} className="g-fin" textAnchor="end">
+          <text x={etiqCom.x} y={etiqCom.y} className="g-fin" textAnchor="start">
             {axeTemps(points[points.length - 1].ms)}
           </text>
           {afficheEtiqMoi && (
-            <text x={etiqMoi!.x} y={etiqMoi!.y} className="g-fin" textAnchor="end">
+            <text x={etiqMoi!.x} y={etiqMoi!.y} className="g-fin" textAnchor="start">
               {axeTemps(points[dernierMoi].moiMs!)}
             </text>
           )}

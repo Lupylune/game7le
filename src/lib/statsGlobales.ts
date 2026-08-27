@@ -67,6 +67,17 @@ export interface PointDensite {
   n: number;
 }
 
+/** Distribution des temps de run : les barres, la courbe lissée, et ce que la
+ *  troncature du domaine a laissé de côté (`debordement` runs à partir de
+ *  `borne`). */
+export interface Distribution {
+  pas: number;
+  tranches: Tranche[];
+  courbe: PointDensite[];
+  debordement: number;
+  borne: number;
+}
+
 /** Un point de série temporelle : la moyenne du jour, et votre temps ce jour-là. */
 export interface PointJour {
   date: string;
@@ -111,7 +122,7 @@ export interface StatsGlobales {
    * Distribution des temps de run : la courbe lissée qui est tracée, et les
    * tranches brutes qui la sous-tendent (infobulle et tableau de données).
    */
-  distribution: { pas: number; tranches: Tranche[]; courbe: PointDensite[] };
+  distribution: Distribution;
   /** Part des runs plus lents que votre moyenne (%), pour vous situer. */
   moiPercentileP: number | null;
   /** Temps de run moyen jour après jour (communauté + vous). */
@@ -144,7 +155,7 @@ const VIDE: StatsGlobales = {
   jeux: [],
   moiMoyenneRunMs: null,
   moiPercentileP: null,
-  distribution: { pas: 0, tranches: [], courbe: [] },
+  distribution: { pas: 0, tranches: [], courbe: [], debordement: 0, borne: 0 },
   serieRuns: [],
   serieParJeu: {},
 };
@@ -163,6 +174,12 @@ const PAS_TRANCHES = [60e3, 120e3, 180e3, 300e3, 600e3, 900e3];
  */
 const TRANCHES_CIBLE = 26;
 
+/**
+ * Part de la largeur d'axe qu'une troncature doit libérer pour valoir le coup.
+ * En dessous, on rognerait le domaine sans vraiment rendre la courbe lisible.
+ */
+const GAIN_AXE_MIN = 0.25;
+
 /** Points de la courbe lissée : assez pour un tracé fluide, sans excès de calcul. */
 const POINTS_COURBE = 120;
 
@@ -173,7 +190,7 @@ const POINTS_COURBE = 120;
  * de runs attendu par tranche de `pas` », donc la courbe et l'histogramme
  * qu'elle remplace partagent le même axe.
  */
-function lisse(valeurs: number[], pas: number): PointDensite[] {
+function lisse(valeurs: number[], pas: number, borneFin?: number): PointDensite[] {
   const n = valeurs.length;
   if (n === 0 || pas <= 0) return [];
   const tries = [...valeurs].sort((a, b) => a - b);
@@ -187,7 +204,10 @@ function lisse(valeurs: number[], pas: number): PointDensite[] {
   const disp = Math.min(ecart || Infinity, iqr > 0 ? iqr / 1.34 : Infinity);
   const h = Math.max(pas / 2, Number.isFinite(disp) ? 0.9 * disp * Math.pow(n, -0.2) : pas);
   const debut = Math.max(0, min - h);
-  const fin = max + h;
+  // La densité est estimée sur *tout* l'échantillon (la fenêtre de Silverman
+  // reste juste), mais on ne l'évalue que jusqu'à la borne affichée : la courbe
+  // ne s'étire pas sur une queue qu'on ne montre pas.
+  const fin = Math.min(max + h, borneFin ?? Infinity);
   const norme = pas / (h * Math.sqrt(2 * Math.PI));
   return Array.from({ length: POINTS_COURBE }, (_, i) => {
     const ms = debut + ((fin - debut) * i) / (POINTS_COURBE - 1);
@@ -200,22 +220,46 @@ function lisse(valeurs: number[], pas: number): PointDensite[] {
   });
 }
 
-/** Découpe des temps en tranches régulières, alignées sur un pas rond. */
-function distribue(valeurs: number[]): { pas: number; tranches: Tranche[]; courbe: PointDensite[] } {
-  if (valeurs.length === 0) return { pas: 0, tranches: [], courbe: [] };
-  const min = Math.min(...valeurs);
-  const max = Math.max(...valeurs);
+/**
+ * Découpe des temps en tranches régulières, alignées sur un pas rond.
+ *
+ * Le domaine s'arrête au 95e centile : une poignée de runs très lents étirait
+ * l'axe sur le double de sa largeur utile, écrasant contre la gauche la partie
+ * de la courbe où se trouvent presque tous les joueurs. Les runs au-delà ne
+ * sont ni perdus ni entassés dans la dernière barre (elle mentirait) : ils sont
+ * comptés dans `debordement` et annoncés sous le graphe, et la densité reste
+ * estimée sur l'échantillon complet.
+ *
+ * Le 95e et non le 99e : à l'échelle du nombre de runs enregistrés, un centile
+ * plus haut ne retire qu'un ou deux points et ne raccourcit donc rien. Et on ne
+ * tronque que si ça libère une part réelle de l'axe (`GAIN_AXE_MIN`) : sinon
+ * autant garder le domaine complet plutôt que de rogner pour rien.
+ */
+function distribue(valeurs: number[]): Distribution {
+  if (valeurs.length === 0) return { pas: 0, tranches: [], courbe: [], debordement: 0, borne: 0 };
+  const tries = [...valeurs].sort((a, b) => a - b);
+  const min = tries[0];
+  const maxTotal = tries[tries.length - 1];
+  const p95 = tries[Math.max(0, Math.ceil(tries.length * 0.95) - 1)];
+  const max =
+    tries.length >= 40 && p95 < maxTotal * (1 - GAIN_AXE_MIN) ? p95 : maxTotal;
   const brut = (max - min) / TRANCHES_CIBLE || 1;
   const pas = PAS_TRANCHES.find((p) => p >= brut) ?? PAS_TRANCHES[PAS_TRANCHES.length - 1];
   const debut = Math.floor(min / pas) * pas;
   const n = Math.max(1, Math.floor((max - debut) / pas) + 1);
+  const borne = debut + n * pas;
   const tranches: Tranche[] = Array.from({ length: n }, (_, i) => ({
     debut: debut + i * pas,
     fin: debut + (i + 1) * pas,
     n: 0,
   }));
-  for (const v of valeurs) tranches[Math.min(n - 1, Math.floor((v - debut) / pas))].n++;
-  return { pas, tranches, courbe: lisse(valeurs, pas) };
+  let debordement = 0;
+  for (const v of tries) {
+    const i = Math.floor((v - debut) / pas);
+    if (i >= n) debordement++;
+    else tranches[i].n++;
+  }
+  return { pas, tranches, courbe: lisse(tries, pas, borne), debordement, borne };
 }
 
 /** Série temporelle depuis un cumul par date, triée par date croissante. */

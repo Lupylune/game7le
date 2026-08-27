@@ -246,6 +246,22 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
     setTimeout(() => setWrong(new Set()), 2000);
   }
 
+  // Définition en cours, répétée juste sous la grille sur petit écran : dès que
+  // le clavier virtuel s'ouvre il recouvre la liste complète, placée dessous.
+  // On garde donc au contact de la grille l'indice qu'on est en train de
+  // résoudre. Sur grand écran la colonne de droite est visible en permanence,
+  // ce rappel y est masqué.
+  const iH = puzzle.horizontaux.findIndex((m) => m.ligne === sel.r);
+  const iV = puzzle.verticaux.findIndex((m) => m.col === sel.c);
+  // La case courante n'appartient pas forcément à un mot dans la direction en
+  // cours (une grille peut n'avoir aucune entrée horizontale sur cette ligne) :
+  // on se rabat sur la perpendiculaire plutôt que de n'afficher aucun indice —
+  // sur petit écran c'est le seul rappel visible sans faire défiler la page.
+  const dirActive: 'h' | 'v' = sel.dir === 'h' ? (iH >= 0 ? 'h' : 'v') : iV >= 0 ? 'v' : 'h';
+  const iActif = dirActive === 'h' ? iH : iV;
+  const indiceActif =
+    iActif < 0 ? null : (dirActive === 'h' ? puzzle.horizontaux : puzzle.verticaux)[iActif].indice;
+
   return (
     <div className="game-area">
       <div className="cw-wrap">
@@ -295,6 +311,13 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
             }),
           )}
         </div>
+        {indiceActif != null && (
+          /* aria-hidden : la définition est déjà dans la liste ci-dessous, on ne
+             la fait pas annoncer deux fois. */
+          <p className="cw-actif" aria-hidden>
+            {dirActive === 'h' ? 'Horizontal' : 'Vertical'} {iActif + 1}. {indiceActif}
+          </p>
+        )}
         <div className="cw-clues">
           <h4>Horizontaux</h4>
           <ul>
