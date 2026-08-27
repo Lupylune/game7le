@@ -419,6 +419,16 @@ main.content {
   font-size: var(--text-timer);
   font-weight: 700;
 }
+.done-card .compte-a-rebours {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.done-card .compte-a-rebours strong {
+  color: var(--text);
+  font-weight: 600;
+  /* Chiffres de largeur fixe : la seconde qui défile ne fait pas danser la carte. */
+  font-variant-numeric: tabular-nums;
+}
 
 /* ===== Nouveautés (icône barre du haut + popin) ===== */
 .nouveautes-btn {

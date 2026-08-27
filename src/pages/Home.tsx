@@ -3,15 +3,17 @@ import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
 import { SymEtincelle, SymFlamme } from '../components/GameIcon';
 import BalleDeFoin from '../components/BalleDeFoin';
+import CompteARebours from '../components/CompteARebours';
 import LigneClassement from '../components/LigneClassement';
 import { classementJour, classementSemaine, type Board, type Entry } from '../lib/classement';
-import { lundiStr, seededRng, todayStr, pick } from '../lib/rng';
-import { formatLong, formatMs } from '../lib/time';
+import { ajouteJours, lundiStr, minuitParis, prochainTirage, seededRng, pick } from '../lib/rng';
+import { formatDateCourte, formatLong, formatMs } from '../lib/time';
 import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
 import { loadEnCours } from '../lib/storage';
 import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
 import { useBadgeEpingle, useBadgesJoueurs } from '../lib/useBadges';
 import { usePodiumSemaine } from '../lib/useChampion';
+import { useJourCourant } from '../lib/useJour';
 import { usePseudo } from '../lib/usePseudo';
 
 const TAGLINES = [
@@ -19,7 +21,8 @@ const TAGLINES = [
 ];
 
 export default function Home() {
-  const date = todayStr();
+  // Jour réactif : passé minuit, l'accueil bascule seul sur le nouveau tirage.
+  const date = useJourCourant();
   const [board, setBoard] = useState<Board | null>(null);
   const [semaine, setSemaine] = useState<Board | null>(null);
   useEffect(() => {
@@ -48,11 +51,14 @@ export default function Home() {
   const streak = calculeStreak(joursEnDirect(runs), date);
   const tagline = pick(seededRng(`tagline:${date}`), TAGLINES);
   // Défi difficile de la semaine : temps officiel (première tentative)
-  const lundi = lundiStr();
+  const lundi = lundiStr(date);
   const myDefi = useHistoriqueDefis(pseudo).find((r) => r.date === lundi && estEnDirect(r));
   // Run laissé en cours (page quittée en pleine partie) : l'appel à l'action le dit
   const enCours = loadEnCours(date, false);
   const enCoursDefi = loadEnCours(lundi, true);
+  // Prochaines échéances : minuit pour le tirage du jour, lundi prochain pour le défi
+  const prochainJour = prochainTirage(date);
+  const prochainDefi = minuitParis(ajouteJours(lundi, 7));
 
   return (
     <div>
@@ -66,6 +72,7 @@ export default function Home() {
               <span className="time">
                 {formatMs(myRun.totalMs)} {myRun.flawless && <SymEtincelle size={18} />}
               </span>
+              <CompteARebours cible={prochainJour} libelle="Prochain dans" />
               <Link to="/classement">Voir le classement →</Link>
             </div>
           ) : (
@@ -74,12 +81,7 @@ export default function Home() {
             </Link>
           )}
           <span className="hero-date">
-            {new Date().toLocaleDateString('fr-FR', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              timeZone: 'Europe/Paris',
-            })}
+            {formatDateCourte(date)}
             {streak > 0 && (
               <>
                 {' · '}
@@ -93,6 +95,7 @@ export default function Home() {
               <span className="time">
                 {formatMs(myDefi.totalMs)} {myDefi.flawless && <SymEtincelle size={18} />}
               </span>
+              <CompteARebours cible={prochainDefi} libelle="Prochain dans" />
               <Link to="/classement?onglet=defi">Voir le classement →</Link>
             </div>
           ) : (

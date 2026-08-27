@@ -79,3 +79,46 @@ export function lundiStr(date = todayStr()): string {
   const depuisLundi = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 0 = lundi
   return new Date(Date.UTC(y, m - 1, d - depuisLundi)).toISOString().slice(0, 10);
 }
+
+/** Date AAAA-MM-JJ décalée de `n` jours (arithmétique en UTC, indép. du fuseau). */
+export function ajouteJours(date: string, n: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
+const fmtParisComplet = new Intl.DateTimeFormat('fr-CA', {
+  timeZone: 'Europe/Paris',
+  hourCycle: 'h23',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+});
+
+/** Décalage Europe/Paris − UTC, en ms, à l'instant `t`. */
+function decalageParis(t: number): number {
+  const p: Record<string, string> = {};
+  for (const { type, value } of fmtParisComplet.formatToParts(t)) p[type] = value;
+  const mur = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  return mur - Math.floor(t / 1000) * 1000;
+}
+
+/**
+ * Instant (epoch ms) où commence le jour `AAAA-MM-JJ` : minuit heure de Paris,
+ * la seconde où son tirage devient jouable pour tout le monde. Le décalage
+ * horaire est résolu par point fixe (deux passes) — le décalage qui compte est
+ * celui qui vaut *à* minuit, pas à l'instant nominal : les deux diffèrent la
+ * nuit d'un changement d'heure, où la journée fait 23 ou 25 heures.
+ */
+export function minuitParis(date: string): number {
+  const [y, m, d] = date.split('-').map(Number);
+  const nominal = Date.UTC(y, m - 1, d);
+  return nominal - decalageParis(nominal - decalageParis(nominal));
+}
+
+/** Instant du prochain tirage quotidien (minuit à Paris) après `date`. */
+export function prochainTirage(date = todayStr()): number {
+  return minuitParis(ajouteJours(date, 1));
+}
