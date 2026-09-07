@@ -316,12 +316,17 @@ main.content {
 }
 /* Entrée de page : court et discret, juste de quoi que la navigation ne soit
    pas un saut sec. Le conteneur doit rester transparent au layout, sans quoi il
-   casserait le centrage des interstitiels et les hauteurs en pourcentage. */
+   casserait le centrage des interstitiels et les hauteurs en pourcentage.
+   `backwards` et non `both` : un remplissage vers l'avant laisse le navigateur
+   conserver un `transform` (matrice identité) une fois l'animation finie, ce qui
+   fait du conteneur le bloc englobant de ses descendants `position: fixed` (la
+   pièce glissée aux échecs, les toasts de bonus/pénalité se retrouvaient alors
+   décalés de l'origine du conteneur au lieu de suivre le curseur / la fenêtre). */
 .page-entree {
   display: contents;
 }
 main.content > .page-entree > * {
-  animation: page-in 0.18s ease-out both;
+  animation: page-in 0.18s ease-out backwards;
 }
 @keyframes page-in {
   from {

@@ -245,7 +245,7 @@ export async function classementSemaine(date: string, n = 5): Promise<Board> {
  */
 export async function classementMois(date: string, n = 5): Promise<Board> {
   const mois = date.slice(0, 7);
-  const rows = await fetchRunsPlage(`${mois}-01`, `${mois}-31`);
+  const rows = await fetchRunsPlage(`${mois}-01`, finMois(date));
   if (rows) return agrege(rows, n, 'periode');
   return { ...classementPeriodeSimule(`game7le:mois:${mois}`, datesMois(date), n), reel: false };
 }
@@ -263,6 +263,17 @@ export async function classementGeneral(n = 5): Promise<Board> {
     ...classementPeriodeSimule('game7le:general', datesPlage(LANCEMENT, today), n),
     reel: false,
   };
+}
+
+/**
+ * Dernier jour du mois calendaire contenant `date`. Indispensable : une borne
+ * `AAAA-MM-31` en dur est une date invalide les mois plus courts, et Postgres
+ * rejette la requête entière (« date/time field value out of range »), ce qui
+ * faisait basculer le classement mensuel sur le peloton simulé.
+ */
+function finMois(date: string): string {
+  const [y, m] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
 }
 
 /** Dates (AAAA-MM-JJ) de `depuis` à `jusqua` inclus, arithmétique en UTC. */
