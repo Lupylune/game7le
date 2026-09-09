@@ -5,14 +5,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Game7le — an unofficial French adaptation of [gauntle.com](https://gauntle.com): a daily challenge
-of **7 mini-games drawn at random each day out of a pool of 16**, chained under a single stopwatch.
+of **7 mini-games drawn at random each day out of a pool of 17**, chained under a single stopwatch.
 The draw and puzzles are identical for every player on a given day (seeded PRNG, no required
 backend). Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as
 possible.
 
 There is also a **weekly hard challenge** (`/defi`, « défi difficile ») : 7 games drawn from a
-dated pool (`poolDefi()`, currently 10 games — Paire, Ratiole, Trace, Chromal and Atlas have no
-`defi` window; Tempo joins on Monday 2026-08-10), played in harder variants
+dated pool (`poolDefi()`, 11 games — Paire, Ratiole, Trace, Chromal and Atlas have no `defi`
+window; Tempo was in it from Monday 2026-08-10 to Monday 2026-09-14 exclusive, where Ricochet
+replaces it), played in harder variants
 via the `difficile` game prop. It is identified by the **Monday of the
 current week** (Europe/Paris) — seeds `game7le:defi:${lundi}:…` (`lundiStr()` in `src/lib/rng.ts`,
 `jeuxDefiSemaine()` in `src/games/index.ts`) — so everyone gets the same draw all week. It has its
@@ -80,7 +81,11 @@ rules when touching `JEUX`:
 
 Games that predate the mechanism (Pokédle, Atlas) are dated at launch, and Chromal/Atlas simply
 have no `defi` window, so every past draw stays the one the site currently shows — the windows only
-start doing real work with Tempo (daily from 2026-08-04, weekly from Monday 2026-08-10).
+start doing real work with Tempo (daily from 2026-08-04, weekly from Monday 2026-08-10, and
+`defi.retire: '2026-09-14'` — the first removal expressed with a window: it stays in the daily
+draw, and the weeks that already drew it keep it) and Ricochet (daily from 2026-09-10, weekly from
+Monday 2026-09-14). A removal never touches `submit_run()`'s id arrays: they are the catalogue of
+everything ever eligible, so runs recorded before the removal stay accepted.
 
 ### Game plugin contract
 
@@ -93,7 +98,9 @@ registered as a `GameDef` in `src/games/index.ts` (see `src/games/types.ts`):
   vocabulary, Dactylo 24 words, Echecs higher-rated mates in 2/3, LeMot & Mélimélo 8 letters,
   Nonogramme 15×15, Reines 8×8, Sudoku 9×9 with 28 clues, Pokédle all generations over 12
   attempts with a Génération clue column replacing Habitat and a +180 s fail penalty, Tempo 0.5–6 s
-  durations held blind — no live counter). **The
+  durations held blind — no live counter, kept for the weeks that drew Tempo before it left the
+  hard pool, Ricochet puzzles whose optimal solution is 8–9 moves
+  instead of 6–8). **The
   `false`/absent path must keep the
   exact same `rng` call sequence as before** so existing daily puzzles don't change when touching
   a generator. `GameDef.reglesDifficile` overrides the rules line shown during hard play.
@@ -177,7 +184,7 @@ and rejects malformed or implausible payloads with an exception (swallowed by th
 `syncRun()`): pseudo format, date within launch date…today (Europe/Paris), bounded `total_ms`,
 `lines` = exactly 7 distinct known game ids with plausible per-game durations and bounded string
 fields, and `flawless` recomputed server-side from the lines (the client flag can only remove it).
-The 16 game ids — and the 11 ever eligible to the hard pool when `p_defi` — are hardcoded in the
+The 17 game ids — and the 12 ever eligible to the hard pool when `p_defi` — are hardcoded in the
 function; they are the whole catalogue, not a dated pool (a run is only checked against known ids,
 never against the day's draw), so keep them in sync with `src/games/index.ts` `JEUX` (adding every
 new id to both arrays, and never removing one, so old runs stay accepted), and keep
@@ -249,6 +256,29 @@ in ink tokens — never in a series color. Every chart ships a hover tooltip **a
 browsing **and** a foldable data table, so no value is reachable by hover alone; `dimensions()`
 switches to a tighter viewBox under 640px so axis text keeps its apparent size instead of
 shrinking with the SVG.
+
+### Ricochet (`src/lib/ricochet.ts`)
+
+Adapted from the `Cartel` project's multiplayer version, reduced to a solo timed puzzle. The board
+is **not invented**: `TUILES` transcribes the twelve 8×8 quadrants of the physical game (relevés in
+`Lireer/ricochet-robot-solver`, MIT), one per corner and rotated a quarter turn per position, giving
+the standard 16×16 board with its seventeen targets and central block. Keep the source's
+conventions (`[colonne, ligne]`, walls noted south and east) when touching that data — the property
+that makes a transcription error visible is that *every target cell carries an elbow of two
+perpendicular walls*.
+
+`genRicochet(rng, difficile)` draws the puzzle: assemble a board, scatter four robots, run one BFS
+(`exploreAtteignables`, typed arrays + open-addressing hash table — the state count grows ~×2.3 per
+move) to get the distance to every (robot, cell) pair at once, then keep the hardest target whose
+optimal solution falls in 6–8 moves (8–9 for the weekly challenge) — the same order of difficulty as
+Cartel's defaults. That ceiling is a **budget** decision as much as a design one: 10-move puzzles
+push generation past a second on the render loop, so the épreuve would start on a stutter (measured
+~80 ms average / 280 ms worst at 6–8, ~170/400 ms at 8–9). Robots are re-scattered — then
+the board reassembled — until the floor is met, under a shared node budget so generation never hangs
+on an unlucky draw. The optimal length is **never shown to the player** — it is only revealed in the
+end-of-game detail line, and it is what the +10 s per extra move is counted against. `trouveSolution()`
+reconstructs the optimal line, used for the hint and the solutions screen — never to arbitrate a
+player's move, which is replayed by `deplace()`.
 
 ### Content pipelines (generated, not hand-authored)
 

@@ -86,6 +86,7 @@ const jeux = [
   ['echecs', '.chess-board'],
   ['pokedle', '.pokedle-board'],
   ['tempo', '.tempo-scene'],
+  ['ricochet', '.ric-plateau'],
 ];
 for (const [id, sel] of jeux) await check(`/entrainement/${id}`, sel, `Jeu : ${id}`);
 

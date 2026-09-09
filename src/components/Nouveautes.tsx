@@ -5,12 +5,12 @@ import BadgeIcon from './BadgeIcon';
 
 /**
  * Icône « Nouveautés » de la barre du haut : ouvre un popin mettant en avant les
- * dernières fonctionnalités (statistiques, champion de la semaine, Atlas, Pokédle, badges).
+ * dernières fonctionnalités (Ricochet, statistiques, champion de la semaine, Atlas, Pokédle, badges).
  * Une pastille signale les nouveautés non encore vues ; l'ouverture du popin
  * marque la version comme vue (mémorisée en localStorage). Bumper `VERSION`
  * réaffiche la pastille après l'ajout d'autres nouveautés.
  */
-const VERSION = 'champion-atlas-badges-pokedle-tempo-stats';
+const VERSION = 'champion-atlas-badges-pokedle-tempo-stats-ricochet';
 const CLE = 'game7le:nouveautes-vues';
 
 function dejaVu(): boolean {
@@ -89,6 +89,18 @@ export default function Nouveautes() {
                   <span className="muted">
                     Records, moyennes et pire temps par épreuve, distribution des temps de run et
                     courbes jour après jour — le tout comparé à vos propres chiffres.
+                  </span>
+                </span>
+              </Link>
+              <Link to="/entrainement/ricochet" className="nouveaute-item" onClick={() => setOuvert(false)}>
+                <span className="nouveaute-ico">
+                  <GameIcon id="ricochet" size={26} />
+                </span>
+                <span className="nouveaute-txt">
+                  <strong>Ricochet</strong>
+                  <span className="muted">
+                    Un nouveau mini-jeu : les robots glissent jusqu'au premier obstacle, amenez le
+                    bon sur sa cible en un minimum de coups.
                   </span>
                 </span>
               </Link>

@@ -10,6 +10,7 @@ import { generate as genReines } from '../games/Reines';
 import { generate as genNono } from '../games/Nonogramme';
 import { solutionEchecs } from '../games/Echecs';
 import { cibleDe } from '../games/Atlas';
+import { genRicochet, COULEURS, TEINTES } from '../lib/ricochet';
 import { POKEMONS } from '../data/pokemon';
 import GameIcon, { SymCouronne } from './GameIcon';
 
@@ -117,6 +118,20 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
             alt={p.nom}
           />
           {p.nom}
+        </p>
+      );
+    }
+    case 'ricochet': {
+      // Une des solutions optimales : la suite de coups, robot par robot.
+      const { solution } = genRicochet(rng, defi);
+      const fleches = { haut: '↑', droite: '→', bas: '↓', gauche: '←' } as const;
+      return (
+        <p className="solution-coups">
+          {solution.map((c, i) => (
+            <span key={i} className="solution-coup" style={{ color: TEINTES[COULEURS[c.robot]] }}>
+              {COULEURS[c.robot]} {fleches[c.dir]}
+            </span>
+          ))}
         </p>
       );
     }

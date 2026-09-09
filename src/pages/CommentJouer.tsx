@@ -54,8 +54,8 @@ export default function CommentJouer() {
         corsées tirées au sort parmi {JEUX_DEFI.length} mini-jeux</strong> (sans Paire, Ratiole ni
         Tracé), avec des variantes relevées — mot de 8 lettres, sudoku 9×9 avare en indices,
         nonogramme 15×15, 8 reines, 16 cases au Chromal, mots croisés au vocabulaire plus rare,
-        phrase doublée à la Dactylo, mats d'échecs mieux cotés, Mélimélo à 8 lettres, Tempo à
-        l'aveugle sur des durées de 0,5 à 6 s. Y passer une
+        phrase doublée à la Dactylo, mats d'échecs mieux cotés, Mélimélo à 8 lettres, Ricochet sur
+        des énigmes plus longues. Y passer une
         épreuve coûte <strong>+3 min</strong> (contre +90 s au quotidien), et les pénalités
         d'échec y sont ajustées (Le Mot raté : +90 s ; élimination au Chromal un peu plus
         clémente, la case étant plus dure à repérer parmi 16). Même tirage pour tout le monde, un

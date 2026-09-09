@@ -484,12 +484,19 @@ main.content > .page-entree > * {
   background: var(--accent);
   border: 1.5px solid var(--bg);
 }
+/* La liste s'allonge à chaque nouveauté : le popin se borne à la hauteur
+   disponible et c'est la liste qui défile, pour que l'entête et sa croix de
+   fermeture restent toujours atteignables. */
 .nouveautes-modal {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--sp-4) var(--sp-5) var(--sp-5);
   width: min(420px, calc(100vw - 2 * var(--sp-4)));
+  max-height: calc(100dvh - 2 * var(--sp-4));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   box-shadow: 0 8px 32px var(--shadow);
 }
 .nouveautes-head {
@@ -497,6 +504,7 @@ main.content > .page-entree > * {
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--sp-3);
+  flex: 0 0 auto;
 }
 .nouveautes-head h2 {
   font-size: var(--text-sm);
@@ -520,6 +528,12 @@ main.content > .page-entree > * {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* La barre de défilement se loge dans la marge intérieure plutôt que de
+     rogner les cartes, et le liseré au survol garde sa place. */
+  padding-right: var(--sp-2);
+  margin-right: calc(-1 * var(--sp-2));
 }
 .nouveaute-item {
   display: flex;
@@ -3356,4 +3370,209 @@ input[type='text'] {
   .atlas-guess:focus-within {
     width: calc(100% - 2 * var(--sp-3));
   }
+}
+
+/* Ricochet — plateau 16×16 en SVG : une unité SVG = une case, ce qui rend le
+   plateau réactif sans calcul de pixels. Les robots sont posés par `transform`,
+   animé en CSS : le déplacement se lit comme une glissade, ce qui est
+   exactement la mécanique du jeu. */
+.ric-consigne {
+  text-align: center;
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.ric-symbole {
+  font-size: 1.25em;
+  line-height: 1;
+  vertical-align: -0.08em;
+}
+.ric-plateau {
+  width: 100%;
+  max-width: min(88vw, 78vh, 30rem);
+  aspect-ratio: 1;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.ric-case {
+  fill: var(--surface);
+}
+.ric-case.pair {
+  fill: var(--surface-elevated);
+}
+.ric-grille line {
+  stroke: var(--border);
+  stroke-width: 0.02;
+}
+.ric-centre {
+  fill: color-mix(in srgb, var(--text) 18%, var(--bg));
+  stroke: var(--text);
+  stroke-width: 0.14;
+}
+.ric-murs line,
+.ric-bord {
+  stroke: var(--text);
+  stroke-width: 0.14;
+  stroke-linecap: round;
+  fill: none;
+}
+/* Les seize cibles hors énigme restent lisibles mais en retrait : décor du
+   plateau physique, pas consigne du jour. */
+.ric-cible {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.ric-cible rect {
+  fill-opacity: 0.2;
+  stroke-width: 0.03;
+}
+.ric-cible text {
+  font-size: 0.55px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.ric-cible.active {
+  opacity: 1;
+}
+/* Anneau autour de la cible du jour : elle doit se trouver d'un coup d'œil
+   parmi les seize autres. */
+.ric-vise {
+  fill: none;
+  stroke-width: 0.07;
+  stroke-dasharray: 0.16 0.12;
+  animation: ric-vise 3s linear infinite;
+}
+@keyframes ric-vise {
+  to {
+    stroke-dashoffset: -1.12;
+  }
+}
+.ric-cible.active rect {
+  fill-opacity: 0.35;
+  stroke-width: 0.08;
+  animation: ric-cible 2s ease-in-out infinite;
+}
+@keyframes ric-cible {
+  0%,
+  100% {
+    fill-opacity: 0.22;
+  }
+  50% {
+    fill-opacity: 0.5;
+  }
+}
+/* Cases d'arrivée du robot sélectionné : trait pointillé jusqu'à la case, seule
+   la case réagissant au clic — un clic sur la trajectoire ne doit rien déplacer,
+   et le groupe focusable se limite ainsi à la case (voir l'anneau de focus). */
+.ric-vers {
+  opacity: 0.65;
+  transition: opacity 0.12s;
+}
+.ric-vers:hover,
+.ric-vers:focus-within {
+  opacity: 1;
+}
+.ric-coup {
+  cursor: pointer;
+}
+.ric-trajet {
+  stroke-width: 0.06;
+  stroke-dasharray: 0.18 0.16;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ric-coup rect {
+  fill-opacity: 0.14;
+}
+/* Pastille d'arrivée : anneau pointillé, dans le langage du trait de
+   trajectoire — pour ne pas se confondre avec un robot posé sur le plateau. */
+.ric-coup circle {
+  fill-opacity: 0.7;
+  stroke-width: 0.06;
+}
+.ric-anneau {
+  stroke-dasharray: 0.14 0.12;
+}
+.ric-vers.indique {
+  opacity: 1;
+  animation: ric-indice 0.7s ease-in-out infinite alternate;
+}
+/* Chrome pose un anneau de focus « auto » démesuré sur un <g> SVG focusable —
+   une pastille bleue cerclée de blanc en travers du robot, y compris à la
+   souris. Et `outline` n'est pas une solution de rechange ici : sa largeur est
+   lue en unités du viewBox, donc 2px couvre deux cases. Le focus clavier est
+   donc dessiné en SVG, comme le reste du plateau. */
+.ric-robot:focus,
+.ric-coup:focus {
+  outline: none;
+}
+.ric-focus {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.09;
+  opacity: 0;
+}
+.ric-robot:focus-visible .ric-focus,
+.ric-coup:focus-visible .ric-focus {
+  opacity: 1;
+}
+@keyframes ric-indice {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ric-robot {
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ric-ombre {
+  fill: #00000040;
+}
+.ric-reflet {
+  fill: #ffffff59;
+}
+/* Le halo pulse en opacité, pas en rayon : une boîte englobante qui respire
+   rendrait le robot « instable » pour tout pilotage automatisé (et fait vibrer
+   l'anneau de focus). */
+.ric-halo {
+  fill: none;
+  stroke-width: 0.07;
+  animation: ric-halo 1.4s ease-in-out infinite;
+}
+@keyframes ric-halo {
+  0%,
+  100% {
+    stroke-opacity: 0.45;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ric-robot,
+  .ric-halo,
+  .ric-cible.active rect,
+  .ric-vise,
+  .ric-vers.indique {
+    animation: none;
+    transition: none;
+  }
+}
+/* Solution du jour : la suite de coups, une pastille par coup. */
+.solution-coups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-2);
+  justify-content: center;
+  margin: 0;
+}
+.solution-coup {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  padding: 1px var(--sp-2);
 }

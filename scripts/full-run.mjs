@@ -99,6 +99,7 @@ const actions = {
   // Atlas charge des libs/tuiles externes ; on ne joue pas, on passe.
   Atlas: () => skip(60),
   Tempo: tempo,
+  Ricochet: () => skip(60),
 };
 
 for (let step = 0; step < 7; step++) {

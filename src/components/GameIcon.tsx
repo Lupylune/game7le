@@ -271,6 +271,15 @@ export default function GameIcon({ id, size = 20 }: { id: string; size?: number 
           <circle cx="16.1" cy="10.5" r="1.5" fill="currentColor" stroke="none" />
         </svg>
       );
+    case 'ricochet': // robot lancé, qui rebondit à angle droit sur un mur
+      return (
+        <svg {...common}>
+          <path d="M20.5 3.5 V13 H6.5" />
+          <path d="M10 9.5 L6 13 L10 16.5" />
+          <path d="M17.5 3.5 H20.5 V6.5" />
+          <circle cx="5" cy="19" r="2.8" fill="currentColor" stroke="none" />
+        </svg>
+      );
     default:
       return (
         <svg {...common}>

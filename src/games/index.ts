@@ -16,6 +16,7 @@ import Echecs from './Echecs';
 import Pokedle from './Pokedle';
 import Atlas from './Atlas';
 import Tempo from './Tempo';
+import Ricochet from './Ricochet';
 
 /**
  * Dates repères de l'historique du tirage. Le tirage d'un jour n'utilise que
@@ -219,8 +220,26 @@ export const JEUX: GameDef[] = [
       'Précision moyenne des 5 durées : de −30 s (100 %) à +45 s (0 %), neutre vers 60 % · une seule tentative par durée',
     skip: { apresS: 45, penaliteS: 90 },
     tirage: { depuis: '2026-08-04' },
-    defi: { depuis: '2026-08-10' },
+    // Sorti du pool du défi à partir du lundi 2026-09-14 : la semaine en cours
+    // (lundi 2026-09-07) est déjà jouée, son tirage ne doit pas bouger. Le jeu
+    // reste au tirage quotidien, et l'entrée reste ici pour que `JEU_PAR_ID`
+    // résolve les défis passés qui l'ont tiré.
+    defi: { depuis: '2026-08-10', retire: '2026-09-14' },
     Component: Tempo,
+  },
+  {
+    id: 'ricochet',
+    nom: 'Ricochet',
+    regles:
+      'Les robots glissent jusqu’au premier obstacle : amenez le robot ciblé sur sa cible en un minimum de coups.',
+    reglesDifficile:
+      'Les robots glissent jusqu’au premier obstacle : amenez le robot ciblé sur sa cible en un minimum de coups — énigme plus longue.',
+    scoring:
+      'Résolu : −15 s · chaque coup au-delà de la solution optimale : +10 s · indice : +15 s · retour au départ : +10 s',
+    skip: { apresS: 45, penaliteS: 90 },
+    tirage: { depuis: '2026-09-10' },
+    defi: { depuis: '2026-09-14' },
+    Component: Ricochet,
   },
 ];
 
