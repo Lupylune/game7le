@@ -9,21 +9,27 @@ export default function APropos() {
         </a>
         , le jeu de casse-têtes quotidien créé par Hannah : des mini-jeux enchaînés sous un
         chronomètre unique, les mêmes énigmes pour tout le monde chaque jour. Game7le s'en
-        distingue par son format : <strong>7 épreuves tirées au sort chaque jour</strong>.
+        distingue par son format : <strong>7 épreuves tirées au sort chaque jour parmi 17</strong>,
+        auxquelles s'ajoute un <strong>défi difficile hebdomadaire</strong>.
       </p>
       <h2>Comment ça marche ici</h2>
       <p>
-        Cette version fonctionne <strong>entièrement dans votre navigateur</strong>, sans serveur ni
-        compte :
+        Les épreuves tournent <strong>entièrement dans votre navigateur</strong>, sans compte ni mot
+        de passe :
       </p>
       <ul>
         <li>
           Les grilles du jour sont générées par un algorithme déterministe seedé sur la date — tous
-          les visiteurs d'un même jour reçoivent les mêmes puzzles.
+          les visiteurs d'un même jour reçoivent les mêmes puzzles, sans rien demander à un serveur.
         </li>
-        <li>Vos temps et votre historique sont stockés sous votre pseudo.</li>
         <li>
-          Le classement mondial est simulé pour la démonstration ; seul votre temps est réel.
+          Vos temps et votre historique sont conservés dans votre navigateur, sous votre pseudo.
+        </li>
+        <li>
+          Le classement, lui, est bien réel : les runs terminés y sont envoyés sous ce même pseudo,
+          librement choisi — c'est la seule donnée qui quitte votre navigateur. Le jeu reste
+          entièrement jouable si ce service est indisponible : le classement retombe alors sur un
+          peloton simulé, signalé comme tel.
         </li>
       </ul>
       <h2>Gratuit, sans pub</h2>
@@ -34,8 +40,17 @@ export default function APropos() {
       <h2>Technique</h2>
       <p className="muted">
         React + TypeScript + Vite. Générateurs et solveurs embarqués pour le sudoku, le démineur
-        (grilles sans pari), le nonogramme, Paire et Reines — chaque grille est vérifiée à solution
-        unique avant de vous être servie.
+        (grilles sans pari), le nonogramme, Paire, Reines et Ricochet — chaque grille est vérifiée à
+        solution unique (ou à solution optimale connue) avant de vous être servie. Le code est
+        ouvert :{' '}
+        <a
+          href="https://github.com/Lupylune/game7le"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          github.com/Lupylune/game7le
+        </a>
+        .
       </p>
       <h2>Sources lexicales</h2>
       <p className="muted">
@@ -53,7 +68,24 @@ export default function APropos() {
         <a href="https://database.lichess.org" target="_blank" rel="noopener noreferrer">
           base ouverte Lichess
         </a>{' '}
-        (licence CC0).
+        (licence CC0), les Pokémon de{' '}
+        <a href="https://pokeapi.co" target="_blank" rel="noopener noreferrer">
+          PokeAPI
+        </a>
+        , et les panoramas d'Atlas de{' '}
+        <a href="https://www.mapillary.com" target="_blank" rel="noopener noreferrer">
+          Mapillary
+        </a>{' '}
+        avec les cartes d'OpenStreetMap. Le plateau de Ricochet est le relevé du jeu de plateau
+        d'origine, repris du solveur{' '}
+        <a
+          href="https://github.com/Lireer/ricochet-robot-solver"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          ricochet-robot-solver
+        </a>{' '}
+        (MIT).
       </p>
     </div>
   );
