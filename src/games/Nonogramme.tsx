@@ -94,10 +94,9 @@ export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GamePro
   const { N, pattern, rows, cols } = useMemo(() => generate(rng, difficile), [rng, difficile]);
   // 0 = vide, 1 = rempli, 2 = croix
   const [grid, setGrid] = useState<number[]>(() => new Array(N * N).fill(0));
-  // Grille 15×15 : cases plus petites pour tenir à l'écran
-  const taille = difficile
-    ? 'clamp(16px, 4.4vw, 26px)'
-    : 'clamp(28px, 7vw, 36px)';
+  // Les pistes d'indices se calent sur la taille de case, décidée en CSS
+  // (`--case` sur .nono-wrap, cf. styles.css) pour suivre la fenêtre.
+  const taille = 'var(--case)';
   const [wrong, setWrong] = useState<Set<number>>(() => new Set());
   const doneRef = useRef(false);
   // Le joueur s'est-il servi de « Vérifier » ? signalé dans le verdict final

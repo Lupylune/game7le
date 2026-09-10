@@ -964,10 +964,35 @@ button.skip-pill.skip-ready:active {
   }
 }
 .game-area {
+  /* Un plateau n'est pas du texte : il n'a aucune raison d'être borné par la
+     colonne de lecture (860 px de `main.content`). Il reprend la largeur de la
+     fenêtre par marges négatives — symétriques, donc le plateau reste centré
+     sur la fenêtre et non sur son conteneur.
+
+     Les deux jetons décrivent la place réellement disponible ; chaque jeu en
+     tire la taille de sa case (`--case`) en divisant par son nombre de colonnes
+     et de lignes, puis borne le résultat : un plancher (la case reste jouable
+     sur petit écran) et un plafond (un écran 4K ne donne pas des cases
+     absurdes). `--jeu-h` retire du budget vertical ce que le run pose autour du
+     plateau — barre du haut, en-tête, ligne de règles, rangée d'actions — et
+     chaque jeu en retire encore ce qui lui est propre (clavier, pavé
+     numérique…). Volontairement en `vw`/`dvh` et non en `%` : `--case` sert de
+     largeur de case, où un pourcentage se résoudrait sur la grille elle-même. */
+  --jeu-l: min(100vw - 2 * var(--sp-4), 1180px);
+  --jeu-h: max(260px, 100dvh - 280px);
+  width: var(--jeu-l);
+  margin-inline: calc(50% - var(--jeu-l) / 2);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-4);
+}
+/* Consignes et rappels posés au fil du plateau. `:where()` annule la
+   spécificité du sélecteur : n'importe quelle classe (.dactylo-phrase,
+   .ric-consigne…) reprend la main sur sa propre largeur. */
+:where(.game-area) > p {
+  max-width: 72ch;
+  text-align: center;
 }
 .game-actions {
   display: flex;
@@ -1915,6 +1940,8 @@ main.content:has(.interstitial) {
 
 /* Le Mot */
 .wordy-board {
+  /* 6 lignes de L cases, moins la place du clavier virtuel sous le plateau. */
+  --case: max(44px, min(92px, (var(--jeu-l) - 40px) / 5, (var(--jeu-h) - 220px) / 6));
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -1924,15 +1951,15 @@ main.content:has(.interstitial) {
   gap: 5px;
 }
 .wordy-cell {
-  width: clamp(44px, 12vw, 58px);
-  height: clamp(44px, 12vw, 58px);
+  width: var(--case);
+  height: var(--case);
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: calc(var(--case) * 0.42);
   text-transform: uppercase;
   transition: border-color 0.15s;
   backface-visibility: hidden;
@@ -1964,10 +1991,8 @@ main.content:has(.interstitial) {
   color: var(--lemot-absent-texte);
 }
 /* Défi difficile : mot de 8 lettres, cases réduites */
-.wordy-board.l8 .wordy-cell {
-  width: clamp(32px, 9.8vw, 46px);
-  height: clamp(32px, 9.8vw, 46px);
-  font-size: 1.15rem;
+.wordy-board.l8 {
+  --case: max(32px, min(72px, (var(--jeu-l) - 60px) / 8, (var(--jeu-h) - 220px) / 6));
 }
 .kb {
   display: flex;
@@ -1975,7 +2000,7 @@ main.content:has(.interstitial) {
   gap: 5px;
   align-items: center;
   width: 100%;
-  max-width: 560px;
+  max-width: min(var(--jeu-l), 660px);
 }
 .kb-row {
   display: flex;
@@ -1985,9 +2010,9 @@ main.content:has(.interstitial) {
 }
 .kb-key {
   flex: 1;
-  max-width: 46px;
+  max-width: 56px;
   min-width: 0;
-  height: 50px;
+  height: clamp(50px, 6.5vh, 60px);
   border: none;
   border-radius: var(--radius-sm);
   background: var(--lemot-touche);
@@ -2001,7 +2026,7 @@ main.content:has(.interstitial) {
   transform: scale(0.9);
 }
 .kb-key.wide {
-  max-width: 74px;
+  max-width: 88px;
   flex: 1.6;
   font-size: 0.75rem;
 }
@@ -2028,10 +2053,21 @@ main.content:has(.interstitial) {
      ce qui élargit les espaces entre les rangées */
   align-items: flex-start;
 }
+/* 5×5. Sous 560px la colonne de définitions passe sous la grille (cf. la règle
+   mobile plus bas) : la grille a alors toute la largeur. */
+.cw-grid {
+  --case: max(44px, min(96px, (var(--jeu-l) - 20px) / 5, (var(--jeu-h) - 90px) / 5));
+}
+@media (min-width: 561px) {
+  /* Définitions à côté de la grille : 260 px de colonne + la gouttière. */
+  .cw-grid {
+    --case: max(44px, min(96px, (var(--jeu-l) - 300px) / 5, (var(--jeu-h) - 90px) / 5));
+  }
+}
 .cw-grid .cell {
-  width: clamp(44px, 15vw, 56px);
-  height: clamp(44px, 15vw, 56px);
-  font-size: 1.3rem;
+  width: var(--case);
+  height: var(--case);
+  font-size: calc(var(--case) * 0.38);
   text-transform: uppercase;
 }
 .cw-grid .cell.black {
@@ -2042,13 +2078,13 @@ main.content:has(.interstitial) {
   position: absolute;
   top: 2px;
   left: 3px;
-  font-size: 0.55rem;
+  font-size: max(0.55rem, calc(var(--case) * 0.16));
   color: var(--text-muted);
   font-weight: 400;
 }
 .cw-clues {
   font-size: var(--text-sm);
-  max-width: 260px;
+  max-width: 300px;
 }
 /* Rappel de la définition en cours : utile seulement quand la liste complète
    passe sous le clavier virtuel (cf. la règle mobile plus bas). */
@@ -2106,10 +2142,16 @@ main.content:has(.interstitial) {
 }
 
 /* Paire */
+.paire-grid {
+  --case: max(44px, min(96px, (var(--jeu-l) - 24px) / 6, (var(--jeu-h) - 120px) / 6));
+  /* Pastille de contrainte posée à cheval sur le bord des cases : elle suit
+     leur taille, sinon elle devient un confetti sur un grand plateau. */
+  --marque: max(16px, calc(var(--case) * 0.3));
+}
 .paire-grid .cell {
-  width: clamp(44px, 11vw, 54px);
-  height: clamp(44px, 11vw, 54px);
-  font-size: 1.4rem;
+  width: var(--case);
+  height: var(--case);
+  font-size: calc(var(--case) * 0.42);
 }
 /* Le glyphe ● rend plus petit que ★ à taille de police égale : on l'agrandit
    pour que les deux symboles aient la même taille visuelle. */
@@ -2125,35 +2167,39 @@ main.content:has(.interstitial) {
 .paire-mark {
   position: absolute;
   z-index: 2;
-  font-size: 0.75rem;
+  font-size: calc(var(--marque) * 0.62);
   font-weight: 700;
   color: var(--text-muted);
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 50%;
-  width: 16px;
-  height: 16px;
+  width: var(--marque);
+  height: var(--marque);
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
 }
 .paire-mark.right {
-  right: -10px;
+  right: calc(var(--marque) / -2 - 2px);
   top: 50%;
   transform: translateY(-50%);
 }
 .paire-mark.bottom {
-  bottom: -10px;
+  bottom: calc(var(--marque) / -2 - 2px);
   left: 50%;
   transform: translateX(-50%);
 }
 
 /* Sudoku */
+.sudoku-grid {
+  /* Le pavé numérique et la rangée d'actions vivent sous la grille. */
+  --case: max(44px, min(96px, (var(--jeu-l) - 24px) / 6, (var(--jeu-h) - 170px) / 6));
+}
 .sudoku-grid .cell {
-  width: clamp(44px, 11vw, 54px);
-  height: clamp(44px, 11vw, 54px);
-  font-size: 1.3rem;
+  width: var(--case);
+  height: var(--case);
+  font-size: calc(var(--case) * 0.4);
 }
 .sudoku-grid .cell.bR {
   border-right: 2px solid var(--text-muted);
@@ -2162,18 +2208,19 @@ main.content:has(.interstitial) {
   border-bottom: 2px solid var(--text-muted);
 }
 /* Défi difficile : 9×9, cases réduites */
-.sudoku-grid.n9 .cell {
-  width: clamp(30px, 8.6vw, 42px);
-  height: clamp(30px, 8.6vw, 42px);
-  font-size: 1.05rem;
+.sudoku-grid.n9 {
+  --case: max(30px, min(74px, (var(--jeu-l) - 36px) / 9, (var(--jeu-h) - 170px) / 9));
 }
 .numpad {
   display: flex;
   gap: var(--sp-2);
+  /* Le pavé est frère de la grille : il n'hérite pas de son `--case`. Sa touche
+     est bornée par la place d'une rangée de dix (le 9×9 du défi difficile). */
+  --touche: max(44px, min(64px, (var(--jeu-l) - 90px) / 10));
 }
 .numpad button {
-  width: 44px;
-  height: 44px;
+  width: var(--touche);
+  height: var(--touche);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-elevated);
@@ -2190,23 +2237,27 @@ main.content:has(.interstitial) {
 }
 
 /* Reines */
+.queens-grid {
+  --case: max(44px, min(96px, (var(--jeu-l) - 24px) / 6, (var(--jeu-h) - 140px) / 6));
+}
 .queens-grid .cell {
-  width: clamp(44px, 11vw, 54px);
-  height: clamp(44px, 11vw, 54px);
-  font-size: 1.3rem;
+  width: var(--case);
+  height: var(--case);
+  font-size: calc(var(--case) * 0.4);
 }
 /* Défi difficile : 8×8, cases réduites pour tenir à l'écran */
-.queens-grid.n8 .cell {
-  width: clamp(34px, 9vw, 46px);
-  height: clamp(34px, 9vw, 46px);
-  font-size: 1.1rem;
+.queens-grid.n8 {
+  --case: max(34px, min(78px, (var(--jeu-l) - 32px) / 8, (var(--jeu-h) - 140px) / 8));
 }
 
 /* Démineur */
+.ms-grid {
+  --case: max(26px, min(60px, (var(--jeu-l) - 48px) / 12, (var(--jeu-h) - 100px) / 12));
+}
 .ms-grid .cell {
-  width: clamp(26px, 7vw, 34px);
-  height: clamp(26px, 7vw, 34px);
-  font-size: 0.95rem;
+  width: var(--case);
+  height: var(--case);
+  font-size: calc(var(--case) * 0.45);
   font-family: var(--font-mono);
   background: var(--surface-elevated);
 }
@@ -2307,19 +2358,26 @@ main.content:has(.interstitial) {
   grid-row: 2;
   touch-action: none; /* peinture au glisser, y compris tactile */
 }
+/* La grille est bordée d'une bande d'indices en haut et à gauche : on lui
+   réserve de la place sur les deux axes. Nonogramme.tsx relit `--case` pour
+   caler les pistes d'indices sur les colonnes / lignes. */
+.nono-wrap {
+  --case: max(28px, min(64px, (var(--jeu-l) - 160px) / 8, (var(--jeu-h) - 130px) / 8));
+}
 .nono-grid .cell {
-  width: clamp(28px, 7vw, 36px);
-  height: clamp(28px, 7vw, 36px);
-  font-size: 0.9rem;
+  width: var(--case);
+  height: var(--case);
+  font-size: calc(var(--case) * 0.4);
+}
+.nono-wrap .clue {
+  font-size: max(0.7rem, calc(var(--case) * 0.3));
 }
 /* Défi difficile : 15×15, cases et indices réduits */
-.nono-wrap.n15 .nono-grid .cell {
-  width: clamp(16px, 4.4vw, 26px);
-  height: clamp(16px, 4.4vw, 26px);
-  font-size: 0.7rem;
+.nono-wrap.n15 {
+  --case: max(16px, min(44px, (var(--jeu-l) - 190px) / 15, (var(--jeu-h) - 130px) / 15));
 }
 .nono-wrap.n15 .clue {
-  font-size: 0.58rem;
+  font-size: max(0.58rem, calc(var(--case) * 0.26));
 }
 .nono-grid .cell.fill::after {
   content: '';
@@ -2365,9 +2423,14 @@ main.content:has(.interstitial) {
     opacity: 1;
   }
 }
+.chromal-grid {
+  /* 6 cases en 3×2 (quotidien) ; le numéro de niveau et la consigne encadrent
+     la grille. */
+  --case: max(72px, min(170px, (var(--jeu-l) - 2 * var(--sp-3)) / 3, (var(--jeu-h) - 150px) / 2));
+}
 .chromal-grid button {
-  width: clamp(72px, 20vw, 110px);
-  height: clamp(72px, 20vw, 110px);
+  width: var(--case);
+  height: var(--case);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -2376,10 +2439,7 @@ main.content:has(.interstitial) {
 /* Défi difficile : 16 cases en 4×4 */
 .chromal-grid.seize {
   grid-template-columns: repeat(4, 1fr);
-}
-.chromal-grid.seize button {
-  width: clamp(58px, 16vw, 84px);
-  height: clamp(58px, 16vw, 84px);
+  --case: max(58px, min(120px, (var(--jeu-l) - 3 * var(--sp-3)) / 4, (var(--jeu-h) - 150px) / 4));
 }
 .chromal-grid button:active {
   transform: scale(0.95);
@@ -2391,7 +2451,7 @@ main.content:has(.interstitial) {
 
 /* Mélimélo */
 .meli-reveal {
-  height: 110px;
+  height: clamp(110px, calc(var(--jeu-h) * 0.26), 180px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2400,7 +2460,7 @@ main.content:has(.interstitial) {
 }
 .meli-reveal .lettre {
   font-family: var(--font-mono);
-  font-size: 4rem;
+  font-size: clamp(4rem, calc(var(--jeu-h) * 0.16), 7rem);
   font-weight: 700;
   line-height: 1;
   color: var(--accent);
@@ -2441,7 +2501,7 @@ main.content:has(.interstitial) {
   border-radius: var(--radius-md);
   color: var(--text);
   padding: var(--sp-3);
-  width: 280px;
+  width: min(var(--jeu-l), clamp(280px, calc(var(--jeu-h) * 0.55), 420px));
 }
 .meli-input:focus {
   outline: none;
@@ -2451,9 +2511,9 @@ main.content:has(.interstitial) {
 /* Dactylo */
 .dactylo-phrase {
   font-family: var(--font-mono);
-  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  font-size: clamp(1.05rem, 2.6vw, 1.75rem);
   line-height: 1.9;
-  max-width: 560px;
+  max-width: min(var(--jeu-l), 820px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -2518,8 +2578,8 @@ main.content:has(.interstitial) {
 }
 .tempo-scene {
   position: relative;
-  width: clamp(220px, 62vw, 300px);
-  height: clamp(220px, 62vw, 300px);
+  width: clamp(220px, min(62vw, var(--jeu-h) - 140px), 460px);
+  height: clamp(220px, min(62vw, var(--jeu-h) - 140px), 460px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2674,9 +2734,12 @@ main.content:has(.interstitial) {
   -webkit-user-select: none;
   touch-action: none; /* glisser-déposer, y compris tactile */
 }
+.chess-board {
+  --case: max(38px, min(92px, (var(--jeu-l) - 8px) / 8, (var(--jeu-h) - 120px) / 8));
+}
 .chess-sq {
-  width: clamp(38px, 10.5vw, 52px);
-  height: clamp(38px, 10.5vw, 52px);
+  width: var(--case);
+  height: var(--case);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2718,7 +2781,7 @@ main.content:has(.interstitial) {
   }
 }
 .chess-piece {
-  font-size: clamp(26px, 7.5vw, 38px);
+  font-size: calc(var(--case) * 0.74);
   line-height: 1;
   animation: cellpop 0.18s ease-out;
 }
@@ -2744,7 +2807,12 @@ main.content:has(.interstitial) {
 }
 
 /* Ratiole / Tracé */
+/* Les attributs width/height du SVG ne servent plus que de rapport d'aspect :
+   les deux jeux ramènent les coordonnées du pointeur dans le viewBox à partir
+   de la boîte réelle, la surface peut donc grandir librement. */
 .draw-svg {
+  width: min(var(--jeu-l), (var(--jeu-h) - 80px) * 1.1, 640px);
+  height: auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -3060,11 +3128,12 @@ input[type='text'] {
 /* Pokédle */
 .pokedle-board {
   width: 100%;
-  max-width: 480px;
+  max-width: min(var(--jeu-l), 760px);
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 46vh;
+  /* Le champ de saisie et sa liste de suggestions vivent sous le tableau. */
+  max-height: max(46vh, var(--jeu-h) - 150px);
   overflow-y: auto;
 }
 .pokedle-row {
@@ -3079,9 +3148,9 @@ input[type='text'] {
   gap: 2px;
   text-align: center;
   padding: 4px 2px;
-  min-height: 44px;
+  min-height: clamp(44px, 6vh, 64px);
   border-radius: var(--radius-sm);
-  font-size: 0.62rem;
+  font-size: clamp(0.62rem, 1vw, 0.86rem);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
@@ -3144,7 +3213,7 @@ input[type='text'] {
 .pokedle-saisie {
   position: relative;
   width: 100%;
-  max-width: 480px;
+  max-width: min(var(--jeu-l), 560px);
 }
 .pokedle-input {
   width: 100%;
@@ -3195,15 +3264,20 @@ input[type='text'] {
 }
 
 /* ===== Atlas (panorama 360° + carte de devine) ===== */
-.atlas-area {
-  width: 100%;
+.atlas-area,
+.atlas-recap {
+  /* Hauteur du cadre de jeu : la place réellement disponible sur grand écran,
+     sans jamais descendre sous la part d'écran que le panorama prenait déjà
+     (c'est ce plancher qui tient le cadrage sur mobile, où l'en-tête du run
+     pèse proportionnellement plus lourd). */
+  --stage-h: max(min(72vh, 620px), min(var(--jeu-h), 860px));
   gap: var(--sp-3);
 }
 /* Le panorama occupe l'essentiel de l'écran ; la carte de devine se superpose. */
 .atlas-stage {
   position: relative;
   width: 100%;
-  height: min(72vh, 620px);
+  height: var(--stage-h);
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--border);
@@ -3269,7 +3343,7 @@ input[type='text'] {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  width: clamp(110px, 16vw, 170px);
+  width: clamp(110px, 16vw, 220px);
   transition: width 0.2s ease, height 0.2s ease;
 }
 /* Au survol/focus : la carte occupe ~3/4 du cadre de jeu (largeur et hauteur). */
@@ -3287,8 +3361,8 @@ input[type='text'] {
 }
 .atlas-guess:hover .atlas-guess-map,
 .atlas-guess:focus-within .atlas-guess-map {
-  /* 3/4 de la hauteur du stage (min(72vh, 620px)), bouton compris. */
-  height: min(50vh, 430px);
+  /* 3/4 de la hauteur du stage, bouton compris. */
+  height: calc(0.7 * var(--stage-h));
 }
 .atlas-guess-btn {
   width: 100%;
@@ -3334,12 +3408,9 @@ input[type='text'] {
   }
 }
 /* Écran récapitulatif du round. */
-.atlas-recap {
-  width: 100%;
-}
 .atlas-recap-map {
   width: 100%;
-  height: min(52vh, 440px);
+  height: max(min(52vh, 440px), min(var(--stage-h) - 120px, 700px));
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
@@ -3388,7 +3459,7 @@ input[type='text'] {
 }
 .ric-plateau {
   width: 100%;
-  max-width: min(88vw, 78vh, 30rem);
+  max-width: min(var(--jeu-l), var(--jeu-h), 46rem);
   aspect-ratio: 1;
   touch-action: manipulation;
   user-select: none;

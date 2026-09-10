@@ -123,6 +123,22 @@ full line. Follow whichever pattern fits when adding a new puzzle-type game.
 `GameIcon.tsx` renders a hand-drawn SVG glyph per game `id` (no emoji) — add a new `case` there for
 any new game id.
 
+**Board sizing (`.game-area` in `src/styles.css`).** Every game's root element carries
+`.game-area`, which breaks out of the 860px reading column (`width: var(--jeu-l)` + symmetric
+negative `margin-inline`, so the board stays centred on the *window*) and publishes two tokens:
+`--jeu-l` (usable width) and `--jeu-h` (usable height — the window minus the top bar, run header,
+rules line and action row). A game derives its cell size from them,
+`--case: max(<floor>, min(<cap>, (var(--jeu-l) - <gutters>) / <cols>, (var(--jeu-h) - <chrome>) / <rows>))`,
+set on the board element and read by the cells for width/height *and* font-size — so a plateau
+grows with the browser window instead of stopping at a fixed pixel maximum. Rules when adding or
+touching a game: express sizes through `--case` (never a bare `px`/`vw` clamp), subtract what the
+game itself stacks around the board (keyboard, numpad, hint line) from `--jeu-h`, keep the floor at
+today's value so small screens don't regress, and keep the cap sane (a 4K screen must not produce
+absurd cells). `--jeu-l`/`--jeu-h` are deliberately in `vw`/`dvh`, not `%`: `--case` is consumed as
+a cell width, where a percentage would resolve against the grid itself. Free-standing text inside a
+plateau is capped by `:where(.game-area) > p { max-width: 72ch }` — a zero-specificity selector, so
+any class (`.dactylo-phrase`, `.ric-consigne`…) still decides its own width.
+
 ### Run flow (`src/pages/RunPage.tsx`)
 
 Central state machine: `intro` → `playing` → `results`, driving through `jeux` (the day's 7 draw).
