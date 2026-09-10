@@ -85,6 +85,10 @@
   --lemot-touche-texte: #f2f2f2;
   --lemot-absent: #33363f;
   --lemot-absent-texte: #d5d5d5a6;
+  /* Paire : mêmes teintes remontées pour le fond sombre — 7,1:1 et 6,4:1 sur la
+     case, ΔE protanope 81 entre les deux, 37 entre l'or et --error. */
+  --paire-etoile: #d1a24a;
+  --paire-rond: #5aa9d6;
 }
 :root {
   /* Reflet doré du podium, réutilisé par la célébration SANS-FAUTE. Teintes
@@ -101,6 +105,14 @@
   --wordle-correct: #3a7e5e;
   --wordle-present: #b57a3b;
   --wordle-absent: #7a7a7a66;
+  /* Paire : ★ et ● doivent se lire d'un coup d'œil, la forme seule ne suffit
+     pas sur un plateau dense. Couple or / bleu *calculé*, pas choisi à l'œil :
+     ≥ 4,4:1 sur la case (3,9:1 sur une case imposée, teintée), séparation
+     protanope ΔE 85 entre les deux symboles, et l'or reste à ΔE 20 de --error
+     sous protanopie pour que le rouge de « Vérifier » ne se confonde pas avec
+     une étoile. Ne pas retoucher les hex à la main. */
+  --paire-etoile: #7d5a14;
+  --paire-rond: #2a5fa0;
   --queens-r1: #c45a5a;
   --queens-r2: #5a7fc4;
   --queens-r3: #c4a45a;
@@ -1937,6 +1949,16 @@ main.content:has(.interstitial) {
 .cellgrid .cell.error {
   color: var(--error);
 }
+/* Les symboles de jeu (`Sym*` dans GameIcon.tsx) portent leurs dimensions en
+   attributs de pixels : dans une case de plateau on les ramène sur la taille de
+   police de la case, qui suit `--case` — sinon la couronne des Reines ou le
+   drapeau du Démineur restent des vignettes de 16 px sur un grand plateau.
+   1,05em : le rapport qu'ils avaient à la taille de case d'origine. La grille
+   miniature des solutions garde ses tailles fixes. */
+.cellgrid:not(.mini) .cell .sym {
+  width: 1.05em;
+  height: 1.05em;
+}
 
 /* Le Mot */
 .wordy-board {
@@ -2152,6 +2174,25 @@ main.content:has(.interstitial) {
   width: var(--case);
   height: var(--case);
   font-size: calc(var(--case) * 0.42);
+}
+/* Deux couleurs pour les deux symboles (cf. --paire-etoile / --paire-rond).
+   Redondant avec la forme, jamais seul porteur de l'information. */
+.paire-sym.star {
+  color: var(--paire-etoile);
+}
+.paire-sym.circle {
+  color: var(--paire-rond);
+}
+/* Case imposée : le symbole gardait sa couleur en retrait (--text-muted), ce
+   que la mise en couleur enlève. L'état passe donc sur le fond de la case —
+   repère indépendant de la teinte, et le symbole y reste plus lisible qu'avant
+   (3,9:1 contre 2,8:1). */
+.paire-grid .cell.given {
+  background: color-mix(in srgb, var(--text) 8%, var(--bg));
+}
+/* La vérification prime : une case fautive vire au rouge, symbole compris. */
+.paire-grid .cell.error .paire-sym {
+  color: var(--error);
 }
 /* Le glyphe ● rend plus petit que ★ à taille de police égale : on l'agrandit
    pour que les deux symboles aient la même taille visuelle. */
@@ -2734,7 +2775,9 @@ main.content:has(.interstitial) {
   -webkit-user-select: none;
   touch-action: none; /* glisser-déposer, y compris tactile */
 }
-.chess-board {
+/* `--case` est posée sur le conteneur et non sur le plateau : la pièce glissée
+   (.chess-drag) est un frère du plateau, elle doit hériter de la même taille. */
+.game-area:has(> .chess-board) {
   --case: max(38px, min(92px, (var(--jeu-l) - 8px) / 8, (var(--jeu-h) - 120px) / 8));
 }
 .chess-sq {
@@ -3176,6 +3219,12 @@ input[type='text'] {
   width: 42px;
   height: 42px;
   image-rendering: pixelated;
+}
+/* Dans le tableau, la vignette suit la hauteur de rangée (les cartes de
+   solutions gardent le 42 px fixe ci-dessus). */
+.pokedle-cell .pokedle-sprite {
+  width: clamp(42px, 5vh, 58px);
+  height: clamp(42px, 5vh, 58px);
 }
 .pokedle-cell.cache {
   background: var(--surface);

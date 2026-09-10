@@ -60,7 +60,18 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
     }
     case 'paire': {
       const { sol } = genPaire(rng);
-      return <MiniGrille n={6} cells={sol.map((v) => ({ contenu: v === 0 ? '★' : '●' }))} />;
+      // Mêmes classes que le plateau : la carte de solution se lit avec le
+      // même code couleur (cf. --paire-etoile / --paire-rond).
+      return (
+        <MiniGrille
+          n={6}
+          cells={sol.map((v) => ({
+            contenu: (
+              <span className={`paire-sym ${v === 0 ? 'star' : 'circle'}`}>{v === 0 ? '★' : '●'}</span>
+            ),
+          }))}
+        />
+      );
     }
     case 'sudoku': {
       const { geo, sol, puzzle } = genSudoku(rng, defi);
