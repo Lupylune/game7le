@@ -292,7 +292,15 @@ push generation past a second on the render loop, so the épreuve would start on
 ~80 ms average / 280 ms worst at 6–8, ~170/400 ms at 8–9). Robots are re-scattered — then
 the board reassembled — until the floor is met, under a shared node budget so generation never hangs
 on an unlucky draw. The optimal length is **never shown to the player** — it is only revealed in the
-end-of-game detail line, and it is what the +10 s per extra move is counted against. `trouveSolution()`
+end-of-game detail line. It is what the reward is counted against: solving at the optimum is worth
+−30 s and every **started batch of three** moves beyond it erodes that by 10 s (−30, −20, −10, 0,
+then +10 s, where the slope **stops**): the first wasted move already drops a step — feedback stays
+immediate, as the old per-move penalty was — and the next two are absorbed. So an extra move is not
+billed separately, it eats into the reward, and a wandering run is capped at +10 s plus the time
+actually spent wandering, instead of the old unbounded +10 s per move. SANS-FAUTE is therefore back
+in play from the tenth surplus move on, as are the hint (+15 s) and the reset (+10 s). The surplus is cumulative over the épreuve and deliberately survives
+« Recommencer », which resets the move counter: otherwise going back to the start would always be
+worth more than finishing a lost line. `trouveSolution()`
 reconstructs the optimal line, used for the hint and the solutions screen — never to arbitrate a
 player's move, which is replayed by `deplace()`.
 

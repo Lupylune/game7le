@@ -235,7 +235,7 @@ export const JEUX: GameDef[] = [
     reglesDifficile:
       'Les robots glissent jusqu’au premier obstacle : amenez le robot ciblé sur sa cible en un minimum de coups — énigme plus longue.',
     scoring:
-      'Résolu : −15 s · chaque coup au-delà de la solution optimale : +10 s · indice : +15 s · retour au départ : +10 s',
+      'Résolu à l’optimum : −30 s · chaque tranche de 3 coups au-delà retire 10 s de ce bonus, jusqu’à +10 s au pire · indice : +15 s · retour au départ : +10 s',
     skip: { apresS: 45, penaliteS: 90 },
     tirage: { depuis: '2026-09-10' },
     defi: { depuis: '2026-09-14' },

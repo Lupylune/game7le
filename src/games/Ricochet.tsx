@@ -17,13 +17,32 @@ import {
   type Direction,
   type Plateau,
 } from '../lib/ricochet';
+import { formatAdjust } from '../lib/time';
+import { useChronoVisible } from '../lib/usePseudo';
 import type { GameProps } from './types';
 
-/** Pénalités : un coup de trop, un indice, un retour au départ. */
-const PENALITE_COUP = 10000;
+/** Pénalités : un indice, un retour au départ. */
 const PENALITE_INDICE = 15000;
 const PENALITE_RESET = 10000;
-const BONUS = -15000;
+/**
+ * Récompense de l'énigme : un coup de trop n'est pas facturé à part, il ronge la
+ * récompense. Le joueur part avec 30 s d'avance à gagner et en perd 10 par
+ * tranche de trois coups au-delà de la solution optimale — −30 s, −20 s, −10 s,
+ * 0, puis +10 s, où la descente s'arrête. Tranche *entamée* : le premier coup
+ * perdu fait déjà tomber un palier (le retour est immédiat, comme l'était
+ * l'ancienne pénalité au coup), les deux suivants sont absorbés. Une partie
+ * égarée coûte donc au pire 10 s, plus le temps réellement passé à errer.
+ */
+const BONUS_OPTIMAL = 30000;
+const EROSION_PAR_PALIER = 10000;
+const COUPS_PAR_PALIER = 3;
+const MALUS_PLAFOND = 10000;
+
+/** Ajustement encore en jeu, au sens de `GameResult.adjustMs` (négatif = gagné). */
+function ajustementCourant(surplus: number): number {
+  const paliers = Math.ceil(surplus / COUPS_PAR_PALIER);
+  return Math.min(MALUS_PLAFOND, EROSION_PAR_PALIER * paliers - BONUS_OPTIMAL);
+}
 
 const FLECHES: Record<Direction, string> = {
   haut: '↑',
@@ -88,6 +107,13 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
   const doneRef = useRef(false);
   // Le joueur s'est-il fait aider ? signalé dans le verdict final
   const aideRef = useRef(false);
+  // Coups joués au-delà de l'optimum, cumulés sur toute l'épreuve. Volontairement
+  // pas remis à zéro par « Recommencer » : sinon il suffirait de repartir du
+  // départ pour racheter le bonus perdu, ce qui vaudrait toujours mieux que de
+  // finir une partie égarée.
+  const surplusRef = useRef(0);
+  const [surplus, setSurplus] = useState(0);
+  const chronoVisible = useChronoVisible();
 
   const murs = useMemo(() => segments(plateau), [plateau]);
 
@@ -118,22 +144,22 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
         solution[coups].dir === dir,
     );
     if (n > optimal) {
-      aideRef.current = true;
-      onAdjust(PENALITE_COUP, 'Coup supplémentaire');
+      surplusRef.current += 1;
+      setSurplus(surplusRef.current);
     }
 
     if (cibleAtteinte(cible, suite)) {
       doneRef.current = true;
-      const marge = n - optimal;
+      const trop = surplusRef.current;
       setTimeout(
         () =>
           onDone({
-            adjustMs: BONUS,
+            adjustMs: ajustementCourant(trop),
             detail:
-              marge > 0
-                ? `résolu en ${n} coups (optimum : ${optimal})`
+              trop > 0
+                ? `résolu en ${n} coups, ${trop} de plus que l’optimum (${optimal})`
                 : aideRef.current
-                  ? `résolu à l’optimum, avec un indice`
+                  ? 'résolu à l’optimum, avec de l’aide'
                   : `résolu en ${n} coups, l’optimum`,
             status: 'success',
           }),
@@ -199,7 +225,25 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
         <span className="ric-symbole" style={{ color: teinteCible(cible) }}>
           {cible.symbole}
         </span>{' '}
-        · coups joués <strong className={coups > optimal ? 'malus' : ''}>{coups}</strong>
+        · coups joués <strong className={surplus > 0 ? 'malus' : ''}>{coups}</strong>
+        {/* Ce qui est encore en jeu fond à vue d'œil : c'est le seul retour
+            immédiat sur un coup perdu, l'optimum lui-même n'étant jamais
+            annoncé. Le libellé suit le signe — au-delà de trois coups en trop la
+            récompense devient un malus. Masqué quand le run se joue sans chrono,
+            comme les autres chiffres de temps. */}
+        {chronoVisible && (
+          <>
+            {' '}
+            · {ajustementCourant(surplus) > 0 ? 'malus' : 'bonus'}{' '}
+            <strong
+              className={
+                ajustementCourant(surplus) > 0 ? 'malus' : ajustementCourant(surplus) < 0 ? 'bonus' : ''
+              }
+            >
+              {ajustementCourant(surplus) === 0 ? '—' : formatAdjust(ajustementCourant(surplus))}
+            </strong>
+          </>
+        )}
       </p>
 
       <svg
@@ -360,7 +404,8 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
 
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Un robot glisse jusqu’à un mur, le bloc central ou un autre robot · cliquez un robot puis sa
-        case d’arrivée (ou les flèches du clavier) · chaque coup au-delà de la solution optimale : +10 s
+        case d’arrivée (ou les flèches du clavier) · résoudre à l’optimum vaut −30 s, et chaque
+        tranche de 3 coups au-delà retire 10 s de ce bonus, jusqu’à +10 s au pire
         {indice && (
           <>
             {' '}
