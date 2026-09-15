@@ -311,11 +311,15 @@ player's move, which is replayed by `deplace()`.
 the robots are **never re-scattered between them**: where you leave them winning one target is where
 the next one starts, which is the whole point — a target reached by parking robots badly makes the
 next one dearer. `Enigme` is therefore `{ plateau, depart, manches }`, one `Manche` daily and five
-on the challenge, and `genChaine()` only keeps a draw whose five legs all fall in 4–6 moves, each
-leg measured from the positions the previous leg's *optimal* line leaves behind (~34 ms average /
-114 ms worst, well under the single-puzzle cost, since five depth-6 searches are cheaper than one
-depth-10). The player rarely follows that reference line, so a leg's real objective is recomputed
-in-game from their actual robots by `resoutManche()` (depth 10, bounded budget, falling back to the
+on the challenge, and `genChaine()` only keeps a draw whose five legs all fall in **7–9 moves** —
+one notch above the daily 6–8, *and* chained — each
+leg measured from the positions the previous leg's *optimal* line leaves behind, for some 43 optimal
+moves over the épreuve. That 9 is a budget ceiling, not a taste one: over 30 weeks, 7–9 generates in
+~300 ms average / ~610 ms worst, while 8–10 jumps to ~670/1300 ms — past a second on the render loop
+the épreuve would start on a stutter — and fails to find its five legs one draw in five, for want of
+a far enough target still unused. The player rarely follows that reference line, so a leg's real
+objective is recomputed
+in-game from their actual robots by `resoutManche()` (depth 11, bounded budget, falling back to the
 generated optimal if it runs out) — charging them the gap between their trajectory and the reference
 would be unearned. The scale follows the format (`BAREME` in `Ricochet.tsx`): 50 s to win and a
 five-move batch on the challenge against 30 s and three daily, so a surplus spread over five targets

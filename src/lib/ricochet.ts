@@ -769,14 +769,17 @@ export interface Enigme {
 
 /**
  * Plancher et plafond de la solution optimale, en coups — mêmes ordres de
- * grandeur que le Ricochet Robots du projet Cartel (6 à 8 par défaut). Le
- * plafond du défi s'arrête plus bas que le quotidien parce que la difficulté y
- * vient de l'enchaînement : cinq cibles de 4 à 6 coups, sans remise à zéro des
- * robots, font une épreuve plus longue et plus exigeante qu'une énigme unique de
- * 9 coups — et cinq recherches de profondeur 6 tiennent dans le budget, là où
- * une seule de profondeur 10 le dépasserait déjà.
+ * grandeur que le Ricochet Robots du projet Cartel (6 à 8 par défaut). Le défi
+ * monte d'un cran *et* enchaîne : cinq cibles de 7 à 9 coups sans remise à zéro
+ * des robots, soit une quarantaine de coups optimaux sur l'épreuve.
+ *
+ * 9 est un plafond de budget, pas de goût : mesuré sur 30 semaines, 7–9 coûte
+ * 308 ms en moyenne et 619 ms au pire à la génération, quand 8–10 passe à
+ * 673/1305 ms — au-delà de la seconde sur la boucle de rendu, l'épreuve
+ * démarrerait sur un à-coup — et ne trouve plus ses cinq manches une fois sur
+ * cinq, faute de cible assez lointaine encore libre.
  */
-const DIFFICULTE = { normal: [6, 8], difficile: [4, 6] } as const;
+const DIFFICULTE = { normal: [6, 8], difficile: [7, 9] } as const;
 
 /** Cibles à enchaîner au défi difficile, sur un même plateau. */
 export const MANCHES_DEFI = 5;
@@ -793,10 +796,14 @@ const BUDGET = 1_400_000;
  * Profondeur et budget de la résolution faite en cours d'épreuve, au passage
  * d'une manche à la suivante : le joueur n'ayant pas forcément suivi la ligne
  * optimale, l'objectif de la manche se recalcule depuis la position réelle de
- * ses robots. Large par rapport aux 4–6 coups visés à la génération, pour
- * couvrir une position laissée bien plus loin de la cible suivante.
+ * ses robots. Deux crans au-dessus des 9 coups visés à la génération, pour
+ * couvrir une position laissée plus loin de la cible que la ligne de référence.
+ * Le cran de plus se paie : depuis une position égarée, 11 rend la main en
+ * 25 ms en moyenne et 360 ms au pire (contre 148 ms à 10, mais deux fois plus de
+ * replis sur `secours`) ; 12 ne gagnerait plus que 3 points de couverture pour
+ * un pire cas à 577 ms, perceptible en plein jeu.
  */
-const PROFONDEUR_MANCHE = 10;
+const PROFONDEUR_MANCHE = 11;
 const BUDGET_MANCHE = 900_000;
 
 /** Rejoue une suite de coups et retourne les positions obtenues. */
