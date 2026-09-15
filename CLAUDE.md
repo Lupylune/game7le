@@ -61,8 +61,10 @@ mechanic and touches most of the app:
 - The fake global leaderboard (`src/lib/classement.ts`) is seeded the same way, purely for demo
   flavor — it is not real multiplayer data.
 - Practice mode (`src/pages/Entrainement.tsx`) seeds on a random nonce instead of the date, so
-  grids differ every attempt. It also plays the **hard variants** on demand (`?mode=difficile`,
-  a Normal/Difficile switch in the header): the gate is `reglesDifficile` being set, not the `defi`
+  grids differ every attempt. It also plays the **hard variants** on demand: a Normal/Difficile
+  switch carried by `?mode=difficile`, on a game's page *and* on the list — where it filters down to
+  the games that have a variant, shows their `reglesDifficile` and links straight into the variant.
+  The gate is `reglesDifficile` being set, not the `defi`
   window — a game can have a variant without being in the weekly pool (Chromal) or keep one after
   leaving it (Tempo), and the point of practice is to reach every variant that exists. The mode
   goes into the seed, so the two variants of a game don't draw the same thing at equal nonce.

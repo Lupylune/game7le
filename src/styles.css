@@ -628,6 +628,20 @@ main.content > .page-entree > * {
   color: var(--text);
   border-color: var(--accent);
 }
+/* Entête de la liste d'entraînement : le texte d'accueil et le choix de la
+   difficulté sur une ligne, empilés dès qu'ils n'y tiennent plus. */
+.entr-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.entr-entete p {
+  margin: 0;
+  flex: 1 1 22rem;
+}
 /* Marque un jeu qui a une variante corsée : dans la liste d'entraînement et sur
    l'écran de décompte quand c'est elle qu'on s'apprête à jouer. */
 .entr-badge {

@@ -16,26 +16,80 @@ import GameIcon from '../components/GameIcon';
  */
 const aVarianteDifficile = (j: GameDef) => !!j.reglesDifficile;
 
+/**
+ * Choix de la difficulté, partagé par la liste et la page d'un jeu : même objet
+ * des deux côtés, et `?mode=difficile` dans l'URL pour qu'un mode se partage et
+ * se garde en naviguant de la liste au jeu.
+ */
+function SelecteurMode({
+  difficile,
+  onChange,
+}: {
+  difficile: boolean;
+  onChange: (difficile: boolean) => void;
+}) {
+  return (
+    <div className="entr-modes" role="tablist" aria-label="Difficulté">
+      {[
+        { dur: false, label: 'Normal' },
+        { dur: true, label: 'Difficile' },
+      ].map((m) => (
+        <button
+          key={m.label}
+          role="tab"
+          aria-selected={difficile === m.dur}
+          className={`entr-mode${difficile === m.dur ? ' actif' : ''}`}
+          onClick={() => onChange(m.dur)}
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function EntrainementListe() {
+  const [params, setParams] = useSearchParams();
+  const difficile = params.get('mode') === 'difficile';
+  // Tout le catalogue encore en service, y compris un jeu qui n'entre dans le
+  // tirage que dans quelques jours : on peut s'y entraîner dès son arrivée. Un
+  // jeu retiré reste jouable par son URL (archives). En mode difficile, seuls
+  // restent les jeux qui ont une variante — les autres n'auraient rien de plus
+  // dur à proposer.
+  const jeux = JEUX.filter(
+    (j) =>
+      (!j.tirage.retire || todayStr() < j.tirage.retire) && (!difficile || aVarianteDifficile(j)),
+  );
+
   return (
     <div className="prose" style={{ maxWidth: 720 }}>
       <h1>Entraînement</h1>
-      <p className="muted">
-        Jouez chaque épreuve à volonté, hors chrono officiel. Les grilles changent à chaque essai —
-        rien n'est enregistré. Les jeux marqués <span className="entr-badge">difficile</span> ont une
-        variante corsée, celle du défi hebdomadaire : le choix se fait sur la page du jeu.
-      </p>
+      <div className="entr-entete">
+        <p className="muted">
+          Jouez chaque épreuve à volonté, hors chrono officiel. Les grilles changent à chaque essai —
+          rien n'est enregistré.{' '}
+          {difficile
+            ? `Voici les ${jeux.length} épreuves qui ont une variante corsée, celle du défi hebdomadaire : les ouvrir depuis ici les lance dans cette variante.`
+            : 'Les jeux marqués « difficile » ont une variante corsée, celle du défi hebdomadaire.'}
+        </p>
+        <SelecteurMode
+          difficile={difficile}
+          onChange={(dur) => setParams(dur ? { mode: 'difficile' } : {}, { replace: true })}
+        />
+      </div>
       <div className="card-grid">
-        {/* Tout le catalogue encore en service, y compris un jeu qui n'entre
-            dans le tirage que dans quelques jours : on peut s'y entraîner dès
-            son arrivée. Un jeu retiré reste jouable par son URL (archives). */}
-        {JEUX.filter((j) => !j.tirage.retire || todayStr() < j.tirage.retire).map((j) => (
-          <Link className="game-card" to={`/entrainement/${j.id}`} key={j.id}>
+        {jeux.map((j) => (
+          <Link
+            className="game-card"
+            to={`/entrainement/${j.id}${difficile ? '?mode=difficile' : ''}`}
+            key={j.id}
+          >
             <strong>
               <GameIcon id={j.id} /> {j.nom}
-              {aVarianteDifficile(j) && <span className="entr-badge">difficile</span>}
+              {/* Inutile de marquer les cartes quand elles le sont toutes. */}
+              {!difficile && aVarianteDifficile(j) && <span className="entr-badge">difficile</span>}
             </strong>
-            <span className="desc">{j.regles}</span>
+            <span className="desc">{difficile ? (j.reglesDifficile ?? j.regles) : j.regles}</span>
           </Link>
         ))}
       </div>
@@ -90,25 +144,6 @@ export function EntrainementJeu() {
     relance();
   };
 
-  const modes = aVarianteDifficile(jeu) && (
-    <div className="entr-modes" role="tablist" aria-label="Difficulté">
-      {[
-        { dur: false, label: 'Normal' },
-        { dur: true, label: 'Difficile' },
-      ].map((m) => (
-        <button
-          key={m.label}
-          role="tab"
-          aria-selected={difficile === m.dur}
-          className={`entr-mode${difficile === m.dur ? ' actif' : ''}`}
-          onClick={() => changeMode(m.dur)}
-        >
-          {m.label}
-        </button>
-      ))}
-    </div>
-  );
-
   return (
     <div>
       <div className="run-header">
@@ -122,8 +157,13 @@ export function EntrainementJeu() {
             colonnes (titre / chrono / contrôle). La colonne du milieu porte le
             choix de difficulté quand le jeu en a un, et reste vide sinon —
             sans elle le lien se logeait au centre au lieu d'être à droite. */}
-        <div>{modes}</div>
-        <Link className="btn btn-sm" to="/entrainement">
+        <div>
+          {aVarianteDifficile(jeu) && (
+            <SelecteurMode difficile={difficile} onChange={changeMode} />
+          )}
+        </div>
+        {/* Le retour garde le mode : on revient à la liste telle qu'on l'a quittée. */}
+        <Link className="btn btn-sm" to={`/entrainement${difficile ? '?mode=difficile' : ''}`}>
           ← Tous les jeux
         </Link>
       </div>

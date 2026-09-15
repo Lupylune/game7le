@@ -69,6 +69,7 @@ await check(
   'Statistiques — défi difficile',
 );
 await check('/entrainement', '.game-card', 'Entraînement (liste)');
+await check('/entrainement?mode=difficile', '.game-card', 'Entraînement (liste) — difficile');
 
 const jeux = [
   ['lemot', '.wordy-board'],
