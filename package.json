@@ -4,17 +4,22 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/vendor.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/vendor.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "node scripts/smoke.mjs && node scripts/full-run.mjs",
     "lexique": "node scripts/build-lexique.mjs && node scripts/build-defs.mjs",
     "echecs": "node scripts/build-echecs.mjs",
-    "pokemon": "node scripts/build-pokemon.mjs"
+    "pokemon": "node scripts/build-pokemon.mjs",
+    "atlas": "node scripts/build-atlas.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.6",
+    "leaflet": "1.9.4",
+    "mapillary-js": "4.1.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1"

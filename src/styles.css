@@ -3382,6 +3382,27 @@ input[type='text'] {
   width: 100%;
   height: 100%;
 }
+/* Repli en vue fixe : photo servie à la place du viewer 360°. */
+.atlas-pano-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.atlas-fixe {
+  position: absolute;
+  top: var(--sp-3);
+  left: var(--sp-3);
+  z-index: 500; /* même plan que la carte de devine */
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
 .atlas-pano-msg {
   position: absolute;
   inset: 0;

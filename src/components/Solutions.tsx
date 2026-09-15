@@ -9,7 +9,7 @@ import { generate as genSudoku } from '../games/Sudoku';
 import { generate as genReines } from '../games/Reines';
 import { generate as genNono } from '../games/Nonogramme';
 import { solutionEchecs } from '../games/Echecs';
-import { cibleDe } from '../games/Atlas';
+import { cibleDe } from '../lib/geo';
 import { genRicochet, COULEURS, TEINTES } from '../lib/ricochet';
 import { POKEMONS } from '../data/pokemon';
 import GameIcon, { SymCouronne } from './GameIcon';

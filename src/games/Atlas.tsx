@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameProps } from './types';
-import { VILLES } from '../data/villes';
 import { seededRng } from '../lib/rng';
 import {
   MAPILLARY_TOKEN,
+  cibleDe,
   formatKm,
   haversineKm,
   loadLeaflet,
   loadMapillary,
   resoudreImage,
   scoreDistance,
+  urlPhoto,
 } from '../lib/geo';
 
 type LatLng = { lat: number; lng: number };
@@ -46,20 +47,20 @@ function pinIcon(L: any, p: { c: string; h: string }) {
   });
 }
 
-/** Décalage maxi autour du centre-ville (~0,015° ≈ 1–1,5 km selon la latitude). */
-const RAYON_TIRAGE = 0.015;
+/** Délai au-delà duquel un viewer qui n'a toujours rien rendu est abandonné au
+ *  profit de la photo fixe : mieux vaut une vue figée qu'un cadre noir muet. */
+const DELAI_VIEWER = 7000;
 
-/**
- * Point cible du jour, déterministe (même endroit pour tous) : une ville tirée
- * au hasard, plus un décalage aléatoire à l'intérieur — on atterrit ainsi sur
- * une rue quelconque de la ville, pas toujours au même endroit. Le panorama
- * réel le plus proche est ensuite résolu via l'API (voir `resoudreImage`).
- */
-export function cibleDe(rng: () => number) {
-  const ville = VILLES[Math.floor(rng() * VILLES.length)];
-  const lat = ville.lat + (rng() * 2 - 1) * RAYON_TIRAGE;
-  const lng = ville.lng + (rng() * 2 - 1) * RAYON_TIRAGE;
-  return { ville, lat, lng };
+/** mapillary-js exige WebGL ; sans lui le viewer ne rendrait qu'un cadre vide
+ *  (machine ancienne, accélération matérielle désactivée). On le sait avant de
+ *  le construire, donc on replie directement sur la photo fixe. */
+function webglDispo(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -101,6 +102,10 @@ export default function Atlas({ rng, onDone }: GameProps) {
   // le score. À défaut (panorama non résolu), on retombe sur le point tiré.
   const [reel, setReel] = useState<LatLng | null>(null);
   const [pret, setPret] = useState(false); // panorama chargé et affiché
+  // Repli en vue fixe : photo affichée quand le viewer 360° ne peut pas servir
+  // (CDN injoignable, WebGL absent, rendu qui n'arrive jamais). On perd la
+  // balade, pas la partie — l'épreuve reste jouable et notée à l'identique.
+  const [photo, setPhoto] = useState<string | null>(null);
   // Message d'indisponibilité du panorama : 'token' (jeton absent),
   // 'nopano' (aucune image Mapillary proche), 'pano' (échec de chargement).
   const [panoErr, setPanoErr] = useState<'token' | 'nopano' | 'pano' | null>(null);
@@ -126,18 +131,45 @@ export default function Atlas({ rng, onDone }: GameProps) {
     }
     let annule = false;
     let viewer: any;
+    let minuteur: number | undefined;
+
+    // Bascule en vue fixe : on demande la photo de la même image et on la pose
+    // à la place du viewer. Sans photo non plus, on l'avoue au joueur.
+    async function replier(id: string) {
+      const url = await urlPhoto(id, token!);
+      if (annule) return;
+      if (url) setPhoto(url);
+      else setPanoErr('pano');
+    }
+
     (async () => {
+      // Le script (CDN) et l'appel API de résolution sont indépendants : on les
+      // lance en parallèle. Grâce au préchauffage + au cache, les deux sont
+      // souvent déjà résolus au moment du montage. On ne les joint PAS par un
+      // Promise.all : l'échec du script emporterait la résolution, alors qu'on
+      // a justement besoin de l'image pour se replier sur sa photo.
+      const libPromise = loadMapillary().catch(() => null);
+      let img;
       try {
-        // Le script (CDN) et l'appel API de résolution sont indépendants : on
-        // les lance en parallèle. Grâce au préchauffage + au cache, les deux
-        // sont souvent déjà résolus au moment du montage.
-        const [mapillary, img] = await Promise.all([loadMapillary(), resoudreImage(cible, token)]);
-        if (annule || !panoRef.current) return;
-        if (!img) {
-          setPanoErr('nopano');
-          return;
-        }
-        setReel({ lat: img.lat, lng: img.lng }); // le score porte sur ce point
+        img = await resoudreImage(cible, token);
+      } catch {
+        if (!annule) setPanoErr('pano'); // transport en échec, pas le lieu
+        return;
+      }
+      if (annule || !panoRef.current) return;
+      if (!img) {
+        setPanoErr('nopano');
+        return;
+      }
+      setReel({ lat: img.lat, lng: img.lng }); // le score porte sur ce point
+
+      const mapillary = await libPromise;
+      if (annule || !panoRef.current) return;
+      if (!mapillary || !webglDispo()) {
+        replier(img.id);
+        return;
+      }
+      try {
         // Viewer interactif : déplacement (flèches/pancartes) et zoom natifs.
         // `cover: false` : on charge l'image directement, sans l'écran-cache
         // cliquable qui recouvrirait la mini-carte.
@@ -147,16 +179,32 @@ export default function Atlas({ rng, onDone }: GameProps) {
           imageId: img.id,
           component: { cover: false },
         });
-        // Masque l'indicateur dès que la première image est rendue (filet de
-        // sécurité si l'événement ne se déclenche pas).
-        viewer.on?.('image', () => !annule && setPret(true));
-        setTimeout(() => !annule && setPret(true), 2500);
+        let rendu = false;
+        viewer.on?.('image', () => {
+          rendu = true;
+          clearTimeout(minuteur);
+          if (!annule) setPret(true);
+        });
+        // Filet : passé ce délai sans le moindre rendu, le viewer est perdu
+        // (WebGL qui échoue en silence, tuiles qui ne viennent pas) — on le
+        // démonte et on sert la photo, plutôt que de laisser un cadre noir.
+        minuteur = window.setTimeout(() => {
+          if (annule || rendu) return;
+          try {
+            viewer?.remove?.();
+          } catch {
+            /* rien */
+          }
+          viewer = null;
+          replier(img.id);
+        }, DELAI_VIEWER);
       } catch {
-        if (!annule) setPanoErr('pano');
+        replier(img.id);
       }
     })();
     return () => {
       annule = true;
+      clearTimeout(minuteur);
       try {
         viewer?.remove?.();
       } catch {
@@ -301,6 +349,16 @@ export default function Atlas({ rng, onDone }: GameProps) {
     <div className="game-area atlas-area">
       <div className="atlas-stage">
         <div ref={panoRef} className="atlas-pano" />
+        {photo && (
+          <img
+            className="atlas-pano-img"
+            src={photo}
+            alt="Photo du lieu à situer"
+            onLoad={() => setPret(true)}
+            onError={() => setPanoErr('pano')}
+          />
+        )}
+        {photo && pret && <p className="atlas-fixe">Vue fixe — panorama 360° indisponible</p>}
         {!panoErr && !pret && (
           <div className="atlas-pano-msg">
             <span className="atlas-spin" aria-hidden />

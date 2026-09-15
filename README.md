@@ -83,7 +83,7 @@ Pokédle toutes générations en 12 essais, Ricochet en solutions de 8 à 9 coup
 | 12 | Dactylo | recopier une phrase au plus vite | 8 mots tirés du lexique, fautes comptées | 24 mots |
 | 13 | Échecs | mat en 1 à 3 coups | base Lichess (CC0) : 800 puzzles 700–1600 Elo | 601 puzzles corsés |
 | 14 | Pokédle | deviner le Pokémon en 8 essais | PokeAPI, génération 1 (151), indices type / stade / couleur / habitat | 1 025 Pokémon, 12 essais, indice Génération |
-| 15 | Atlas | panorama 360° + carte, à la GeoGuessr | pool de grandes villes + Mapillary et Leaflet chargés du CDN (seule épreuve à exiger le réseau) | — |
+| 15 | Atlas | panorama 360° + carte, à la GeoGuessr | pool de grandes villes + Mapillary, cibles pré-résolues au build, repli en photo fixe (seule épreuve à exiger le réseau) | — |
 | 16 | Tempo | reproduire 5 durées de mémoire | durées tirées au sort, restitution par appui maintenu | sorti du pool le 2026-09-14 |
 | 17 | Ricochet | Ricochet Robots 16×16 | plateau physique transcrit (12 quadrants), BFS complet, solution optimale de 6 à 8 coups | 8 à 9 coups |
 
@@ -221,7 +221,13 @@ npm test          # tests Playwright : fumée + parcours complet
 npm run lexique   # régénère src/data/{lexique,definitions}.ts (Lexique 3.83 + Wiktionnaire)
 npm run echecs    # régénère src/data/echecs.ts (base Lichess)
 npm run pokemon   # régénère src/data/pokemon.ts (PokeAPI, toutes générations)
+npm run atlas     # prolonge public/atlas.json : cibles d'Atlas pré-résolues chez Mapillary
+                  # (reprenable ; `-- --horizon 365 --force --concurrence 4`)
 ```
+
+`npm run dev` et `npm run build` recopient d'abord Leaflet et mapillary-js de `node_modules` vers
+`public/vendor/` (`scripts/vendor.mjs`) : Atlas les sert depuis notre domaine, pas depuis un CDN
+tiers. Le dossier est gitignoré et reconstruit à chaque fois — inutile de le versionner.
 
 La version de Node est épinglée par `.node-version` (nodenv) ; si `node`/`npm` manquent dans un
 shell, lancer `eval "$(nodenv init -)"`.
@@ -235,6 +241,10 @@ Copier `.env.example` vers `.env`. Toutes les variables sont **optionnelles** :
 | `VITE_SUPABASE_URL` | URL du projet Supabase | classement simulé, historique local seulement |
 | `VITE_SUPABASE_ANON_KEY` | clé anonyme publique | idem |
 | `VITE_MAPILLARY_TOKEN` | jeton Mapillary (gratuit) pour Atlas | Atlas reste jouable, mais sans le panorama 360° |
+
+Le jeton sert aussi à `npm run atlas`, qui pré-résout les cibles hors production. Sans lui, pas de
+`public/atlas.json` : le jeu résout les images au moment de jouer, comme avant, simplement plus
+lentement.
 
 ## Déploiement
 
@@ -298,7 +308,7 @@ chaque grille est vérifiée à solution unique avant d'être servie.
 | [Wiktionnaire](https://fr.wiktionary.org) (dump wiktextract / kaikki.org) | indices des Croisés | CC BY-SA 4.0 |
 | [Base de puzzles Lichess](https://database.lichess.org) | Échecs | CC0 |
 | [PokeAPI](https://pokeapi.co) | Pokédle | données et sprites libres d'usage |
-| [Mapillary](https://www.mapillary.com) + [Leaflet](https://leafletjs.com) / OpenStreetMap | Atlas | API et tuiles publiques |
+| [Mapillary](https://www.mapillary.com) + [Leaflet](https://leafletjs.com) / OpenStreetMap | Atlas | API et tuiles publiques ; bibliothèques auto-hébergées |
 | [Lireer/ricochet-robot-solver](https://github.com/Lireer/ricochet-robot-solver) | relevé des quadrants du plateau Ricochet | MIT |
 
 Polices : Rubik Mono One, Lexend, Chivo Mono (Google Fonts).

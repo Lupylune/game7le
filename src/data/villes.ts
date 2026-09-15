@@ -2,7 +2,7 @@
  * Pool de villes du jeu Atlas (adaptation d'un GeoGuessr).
  *
  * Plutôt que des coordonnées de monuments figées, on tire une ville au hasard
- * puis un décalage aléatoire à l'intérieur (voir `cibleDe()` dans `Atlas.tsx`) :
+ * puis un décalage aléatoire à l'intérieur (voir `cibleDe()` dans `lib/geo.ts`) :
  * on tombe ainsi sur une rue quelconque, déterministe pour un même jour (même
  * seed → même endroit pour tous). Le panorama réel le plus proche est ensuite
  * résolu via l'API Mapillary (`resoudreImage()` dans `src/lib/geo.ts`).

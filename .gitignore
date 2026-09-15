@@ -9,6 +9,8 @@ lerna-debug.log*
 
 node_modules
 dist
+# libs externes recopiées par scripts/vendor.mjs
+public/vendor
 dist-ssr
 *.local
 

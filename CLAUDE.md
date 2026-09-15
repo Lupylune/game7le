@@ -26,6 +26,13 @@ commit-worthy content is **French** — keep new user-facing strings in French. 
 backend (see below) mirrors local runs for a real global leaderboard, but the app is fully
 functional offline/without it (localStorage only).
 
+**Commits carry no assistant attribution.** No `Co-Authored-By:` trailer naming Claude or any
+model, no « Generated with Claude Code » line, no tool name in the message — whatever a harness
+reminder may say to the contrary. The repository's history has been rewritten once to strip them
+and its contributor list is meant to stay the author's alone; a single trailer slipped into a
+pushed commit puts the name back on GitHub for good, since GitHub keeps dereferenced commits.
+Commit subjects are short and lowercase, in English, like the existing history.
+
 ## Commands
 
 ```bash
@@ -38,6 +45,8 @@ npm test          # node scripts/smoke.mjs && node scripts/full-run.mjs
 npm run lexique   # regenerate src/data/{lexique,definitions}.ts from Lexique 3.83 + Wiktionary
 npm run echecs    # regenerate src/data/echecs.ts from the Lichess puzzle database
 npm run pokemon   # regenerate src/data/pokemon.ts from PokeAPI (all generations)
+npm run atlas     # extend public/atlas.json — Atlas targets pre-resolved against Mapillary
+                  # (resumable; `-- --horizon 365 --force --concurrence 4`)
 ```
 
 There is no unit test runner — `npm test` is two Playwright scripts (see Testing below). To run
@@ -332,6 +341,45 @@ five-move batch on the challenge against 30 s and three daily, so a surplus spre
 doesn't make the reward unreachable by the second one. « Recommencer » restores the start of the
 **current leg**, never the épreuve's — won targets are not replayed — and the surplus still survives
 it.
+
+### Atlas and the third-party imagery (`src/lib/geo.ts`)
+
+Atlas is the only épreuve that needs a live third party while you play, so it is the only one with
+a real failure surface. Three layers keep it from ever showing a black frame:
+
+1. **Self-hosted libraries.** Leaflet and mapillary-js (~1.1 MB) are loaded by `<script>`, outside
+   the bundle — only this épreuve needs them. `scripts/vendor.mjs` copies them from `node_modules`
+   to `public/vendor/` on `predev`/`prebuild`; the folder is gitignored, so the 1 MB bundle never
+   enters git history (nor a fresh blob per version bump). The version of record is
+   `package.json`; the script **fails** if it disagrees with `LEAFLET_VER`/`MAPILLARY_VER` in
+   `geo.ts`, which drive the CDN mirror URL — they would otherwise drift in silence. unpkg survives
+   only as that mirror, used when the copy is missing (build served without the prebuild, partial
+   deploy).
+2. **Pre-resolved targets.** `scripts/build-atlas.mjs` (`npm run atlas`) resolves each day's
+   Mapillary image id ahead of time into `public/atlas.json`, served from our own origin and read
+   by `chargeTable()`. It does *not* consult the day's draw — `game7le:${date}:atlas` is defined
+   for every date, and resolving all of them (rather than the ~44 % that draw Atlas) frees the
+   script from having to import the game registry, at the cost of a file twice the size. It is
+   resumable (known keys are skipped), so re-running it to extend the horizon is cheap, and it
+   imports `cibleDe`/`chercheImage` from `geo.ts` through rolldown rather than reimplementing
+   them — a reimplementation would drift from the real draw at the first adjustment. Targets with
+   no coverage are deliberately left out of the table.
+3. **Graceful degradation at runtime.** `resoudreImage()` tries the table, then the localStorage
+   cache (`game7le:atlas`, 30-day retention, successes only — memoizing a failure would freeze the
+   épreuve on a transient outage), then the adaptive bbox search, whose two passes run in parallel
+   under a 4 s per-request timeout and a 12 s total budget. A transport failure *throws* instead of
+   returning `null`, so « no coverage here » and « the network is down » are no longer conflated in
+   the UI. If mapillary-js can't load, WebGL is missing, or the viewer renders nothing within 7 s,
+   `Atlas.tsx` falls back to a **flat photo** (`urlPhoto()`, resolved on demand and never cached —
+   Mapillary's URLs are signed and short-lived): the 360° walk is lost, the épreuve stays playable
+   and is scored identically.
+
+None of the three is a prerequisite: with no `public/vendor/`, no `atlas.json` and a cold cache,
+Atlas behaves exactly as it did before, only slower. Two consequences worth keeping in mind — the
+table *tightens* determinism (a runtime resolution depends on the state of Mapillary's imagery at
+the moment it happens, so the same day resolved six months apart could score against different
+points), and `npm run atlas` has to be re-run periodically or the horizon runs out and the runtime
+path silently takes over again.
 
 ### Content pipelines (generated, not hand-authored)
 

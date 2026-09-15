@@ -20,6 +20,7 @@ import { syncRun } from '../lib/sync';
 import { useChronoVisible } from '../lib/usePseudo';
 import GameIcon, { SymEtincelle } from '../components/GameIcon';
 import { prewarmAtlas } from '../games/Atlas';
+import { preconnecteAtlas } from '../lib/geo';
 import Solutions from '../components/Solutions';
 import SplitsRun from '../components/SplitsRun';
 
@@ -397,6 +398,14 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     () => seededRng(`game7le:${defi ? 'defi:' : ''}${date}:${jeu.id}`),
     [date, jeu.id, defi],
   );
+
+  // Atlas dépend de trois hôtes tiers (CDN des libs, API d'imagerie, tuiles
+  // OSM) : on ouvre les connexions dès l'écran d'intro, donc avant même le
+  // préchauffage ci-dessous — la poignée de main est déjà faite quand les
+  // téléchargements démarrent.
+  useEffect(() => {
+    if (jeux.some((j) => j.id === 'atlas')) preconnecteAtlas();
+  }, [jeux]);
 
   // Atlas dépend d'un appel réseau (imagerie Mapillary) : dès que le run
   // démarre, si Atlas figure dans le tirage on le préchauffe tout de suite —
