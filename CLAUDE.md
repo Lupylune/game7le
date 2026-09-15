@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Game7le — an unofficial French adaptation of [gauntle.com](https://gauntle.com): a daily challenge
-of **7 mini-games drawn at random each day out of a pool of 17**, chained under a single stopwatch.
+of **7 mini-games drawn at random each day out of a pool of 16**, chained under a single stopwatch.
 The draw and puzzles are identical for every player on a given day (seeded PRNG, no required
 backend). Bonuses reduce total time, penalties add to it; the goal is to finish the run as fast as
 possible.
@@ -13,7 +13,7 @@ possible.
 There is also a **weekly hard challenge** (`/defi`, « défi difficile ») : 7 games drawn from a
 dated pool (`poolDefi()`, 11 games — Paire, Ratiole, Trace, Chromal and Atlas have no `defi`
 window; Tempo was in it from Monday 2026-08-10 to Monday 2026-09-14 exclusive, where Ricochet
-replaces it), played in harder variants
+replaces it — and left the daily draw too on 2026-09-16), played in harder variants
 via the `difficile` game prop. It is identified by the **Monday of the
 current week** (Europe/Paris) — seeds `game7le:defi:${lundi}:…` (`lundiStr()` in `src/lib/rng.ts`,
 `jeuxDefiSemaine()` in `src/games/index.ts`) — so everyone gets the same draw all week. It has its
@@ -81,9 +81,11 @@ rules when touching `JEUX`:
 
 Games that predate the mechanism (Pokédle, Atlas) are dated at launch, and Chromal/Atlas simply
 have no `defi` window, so every past draw stays the one the site currently shows — the windows only
-start doing real work with Tempo (daily from 2026-08-04, weekly from Monday 2026-08-10, and
-`defi.retire: '2026-09-14'` — the first removal expressed with a window: it stays in the daily
-draw, and the weeks that already drew it keep it) and Ricochet (daily from 2026-09-10, weekly from
+start doing real work with Tempo (daily from 2026-08-04, weekly from Monday 2026-08-10, then
+removed from both — `defi.retire: '2026-09-14'`, `tirage.retire: '2026-09-16'`, the first removals
+expressed with a window rather than by deleting the entry: the 24 past days and the 4 past weeks
+that drew it keep it, `JEU_PAR_ID` still resolves their runs, and it stays playable at
+`/entrainement/tempo` by URL) and Ricochet (daily from 2026-09-10, weekly from
 Monday 2026-09-14). A removal never touches `submit_run()`'s id arrays: they are the catalogue of
 everything ever eligible, so runs recorded before the removal stay accepted.
 

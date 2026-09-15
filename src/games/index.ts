@@ -221,11 +221,14 @@ export const JEUX: GameDef[] = [
     scoring:
       'Précision moyenne des 5 durées : de −30 s (100 %) à +45 s (0 %), neutre vers 60 % · une seule tentative par durée',
     skip: { apresS: 45, penaliteS: 90 },
-    tirage: { depuis: '2026-08-04' },
+    // Sorti du tirage quotidien à partir du 2026-09-16 (borne exclusive) : le
+    // 15 est déjà en cours de jeu, son tirage ne doit pas bouger. Comme pour le
+    // défi, le retrait passe par la fenêtre et non par la suppression de
+    // l'entrée — les jours passés qui l'ont tiré rejouent le pool qu'ils ont
+    // connu, et `JEU_PAR_ID` résout toujours leurs runs.
+    tirage: { depuis: '2026-08-04', retire: '2026-09-16' },
     // Sorti du pool du défi à partir du lundi 2026-09-14 : la semaine en cours
-    // (lundi 2026-09-07) est déjà jouée, son tirage ne doit pas bouger. Le jeu
-    // reste au tirage quotidien, et l'entrée reste ici pour que `JEU_PAR_ID`
-    // résolve les défis passés qui l'ont tiré.
+    // (lundi 2026-09-07) était déjà jouée, son tirage ne devait pas bouger.
     defi: { depuis: '2026-08-10', retire: '2026-09-14' },
     Component: Tempo,
   },
