@@ -95,12 +95,13 @@ registered as a `GameDef` in `src/games/index.ts` (see `src/games/types.ts`):
 - `rng: RNG` — the seeded generator described above; use it for all randomness (grid gen, word
   choice, shuffling) so the game is reproducible for a given seed.
 - `difficile?: boolean` — hard variant for the weekly challenge (Croisés rare
-  vocabulary, Dactylo 24 words, Echecs higher-rated mates in 2/3, LeMot & Mélimélo 8 letters,
+  vocabulary, Dactylo 24 words, Démineur 24×24 with 80 mines (side doubled, mine density kept, so
+  the difficulty is the length of the sweep and never a guess), Echecs higher-rated mates in 2/3,
+  LeMot & Mélimélo 8 letters,
   Nonogramme 15×15, Reines 8×8, Sudoku 9×9 with 28 clues, Pokédle all generations over 12
   attempts with a Génération clue column replacing Habitat and a +180 s fail penalty, Tempo 0.5–6 s
   durations held blind — no live counter, kept for the weeks that drew Tempo before it left the
-  hard pool, Ricochet puzzles whose optimal solution is 8–9 moves
-  instead of 6–8). **The
+  hard pool, Ricochet five targets chained on one board instead of a single puzzle). **The
   `false`/absent path must keep the
   exact same `rng` call sequence as before** so existing daily puzzles don't change when touching
   a generator. `GameDef.reglesDifficile` overrides the rules line shown during hard play.
@@ -286,10 +287,10 @@ perpendicular walls*.
 `genRicochet(rng, difficile)` draws the puzzle: assemble a board, scatter four robots, run one BFS
 (`exploreAtteignables`, typed arrays + open-addressing hash table — the state count grows ~×2.3 per
 move) to get the distance to every (robot, cell) pair at once, then keep the hardest target whose
-optimal solution falls in 6–8 moves (8–9 for the weekly challenge) — the same order of difficulty as
+optimal solution falls in 6–8 moves — the same order of difficulty as
 Cartel's defaults. That ceiling is a **budget** decision as much as a design one: 10-move puzzles
 push generation past a second on the render loop, so the épreuve would start on a stutter (measured
-~80 ms average / 280 ms worst at 6–8, ~170/400 ms at 8–9). Robots are re-scattered — then
+~80 ms average / 280 ms worst at 6–8). Robots are re-scattered — then
 the board reassembled — until the floor is met, under a shared node budget so generation never hangs
 on an unlucky draw. The optimal length is **never shown to the player** — it is only revealed in the
 end-of-game detail line. It is what the reward is counted against: solving at the optimum is worth
@@ -303,6 +304,22 @@ in play from the tenth surplus move on, as are the hint (+15 s) and the reset (+
 worth more than finishing a lost line. `trouveSolution()`
 reconstructs the optimal line, used for the hint and the solutions screen — never to arbitrate a
 player's move, which is replayed by `deplace()`.
+
+**The weekly challenge chains `MANCHES_DEFI` = 5 targets on a single board** (`genChaine()`), and
+the robots are **never re-scattered between them**: where you leave them winning one target is where
+the next one starts, which is the whole point — a target reached by parking robots badly makes the
+next one dearer. `Enigme` is therefore `{ plateau, depart, manches }`, one `Manche` daily and five
+on the challenge, and `genChaine()` only keeps a draw whose five legs all fall in 4–6 moves, each
+leg measured from the positions the previous leg's *optimal* line leaves behind (~34 ms average /
+114 ms worst, well under the single-puzzle cost, since five depth-6 searches are cheaper than one
+depth-10). The player rarely follows that reference line, so a leg's real objective is recomputed
+in-game from their actual robots by `resoutManche()` (depth 10, bounded budget, falling back to the
+generated optimal if it runs out) — charging them the gap between their trajectory and the reference
+would be unearned. The scale follows the format (`BAREME` in `Ricochet.tsx`): 50 s to win and a
+five-move batch on the challenge against 30 s and three daily, so a surplus spread over five targets
+doesn't make the reward unreachable by the second one. « Recommencer » restores the start of the
+**current leg**, never the épreuve's — won targets are not replayed — and the surplus still survives
+it.
 
 ### Content pipelines (generated, not hand-authored)
 

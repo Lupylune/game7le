@@ -747,23 +747,39 @@ function remonte(parent: readonly number[], via: readonly number[], depuis: numb
 
 /* ===== Génération de l'énigme du jour ==================================== */
 
+/** Une cible à atteindre, et la ligne optimale qui y mène depuis le début de la manche. */
+export interface Manche {
+  cible: Cible;
+  /** Longueur de la solution optimale : c'est l'objectif, jamais annoncé au joueur. */
+  optimal: number;
+  solution: Coup[];
+}
+
 export interface Enigme {
   plateau: Plateau;
   /** Positions de départ des quatre robots, index = couleur. */
   depart: number[];
-  cible: Cible;
-  /** Longueur de la solution optimale : c'est l'objectif annoncé au joueur. */
-  optimal: number;
-  solution: Coup[];
+  /**
+   * Manches à enchaîner sur le même plateau : une seule au quotidien, cinq au
+   * défi. Les robots ne sont pas replacés entre deux manches — la position
+   * laissée par la cible précédente est le départ de la suivante.
+   */
+  manches: Manche[];
 }
 
 /**
  * Plancher et plafond de la solution optimale, en coups — mêmes ordres de
  * grandeur que le Ricochet Robots du projet Cartel (6 à 8 par défaut). Le
- * plafond du défi s'arrête à 9 : à 10 coups, la génération dépasse la seconde
- * sur la boucle de rendu, et l'épreuve démarrerait sur un à-coup.
+ * plafond du défi s'arrête plus bas que le quotidien parce que la difficulté y
+ * vient de l'enchaînement : cinq cibles de 4 à 6 coups, sans remise à zéro des
+ * robots, font une épreuve plus longue et plus exigeante qu'une énigme unique de
+ * 9 coups — et cinq recherches de profondeur 6 tiennent dans le budget, là où
+ * une seule de profondeur 10 le dépasserait déjà.
  */
-const DIFFICULTE = { normal: [6, 8], difficile: [8, 9] } as const;
+const DIFFICULTE = { normal: [6, 8], difficile: [4, 6] } as const;
+
+/** Cibles à enchaîner au défi difficile, sur un même plateau. */
+export const MANCHES_DEFI = 5;
 
 /**
  * Budget de nœuds partagé par toutes les tentatives : borne le temps de
@@ -774,13 +790,73 @@ const DIFFICULTE = { normal: [6, 8], difficile: [8, 9] } as const;
 const BUDGET = 1_400_000;
 
 /**
+ * Profondeur et budget de la résolution faite en cours d'épreuve, au passage
+ * d'une manche à la suivante : le joueur n'ayant pas forcément suivi la ligne
+ * optimale, l'objectif de la manche se recalcule depuis la position réelle de
+ * ses robots. Large par rapport aux 4–6 coups visés à la génération, pour
+ * couvrir une position laissée bien plus loin de la cible suivante.
+ */
+const PROFONDEUR_MANCHE = 10;
+const BUDGET_MANCHE = 900_000;
+
+/** Rejoue une suite de coups et retourne les positions obtenues. */
+function appliqueCoups(plateau: Plateau, robots: readonly number[], coups: readonly Coup[]): number[] {
+  let positions = robots.slice();
+  for (const coup of coups) {
+    const suite = deplace(plateau, positions, coup.robot, coup.dir);
+    if (!suite) break;
+    positions = suite;
+  }
+  return positions;
+}
+
+/**
+ * Objectif d'une manche depuis une position donnée. Sert au passage de manche en
+ * cours d'épreuve : `secours` (l'optimal relevé à la génération) reprend la main
+ * si la recherche sort du budget, pour que l'épreuve continue avec un objectif
+ * plausible plutôt que de bloquer.
+ */
+export function resoutManche(
+  plateau: Plateau,
+  robots: readonly number[],
+  cible: Cible,
+  secours: number,
+): Manche {
+  const solution = trouveSolution(plateau, robots, cible, PROFONDEUR_MANCHE, BUDGET_MANCHE);
+  if (!solution || solution.length === 0) return { cible, optimal: secours, solution: [] };
+  return { cible, optimal: solution.length, solution };
+}
+
+/** Cibles atteignables depuis une position, avec leur profondeur optimale. */
+function candidatesDepuis(
+  plateau: Plateau,
+  profondeurs: Map<number, number>,
+  maxi: number,
+  exclues: ReadonlySet<Cible>,
+): { cible: Cible; prof: number }[] {
+  // Profondeur de chaque cible : pour le vortex, c'est le robot le mieux placé.
+  return plateau.cibles
+    .map((cible) => {
+      if (exclues.has(cible)) return null;
+      const profs =
+        cible.robot === null
+          ? COULEURS.map((_, r) => profondeurs.get(cleAtteinte(r, cible.pos)))
+          : [profondeurs.get(cleAtteinte(cible.robot, cible.pos))];
+      const dispo = profs.filter((p): p is number => p !== undefined && p > 0);
+      return dispo.length === 0 ? null : { cible, prof: Math.min(...dispo) };
+    })
+    .filter((c): c is { cible: Cible; prof: number } => c !== null && c.prof <= maxi);
+}
+
+/**
  * Tire l'énigme du jour : un plateau, quatre robots, et la cible inédite la plus
  * corsée dont la solution optimale tient dans la fourchette de difficulté. Tant
  * qu'aucune cible ne l'atteint, les robots sont redistribués ; en dernier
  * recours un nouveau plateau est assemblé.
  */
 export function genRicochet(rng: RNG, difficile = false): Enigme {
-  const [mini, maxi] = DIFFICULTE[difficile ? 'difficile' : 'normal'];
+  if (difficile) return genChaine(rng);
+  const [mini, maxi] = DIFFICULTE.normal;
   let restant = BUDGET;
   let meilleure: Enigme | null = null;
   let plateau = assemble(tireTuiles(rng));
@@ -794,18 +870,7 @@ export function genRicochet(rng: RNG, difficile = false): Enigme {
     const { profondeurs, noeuds } = exploreAtteignables(plateau, depart, maxi, restant);
     restant -= noeuds;
 
-    // Profondeur de chaque cible : pour le vortex, c'est le robot le mieux placé.
-    const candidates = plateau.cibles
-      .map((cible) => {
-        const profs =
-          cible.robot === null
-            ? COULEURS.map((_, r) => profondeurs.get(cleAtteinte(r, cible.pos)))
-            : [profondeurs.get(cleAtteinte(cible.robot, cible.pos))];
-        const dispo = profs.filter((p): p is number => p !== undefined && p > 0);
-        return dispo.length === 0 ? null : { cible, prof: Math.min(...dispo) };
-      })
-      .filter((c): c is { cible: Cible; prof: number } => c !== null && c.prof <= maxi);
-
+    const candidates = candidatesDepuis(plateau, profondeurs, maxi, new Set());
     if (candidates.length === 0) continue;
 
     // La plus corsée d'abord ; à profondeur égale, tirage au sort.
@@ -816,9 +881,9 @@ export function genRicochet(rng: RNG, difficile = false): Enigme {
     const solution = trouveSolution(plateau, depart, cible, prof);
     if (!solution || solution.length !== prof) continue;
 
-    const enigme: Enigme = { plateau, depart, cible, optimal: prof, solution };
+    const enigme: Enigme = { plateau, depart, manches: [{ cible, optimal: prof, solution }] };
     if (prof >= mini) return enigme;
-    if (!meilleure || prof > meilleure.optimal) meilleure = enigme;
+    if (!meilleure || prof > meilleure.manches[0].optimal) meilleure = enigme;
   }
 
   // Budget épuisé sans atteindre le plancher : la meilleure énigme croisée fait
@@ -827,5 +892,74 @@ export function genRicochet(rng: RNG, difficile = false): Enigme {
   const depart = placeRobots(rng, plateau);
   const cible = plateau.cibles[0];
   const solution = trouveSolution(plateau, depart, cible, 8) ?? [];
-  return { plateau, depart, cible, optimal: Math.max(1, solution.length), solution };
+  return {
+    plateau,
+    depart,
+    manches: [{ cible, optimal: Math.max(1, solution.length), solution }],
+  };
+}
+
+/**
+ * Tire l'énigme du défi : un seul plateau, un seul placement de robots, et cinq
+ * cibles à enchaîner. Chaque manche est tirée depuis les positions laissées par
+ * la ligne optimale de la précédente — les robots ne sont jamais replacés, c'est
+ * tout l'intérêt : une cible atteinte en laissant ses robots n'importe où rend
+ * la suivante plus coûteuse. Un essai n'est retenu que si ses cinq manches
+ * tiennent dans la fourchette ; sinon la meilleure chaîne croisée (la plus
+ * longue, puis la plus corsée) fait l'affaire, comme au quotidien.
+ */
+function genChaine(rng: RNG): Enigme {
+  const [mini, maxi] = DIFFICULTE.difficile;
+  let restant = BUDGET;
+  let meilleure: Enigme | null = null;
+  let score = -1;
+  let plateau = assemble(tireTuiles(rng));
+
+  for (let essai = 0; essai < 12 && restant > 0; essai++) {
+    if (essai > 0 && essai % 3 === 0) plateau = assemble(tireTuiles(rng));
+    const depart = placeRobots(rng, plateau);
+    const manches: Manche[] = [];
+    const vues = new Set<Cible>();
+    let positions: number[] = depart;
+
+    for (let m = 0; m < MANCHES_DEFI && restant > 0; m++) {
+      const { profondeurs, noeuds } = exploreAtteignables(plateau, positions, maxi, restant);
+      restant -= noeuds;
+
+      const candidates = candidatesDepuis(plateau, profondeurs, maxi, vues);
+      if (candidates.length === 0) break;
+
+      const profMax = Math.max(...candidates.map((c) => c.prof));
+      const exaequo = shuffle(rng, candidates.filter((c) => c.prof === profMax));
+      const { cible, prof } = exaequo[0];
+
+      const solution = trouveSolution(plateau, positions, cible, prof);
+      if (!solution || solution.length !== prof) break;
+
+      manches.push({ cible, optimal: prof, solution });
+      vues.add(cible);
+      positions = appliqueCoups(plateau, positions, solution);
+    }
+
+    if (manches.length === 0) continue;
+    const plancher = Math.min(...manches.map((m) => m.optimal));
+    if (manches.length === MANCHES_DEFI && plancher >= mini) return { plateau, depart, manches };
+    // Chaîne complète d'abord, puis celle dont la manche la plus faible est la
+    // moins faible : une manche à deux coups gâche plus qu'elle ne raccourcit.
+    const valeur = manches.length * 100 + plancher;
+    if (valeur > score) {
+      score = valeur;
+      meilleure = { plateau, depart, manches };
+    }
+  }
+
+  if (meilleure) return meilleure;
+  const depart = placeRobots(rng, plateau);
+  const cible = plateau.cibles[0];
+  const solution = trouveSolution(plateau, depart, cible, 8) ?? [];
+  return {
+    plateau,
+    depart,
+    manches: [{ cible, optimal: Math.max(1, solution.length), solution }],
+  };
 }

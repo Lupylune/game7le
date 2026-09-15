@@ -99,7 +99,9 @@ export const JEUX: GameDef[] = [
     nom: 'Démineur',
     regles:
       'Grille 12×12, 20 mines. Creusez la case marquée en premier : la grille est la même pour tous. Tout se déduit ensuite, aucun pari nécessaire.',
-    scoring: 'Grille nettoyée : −15 s · mine touchée : de +120 s (dès le début) à +30 s (dégressif)',
+    reglesDifficile:
+      'Grille 24×24, 80 mines. Creusez la case marquée en premier : la grille est la même pour tous. Tout se déduit ensuite, aucun pari nécessaire.',
+    scoring: 'Grille nettoyée : −15 s (−30 s au défi) · mine touchée : de +120 s (dès le début) à +30 s (dégressif)',
     skip: { apresS: 45, penaliteS: 90 },
     tirage: { depuis: LANCEMENT },
     defi: { depuis: DEFI_LANCEMENT },
@@ -233,9 +235,9 @@ export const JEUX: GameDef[] = [
     regles:
       'Les robots glissent jusqu’au premier obstacle : amenez le robot ciblé sur sa cible en un minimum de coups.',
     reglesDifficile:
-      'Les robots glissent jusqu’au premier obstacle : amenez le robot ciblé sur sa cible en un minimum de coups — énigme plus longue.',
+      'Les robots glissent jusqu’au premier obstacle : cinq cibles à enchaîner sur le même plateau, les robots restant où vous les laissez d’une cible à la suivante.',
     scoring:
-      'Résolu à l’optimum : −30 s · chaque tranche de 3 coups au-delà retire 10 s de ce bonus, jusqu’à +10 s au pire · indice : +15 s · retour au départ : +10 s',
+      'Résolu à l’optimum : −30 s (−50 s au défi, 5 cibles) · chaque tranche de 3 coups au-delà (5 au défi) retire 10 s de ce bonus, jusqu’à +10 s au pire · indice : +15 s · retour au départ de la cible : +10 s',
     skip: { apresS: 45, penaliteS: 90 },
     tirage: { depuis: '2026-09-10' },
     defi: { depuis: '2026-09-14' },

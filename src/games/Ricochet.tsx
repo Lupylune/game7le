@@ -11,17 +11,19 @@ import {
   genRicochet,
   glisse,
   ligneDe,
+  resoutManche,
   trouveSolution,
   type Cible,
   type Coup,
   type Direction,
+  type Manche,
   type Plateau,
 } from '../lib/ricochet';
 import { formatAdjust } from '../lib/time';
 import { useChronoVisible } from '../lib/usePseudo';
 import type { GameProps } from './types';
 
-/** Pénalités : un indice, un retour au départ. */
+/** Pénalités : un indice, un retour au départ de la manche. */
 const PENALITE_INDICE = 15000;
 const PENALITE_RESET = 10000;
 /**
@@ -32,16 +34,22 @@ const PENALITE_RESET = 10000;
  * perdu fait déjà tomber un palier (le retour est immédiat, comme l'était
  * l'ancienne pénalité au coup), les deux suivants sont absorbés. Une partie
  * égarée coûte donc au pire 10 s, plus le temps réellement passé à errer.
+ *
+ * Le défi enchaîne cinq manches : la mise et la tranche y suivent le même
+ * rapport (50 s à gagner, une tranche de cinq coups), pour que le surplus cumulé
+ * sur cinq cibles ne rende pas la récompense inatteignable dès la deuxième.
  */
-const BONUS_OPTIMAL = 30000;
+const BAREME = {
+  normal: { bonus: 30000, tranche: 3 },
+  difficile: { bonus: 50000, tranche: 5 },
+} as const;
 const EROSION_PAR_PALIER = 10000;
-const COUPS_PAR_PALIER = 3;
 const MALUS_PLAFOND = 10000;
 
 /** Ajustement encore en jeu, au sens de `GameResult.adjustMs` (négatif = gagné). */
-function ajustementCourant(surplus: number): number {
-  const paliers = Math.ceil(surplus / COUPS_PAR_PALIER);
-  return Math.min(MALUS_PLAFOND, EROSION_PAR_PALIER * paliers - BONUS_OPTIMAL);
+function ajustementCourant(surplus: number, bareme: (typeof BAREME)[keyof typeof BAREME]): number {
+  const paliers = Math.ceil(surplus / bareme.tranche);
+  return Math.min(MALUS_PLAFOND, EROSION_PAR_PALIER * paliers - bareme.bonus);
 }
 
 const FLECHES: Record<Direction, string> = {
@@ -90,10 +98,22 @@ function segments(plateau: Plateau): Array<[number, number, number, number]> {
 
 export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps) {
   const enigme = useMemo(() => genRicochet(rng, difficile), [rng, difficile]);
-  const { plateau, depart, cible, optimal, solution } = enigme;
+  const { plateau, depart, manches } = enigme;
   const taille = plateau.taille;
+  const bareme = BAREME[difficile ? 'difficile' : 'normal'];
 
   const [robots, setRobots] = useState<number[]>(depart);
+  // Manche courante : au défi, cinq cibles s'enchaînent sur le même plateau sans
+  // que les robots soient replacés. Son objectif n'est donc pas celui relevé à
+  // la génération dès la deuxième — il est recalculé depuis la position réelle
+  // des robots (`resoutManche`), sinon on facturerait au joueur l'écart entre sa
+  // trajectoire et la ligne de référence.
+  const [iManche, setIManche] = useState(0);
+  const [manche, setManche] = useState<Manche>(manches[0]);
+  const { cible, optimal, solution } = manche;
+  // Positions au début de la manche : ce sont elles que « Recommencer » restaure,
+  // les manches déjà gagnées n'étant pas rejouables.
+  const [departManche, setDepartManche] = useState<number[]>(depart);
   const [coups, setCoups] = useState(0);
   // Aucun robot présélectionné : l'énigme commence par le choix du robot à
   // bouger, pas par un plateau déjà en mode déplacement.
@@ -113,6 +133,10 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
   // finir une partie égarée.
   const surplusRef = useRef(0);
   const [surplus, setSurplus] = useState(0);
+  // Coups et optimums des manches déjà gagnées : le verdict final annonce le
+  // total de l'épreuve, pas celui de la dernière cible.
+  const coupsTotalRef = useRef(0);
+  const optimalTotalRef = useRef(0);
   const chronoVisible = useChronoVisible();
 
   const murs = useMemo(() => segments(plateau), [plateau]);
@@ -125,6 +149,50 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
       (m) => m.pos !== robots[sel],
     );
   }, [sel, robots, plateau]);
+
+  /**
+   * Index de la prochaine manche à jouer depuis une position, en sautant celles
+   * qu'un robot occupe déjà — une cible gagnée sans jouer ne ferait qu'une
+   * manche fantôme. `null` quand il n'en reste plus : l'épreuve est finie.
+   */
+  function prochaineManche(depuis: number, positions: number[]): number | null {
+    let i = depuis;
+    while (i < manches.length && cibleAtteinte(manches[i].cible, positions)) i++;
+    return i < manches.length ? i : null;
+  }
+
+  /** Ouvre une manche depuis la position laissée par la précédente. */
+  function ouvreManche(i: number, positions: number[]) {
+    setIManche(i);
+    setManche(resoutManche(plateau, positions, manches[i].cible, manches[i].optimal));
+    setDepartManche(positions);
+    setCoups(0);
+    setSel(null);
+    setIndice(null);
+    setSurChemin(true);
+  }
+
+  function termine(coupsManche: number) {
+    doneRef.current = true;
+    const trop = surplusRef.current;
+    const total = coupsTotalRef.current + coupsManche;
+    const optimumTotal = optimalTotalRef.current + optimal;
+    const quoi = manches.length > 1 ? `${manches.length} cibles enchaînées` : 'résolu';
+    setTimeout(
+      () =>
+        onDone({
+          adjustMs: ajustementCourant(trop, bareme),
+          detail:
+            trop > 0
+              ? `${quoi} en ${total} coups, ${trop} de plus que l’optimum (${optimumTotal})`
+              : aideRef.current
+                ? `${quoi} à l’optimum, avec de l’aide`
+                : `${quoi} en ${total} coups, l’optimum`,
+          status: 'success',
+        }),
+      400,
+    );
+  }
 
   function joue(robot: number, dir: Direction) {
     if (doneRef.current) return;
@@ -149,22 +217,14 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
     }
 
     if (cibleAtteinte(cible, suite)) {
-      doneRef.current = true;
-      const trop = surplusRef.current;
-      setTimeout(
-        () =>
-          onDone({
-            adjustMs: ajustementCourant(trop),
-            detail:
-              trop > 0
-                ? `résolu en ${n} coups, ${trop} de plus que l’optimum (${optimal})`
-                : aideRef.current
-                  ? 'résolu à l’optimum, avec de l’aide'
-                  : `résolu en ${n} coups, l’optimum`,
-            status: 'success',
-          }),
-        400,
-      );
+      const suivante = prochaineManche(iManche + 1, suite);
+      if (suivante === null) {
+        termine(n);
+        return;
+      }
+      coupsTotalRef.current += n;
+      optimalTotalRef.current += optimal;
+      ouvreManche(suivante, suite);
     }
   }
 
@@ -211,7 +271,10 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
     if (doneRef.current || coups === 0) return;
     onAdjust(PENALITE_RESET, 'Retour au départ');
     aideRef.current = true;
-    setRobots(depart);
+    // Départ de la manche courante, pas de l'épreuve : les cibles déjà gagnées
+    // ne se rejouent pas. Le surplus, lui, n'est pas remis à zéro (voir plus
+    // haut) — sinon repartir en arrière rachèterait le bonus perdu.
+    setRobots(departManche);
     setCoups(0);
     setSel(null);
     setIndice(null);
@@ -221,6 +284,14 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
   return (
     <div className="game-area">
       <p className="ric-consigne">
+        {manches.length > 1 && (
+          <>
+            <strong>
+              Cible {iManche + 1}/{manches.length}
+            </strong>{' '}
+            ·{' '}
+          </>
+        )}
         Amenez <strong style={{ color: teinteCible(cible) }}>{robotAttendu(cible)}</strong> sur{' '}
         <span className="ric-symbole" style={{ color: teinteCible(cible) }}>
           {cible.symbole}
@@ -234,13 +305,19 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
         {chronoVisible && (
           <>
             {' '}
-            · {ajustementCourant(surplus) > 0 ? 'malus' : 'bonus'}{' '}
+            · {ajustementCourant(surplus, bareme) > 0 ? 'malus' : 'bonus'}{' '}
             <strong
               className={
-                ajustementCourant(surplus) > 0 ? 'malus' : ajustementCourant(surplus) < 0 ? 'bonus' : ''
+                ajustementCourant(surplus, bareme) > 0
+                  ? 'malus'
+                  : ajustementCourant(surplus, bareme) < 0
+                    ? 'bonus'
+                    : ''
               }
             >
-              {ajustementCourant(surplus) === 0 ? '—' : formatAdjust(ajustementCourant(surplus))}
+              {ajustementCourant(surplus, bareme) === 0
+                ? '—'
+                : formatAdjust(ajustementCourant(surplus, bareme))}
             </strong>
           </>
         )}
@@ -404,8 +481,10 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
 
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Un robot glisse jusqu’à un mur, le bloc central ou un autre robot · cliquez un robot puis sa
-        case d’arrivée (ou les flèches du clavier) · résoudre à l’optimum vaut −30 s, et chaque
-        tranche de 3 coups au-delà retire 10 s de ce bonus, jusqu’à +10 s au pire
+        case d’arrivée (ou les flèches du clavier)
+        {manches.length > 1 && ' · les robots restent où vous les laissez d’une cible à la suivante'}{' '}
+        · résoudre à l’optimum vaut −{bareme.bonus / 1000} s, et chaque tranche de {bareme.tranche}{' '}
+        coups au-delà retire 10 s de ce bonus, jusqu’à +10 s au pire
         {indice && (
           <>
             {' '}

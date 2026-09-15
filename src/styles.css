@@ -2295,6 +2295,16 @@ main.content:has(.interstitial) {
 .ms-grid {
   --case: max(26px, min(60px, (var(--jeu-l) - 48px) / 12, (var(--jeu-h) - 100px) / 12));
 }
+/* Plateau du défi : 24 colonnes au lieu de 12. Gouttières ramenées à 1 px (à
+   2 px elles mangeraient 50 px de large) et chiffre agrandi par rapport à la
+   case — sur une case de moitié plus petite, c'est lui qui doit rester lisible. */
+.ms-grid.grand {
+  --case: max(15px, min(34px, (var(--jeu-l) - 36px) / 24, (var(--jeu-h) - 100px) / 24));
+  gap: 1px;
+}
+.ms-grid.grand .cell {
+  font-size: calc(var(--case) * 0.62);
+}
 .ms-grid .cell {
   width: var(--case);
   height: var(--case);

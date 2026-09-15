@@ -133,17 +133,29 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
       );
     }
     case 'ricochet': {
-      // Une des solutions optimales : la suite de coups, robot par robot.
-      const { solution } = genRicochet(rng, defi);
+      // Une des lignes optimales, robot par robot — une par manche, le défi en
+      // enchaînant cinq sur le même plateau. Les manches suivantes partent des
+      // positions laissées par cette ligne-là : c'est la référence, pas
+      // forcément le chemin qu'a pris le joueur.
+      const { manches } = genRicochet(rng, defi);
       const fleches = { haut: '↑', droite: '→', bas: '↓', gauche: '←' } as const;
       return (
-        <p className="solution-coups">
-          {solution.map((c, i) => (
-            <span key={i} className="solution-coup" style={{ color: TEINTES[COULEURS[c.robot]] }}>
-              {COULEURS[c.robot]} {fleches[c.dir]}
-            </span>
+        <>
+          {manches.map((manche, m) => (
+            <p className="solution-coups" key={m}>
+              {manches.length > 1 && (
+                <span className="solution-coup muted">
+                  {manche.cible.symbole} {m + 1}/{manches.length}
+                </span>
+              )}
+              {manche.solution.map((c, i) => (
+                <span key={i} className="solution-coup" style={{ color: TEINTES[COULEURS[c.robot]] }}>
+                  {COULEURS[c.robot]} {fleches[c.dir]}
+                </span>
+              ))}
+            </p>
           ))}
-        </p>
+        </>
       );
     }
     default:
