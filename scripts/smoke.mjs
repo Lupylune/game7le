@@ -90,6 +90,16 @@ const jeux = [
 ];
 for (const [id, sel] of jeux) await check(`/entrainement/${id}`, sel, `Jeu : ${id}`);
 
+// Variantes corsées, jouables à l'entraînement via `?mode=difficile` : elles ne
+// sont montées nulle part ailleurs dans ce test (le défi n'en tire que sept par
+// semaine), et ce sont elles qui changent grille, taille et barème.
+const DURS = new Set([
+  'lemot', 'croises', 'sudoku', 'reines', 'demineur', 'nonogramme',
+  'melimelo', 'chromal', 'dactylo', 'echecs', 'pokedle', 'tempo', 'ricochet',
+]);
+for (const [id, sel] of jeux.filter(([id]) => DURS.has(id)))
+  await check(`/entrainement/${id}?mode=difficile`, sel, `Jeu difficile : ${id}`);
+
 // Run du jour : l'intro, le compte à rebours puis la première épreuve du tirage
 await check('/jouer', '.interstitial', 'Run — intro');
 await page.click('button.btn-primary');

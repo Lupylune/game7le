@@ -61,7 +61,11 @@ mechanic and touches most of the app:
 - The fake global leaderboard (`src/lib/classement.ts`) is seeded the same way, purely for demo
   flavor — it is not real multiplayer data.
 - Practice mode (`src/pages/Entrainement.tsx`) seeds on a random nonce instead of the date, so
-  grids differ every attempt.
+  grids differ every attempt. It also plays the **hard variants** on demand (`?mode=difficile`,
+  a Normal/Difficile switch in the header): the gate is `reglesDifficile` being set, not the `defi`
+  window — a game can have a variant without being in the weekly pool (Chromal) or keep one after
+  leaving it (Tempo), and the point of practice is to reach every variant that exists. The mode
+  goes into the seed, so the two variants of a game don't draw the same thing at equal nonce.
 
 When adding a new game or changing draw logic, preserve this determinism: never call
 `Math.random()` directly in game logic — always thread the `rng: RNG` prop through.
@@ -368,7 +372,9 @@ lexique` / `npm run echecs` / `npm run pokemon` rather than editing directly:
 No component/unit test framework — end-to-end via Playwright driving the built app on
 `localhost:4183` (`npm run preview` must be running first):
 
-- `smoke.mjs`: loads every page and every game's practice route, asserts no console/page errors.
+- `smoke.mjs`: loads every page and every game's practice route — plus every hard variant through
+  `?mode=difficile`, the only place they are all mounted (a week's défi only draws seven) — and
+  asserts no console/page errors.
 - `full-run.mjs`: plays through an entire day's draw (7 games) using `page.clock` to fast-forward
   the skip-timer and simulated drag gestures for draw-based games, then checks the results screen
   and localStorage persistence. Because the draw is random per day, it reads the on-screen game

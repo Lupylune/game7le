@@ -600,15 +600,20 @@ main.content > .page-entree > * {
   flex-direction: column;
   gap: var(--sp-2);
 }
-/* Onglets défi du jour / défi difficile */
-.lb-tabs {
+/* Onglets défi du jour / défi difficile — et, à l'entraînement, le choix de la
+   difficulté : même objet, mêmes tokens, une seule règle à faire vivre. */
+.lb-tabs,
+.entr-modes {
   display: flex;
   flex-wrap: wrap; /* cinq onglets : on passe à la ligne sur petit écran */
   justify-content: center;
   gap: var(--sp-2);
+}
+.lb-tabs {
   margin-bottom: var(--sp-4);
 }
-.lb-tab {
+.lb-tab,
+.entr-mode {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -618,9 +623,23 @@ main.content > .page-entree > * {
   font-size: var(--text-sm);
   transition: border-color 0.15s, color 0.15s;
 }
-.lb-tab.actif {
+.lb-tab.actif,
+.entr-mode.actif {
   color: var(--text);
   border-color: var(--accent);
+}
+/* Marque un jeu qui a une variante corsée : dans la liste d'entraînement et sur
+   l'écran de décompte quand c'est elle qu'on s'apprête à jouer. */
+.entr-badge {
+  margin-left: var(--sp-2);
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 .lb .row {
   position: relative;

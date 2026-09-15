@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { JEUX, JEU_PAR_ID } from '../games';
 import { todayStr } from '../lib/rng';
-import type { GameResult } from '../games/types';
+import type { GameDef, GameResult } from '../games/types';
 import { seededRng } from '../lib/rng';
 import { formatAdjust, formatMs } from '../lib/time';
 import { VERDICTS } from './RunPage';
 import GameIcon from '../components/GameIcon';
+
+/**
+ * Un jeu a une variante corsée dès qu'il en décrit les règles — c'est le seul
+ * marqueur fiable : `defi` ne dit que sa présence au tirage hebdomadaire, or
+ * Chromal a une variante sans y être, et Tempo en garde une après en être
+ * sorti. À l'entraînement, on veut pouvoir jouer toutes celles qui existent.
+ */
+const aVarianteDifficile = (j: GameDef) => !!j.reglesDifficile;
 
 export function EntrainementListe() {
   return (
@@ -14,7 +22,8 @@ export function EntrainementListe() {
       <h1>Entraînement</h1>
       <p className="muted">
         Jouez chaque épreuve à volonté, hors chrono officiel. Les grilles changent à chaque essai —
-        rien n'est enregistré.
+        rien n'est enregistré. Les jeux marqués <span className="entr-badge">difficile</span> ont une
+        variante corsée, celle du défi hebdomadaire : le choix se fait sur la page du jeu.
       </p>
       <div className="card-grid">
         {/* Tout le catalogue encore en service, y compris un jeu qui n'entre
@@ -24,6 +33,7 @@ export function EntrainementListe() {
           <Link className="game-card" to={`/entrainement/${j.id}`} key={j.id}>
             <strong>
               <GameIcon id={j.id} /> {j.nom}
+              {aVarianteDifficile(j) && <span className="entr-badge">difficile</span>}
             </strong>
             <span className="desc">{j.regles}</span>
           </Link>
@@ -36,11 +46,20 @@ export function EntrainementListe() {
 export function EntrainementJeu() {
   const { id } = useParams();
   const jeu = JEU_PAR_ID.get(id ?? '');
+  const [params, setParams] = useSearchParams();
   const [nonce, setNonce] = useState(() => Math.floor(Math.random() * 1e9));
   const [count, setCount] = useState(3);
   const [startAt, setStartAt] = useState(0);
   const [result, setResult] = useState<(GameResult & { ms: number }) | null>(null);
-  const rng = useMemo(() => seededRng(`entrainement:${id}:${nonce}`), [id, nonce]);
+  // `?mode=difficile` : partageable, et ignoré pour un jeu qui n'a pas de
+  // variante — sinon l'URL ferait passer un `difficile` que le jeu ne gère pas.
+  const difficile = !!jeu && aVarianteDifficile(jeu) && params.get('mode') === 'difficile';
+  // Le mode entre dans la graine : les deux variantes d'un même jeu ne tirent
+  // pas la même chose à nonce égal.
+  const rng = useMemo(
+    () => seededRng(`entrainement:${id}:${difficile ? 'difficile:' : ''}${nonce}`),
+    [id, difficile, nonce],
+  );
 
   // Compte à rebours de 3 s avant le début, comme dans le run
   useEffect(() => {
@@ -59,11 +78,36 @@ export function EntrainementJeu() {
       </p>
     );
 
-  const retry = () => {
+  const relance = () => {
     setResult(null);
     setCount(3);
     setNonce(Math.floor(Math.random() * 1e9));
   };
+
+  const changeMode = (dur: boolean) => {
+    if (dur === difficile) return;
+    setParams(dur ? { mode: 'difficile' } : {}, { replace: true });
+    relance();
+  };
+
+  const modes = aVarianteDifficile(jeu) && (
+    <div className="entr-modes" role="tablist" aria-label="Difficulté">
+      {[
+        { dur: false, label: 'Normal' },
+        { dur: true, label: 'Difficile' },
+      ].map((m) => (
+        <button
+          key={m.label}
+          role="tab"
+          aria-selected={difficile === m.dur}
+          className={`entr-mode${difficile === m.dur ? ' actif' : ''}`}
+          onClick={() => changeMode(m.dur)}
+        >
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div>
@@ -72,13 +116,13 @@ export function EntrainementJeu() {
           <div className="game-name">
             <GameIcon id={jeu.id} /> {jeu.nom}
           </div>
-          <div className="step">Entraînement libre</div>
+          <div className="step">Entraînement libre{difficile && ' · difficile'}</div>
         </div>
         {/* Même calage que dans le run : l'entête est une grille de trois
-            colonnes (titre / chrono / contrôle). Sans ce placeholder, le lien
-            se logeait dans la colonne du milieu et flottait au centre de la
-            page au lieu d'être aligné à droite. */}
-        <div />
+            colonnes (titre / chrono / contrôle). La colonne du milieu porte le
+            choix de difficulté quand le jeu en a un, et reste vide sinon —
+            sans elle le lien se logeait au centre au lieu d'être à droite. */}
+        <div>{modes}</div>
         <Link className="btn btn-sm" to="/entrainement">
           ← Tous les jeux
         </Link>
@@ -96,7 +140,7 @@ export function EntrainementJeu() {
             </span>
           </p>
           <div className="game-actions">
-            <button className="btn btn-primary" onClick={retry}>
+            <button className="btn btn-primary" onClick={relance}>
               Rejouer
             </button>
           </div>
@@ -106,6 +150,7 @@ export function EntrainementJeu() {
           <p className="verdict">Prêt·e ?</p>
           <p className="next-up">
             <GameIcon id={jeu.id} /> <strong>{jeu.nom}</strong>
+            {difficile && <span className="entr-badge">difficile</span>}
           </p>
           <div className="countdown" key={count}>
             {count}
@@ -113,10 +158,11 @@ export function EntrainementJeu() {
         </div>
       ) : (
         <>
-          <p className="game-rules">{jeu.regles}</p>
+          <p className="game-rules">{difficile ? (jeu.reglesDifficile ?? jeu.regles) : jeu.regles}</p>
           <jeu.Component
-            key={nonce}
+            key={`${nonce}-${difficile}`}
             rng={rng}
+            difficile={difficile}
             onAdjust={() => {}}
             onDone={(r) => setResult({ ...r, ms: performance.now() - startAt })}
           />
