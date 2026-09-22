@@ -91,8 +91,10 @@ export function cibleDe(rng: () => number) {
 /** Les libs sont servies depuis notre propre domaine : `scripts/vendor.mjs` les
  *  recopie de node_modules vers public/vendor/ avant chaque dev et chaque
  *  build. Un point de défaillance en moins (unpkg est gratuit et sans garantie)
- *  et une poignée de main TLS de moins vers un tiers. */
-const LOCAL = (nom: string) => `/vendor/${nom}`;
+ *  et une poignée de main TLS de moins vers un tiers. La version est DANS le
+ *  chemin : c'est elle qui rend le `immutable` de `public/_headers` honnête, et
+ *  qui fait qu'une montée de version invalide le cache toute seule. */
+const LOCAL = (nom: string, ver: string, f: string) => `/vendor/${nom}-${ver}/${f}`;
 /** Miroir de secours, au cas où la copie manquerait (build servi sans le
  *  prebuild, déploiement partiel) : mieux vaut une lib lente que pas de jeu. */
 const MIROIR = (p: string) => `https://unpkg.com/${p}`;
@@ -161,16 +163,16 @@ const MAPILLARY_VER = '4.1.2';
 /** Charge Leaflet (carte OSM). Renvoie le global `L`. */
 export async function loadLeaflet(): Promise<any> {
   const p = `leaflet@${LEAFLET_VER}/dist/leaflet`;
-  loadCss(LOCAL('leaflet/leaflet.css'), MIROIR(`${p}.css`));
-  await loadScript(LOCAL('leaflet/leaflet.js'), MIROIR(`${p}.js`));
+  loadCss(LOCAL('leaflet', LEAFLET_VER, 'leaflet.css'), MIROIR(`${p}.css`));
+  await loadScript(LOCAL('leaflet', LEAFLET_VER, 'leaflet.js'), MIROIR(`${p}.js`));
   return (window as any).L;
 }
 
 /** Charge mapillary-js (viewer 360°). Renvoie le module global `mapillary`. */
 export async function loadMapillary(): Promise<any> {
   const p = `mapillary-js@${MAPILLARY_VER}/dist/mapillary`;
-  loadCss(LOCAL('mapillary/mapillary.css'), MIROIR(`${p}.css`));
-  await loadScript(LOCAL('mapillary/mapillary.js'), MIROIR(`${p}.js`));
+  loadCss(LOCAL('mapillary', MAPILLARY_VER, 'mapillary.css'), MIROIR(`${p}.css`));
+  await loadScript(LOCAL('mapillary', MAPILLARY_VER, 'mapillary.js'), MIROIR(`${p}.js`));
   return (window as any).mapillary;
 }
 
@@ -261,17 +263,18 @@ async function fetchBbox(
 /**
  * Une passe de recherche adaptative de la taille de bbox : on part petit, on
  * RÉTRÉCIT si l'API renvoie 500 (zone dense → la couverture existe, on affine)
- * et on ÉLARGIT si la zone est vide (zone clairsemée). Renvoie l'image la plus
- * proche du point (un panorama si présent), ou null si le lieu n'a aucune
- * couverture. Lève si le réseau est indisponible : un échec de transport n'est
- * pas une absence de panorama, et l'appelant doit pouvoir le dire au joueur.
+ * et on ÉLARGIT si la zone est vide (zone clairsemée). Renvoie les images de la
+ * première bbox non vide, ORDONNÉES (panorama d'abord, puis distance au point),
+ * ou un tableau vide si le lieu n'a aucune couverture. Lève si le réseau est
+ * indisponible : un échec de transport n'est pas une absence de panorama, et
+ * l'appelant doit pouvoir le dire au joueur.
  */
 async function chercher(
   point: { lat: number; lng: number },
   panoOnly: boolean,
   token: string,
   bornes: Bornes,
-): Promise<ImageMapillary | null> {
+): Promise<ImageMapillary[]> {
   let d = 0.001; // demi-côté initial (~100 m) : sous le seuil de 500 même en zone très dense
   let vu500 = false;
   const fin = Date.now() + bornes.budget;
@@ -290,52 +293,71 @@ async function chercher(
       continue;
     }
     if (code === 0) throw new Error('réseau indisponible');
-    if (code !== 200) return null; // jeton invalide : rien à retenter
+    if (code !== 200) return []; // jeton invalide : rien à retenter
     if (images.length) {
-      // Meilleur candidat : panorama d'abord, puis le plus proche du point.
-      let best: ImageMapillary | null = null;
-      let bestScore = Infinity;
+      // Classement : panorama d'abord, puis le plus proche du point.
+      const classes: { img: ImageMapillary; score: number }[] = [];
       for (const img of images) {
         const c = img?.geometry?.coordinates;
         if (!c || img.id == null) continue;
         const km = haversineKm(point, { lat: c[1], lng: c[0] });
-        const score = (img.is_pano ? 0 : 1e4) + km; // pano prioritaire
-        if (score < bestScore) {
-          bestScore = score;
-          best = { id: String(img.id), lat: c[1], lng: c[0], pano: !!img.is_pano };
-        }
+        classes.push({
+          img: { id: String(img.id), lat: c[1], lng: c[0], pano: !!img.is_pano },
+          score: (img.is_pano ? 0 : 1e4) + km, // pano prioritaire
+        });
       }
-      if (best) return best;
+      if (classes.length) return classes.sort((a, b) => a.score - b.score).map((x) => x.img);
     }
-    if (vu500) return null; // dense puis rétréci jusqu'au vide : plus rien à tenter
+    if (vu500) return []; // dense puis rétréci jusqu'au vide : plus rien à tenter
     d *= 2.5; // zone clairsemée : on élargit
   }
-  return null;
+  return [];
 }
 
 /**
- * Résolution brute, sans cache : les deux passes menées EN PARALLÈLE — la première restreinte aux vrais
+ * Résolution brute, sans cache. `exclus` écarte des ids candidats : utilisé par
+ * `build-atlas.mjs` pour passer au suivant quand le plus proche s'avère
+ * inaffichable — sans ça on retomberait indéfiniment sur la même image morte.
+ * Les deux passes sont menées EN PARALLÈLE — la première restreinte aux vrais
  * panoramas 360° (`is_pano=true`) pour garantir une vue immersive, la seconde
  * acceptant une image plate plutôt que rien. Les enchaîner coûtait jusqu'à
  * quatorze aller-retours en file — soit plusieurs secondes d'écran d'attente —
  * pour le même résultat, puisque la priorité entre les deux est décidée ici.
  */
+export async function chercheCandidats(
+  point: { lat: number; lng: number },
+  token: string,
+  bornes: Bornes = BORNES_JEU,
+): Promise<ImageMapillary[]> {
+  const [pano, plate] = await Promise.allSettled([
+    chercher(point, true, token, bornes),
+    chercher(point, false, token, bornes),
+  ]);
+  const val = (r: PromiseSettledResult<ImageMapillary[]>) =>
+    r.status === 'fulfilled' ? r.value : [];
+  // Panoramas d'abord, puis les images plates : c'est l'ordre de préférence
+  // historique (`pano ?? plate`), déplié en liste. Le dédoublonnage compte : la
+  // passe « tout type » remonte aussi les panoramas.
+  const vus = new Set<string>();
+  const out: ImageMapillary[] = [];
+  for (const img of [...val(pano), ...val(plate)])
+    if (!vus.has(img.id)) {
+      vus.add(img.id);
+      out.push(img);
+    }
+  if (out.length) return out;
+  // Les deux passes en échec de transport : c'est le réseau, pas le lieu.
+  if (pano.status === 'rejected' && plate.status === 'rejected') throw pano.reason;
+  return [];
+}
+
+/** Le meilleur candidat, c'est-à-dire ce que le jeu utilise. */
 export async function chercheImage(
   point: { lat: number; lng: number },
   token: string,
   bornes: Bornes = BORNES_JEU,
 ): Promise<ImageMapillary | null> {
-  const [pano, plate] = await Promise.allSettled([
-    chercher(point, true, token, bornes),
-    chercher(point, false, token, bornes),
-  ]);
-  const val = (r: PromiseSettledResult<ImageMapillary | null>) =>
-    r.status === 'fulfilled' ? r.value : null;
-  const img = val(pano) ?? val(plate);
-  if (img) return img;
-  // Les deux passes en échec de transport : c'est le réseau, pas le lieu.
-  if (pano.status === 'rejected' && plate.status === 'rejected') throw pano.reason;
-  return null;
+  return (await chercheCandidats(point, token, bornes))[0] ?? null;
 }
 
 // ---- Cache de résolution ---------------------------------------------------

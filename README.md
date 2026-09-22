@@ -222,7 +222,10 @@ npm run lexique   # régénère src/data/{lexique,definitions}.ts (Lexique 3.83 
 npm run echecs    # régénère src/data/echecs.ts (base Lichess)
 npm run pokemon   # régénère src/data/pokemon.ts (PokeAPI, toutes générations)
 npm run atlas     # prolonge public/atlas.json : cibles d'Atlas pré-résolues chez Mapillary
-                  # (reprenable ; `-- --horizon 365 --force --concurrence 4`)
+                  # (reprenable ; `-- --horizon 365 --concurrence 4`)
+npm run atlas -- --verifier --depuis 2026-09-21
+                  # revalide les entrées et remplace celles qui ne s'affichent plus,
+                  # sans toucher aux jours déjà joués
 ```
 
 `npm run dev` et `npm run build` recopient d'abord Leaflet et mapillary-js de `node_modules` vers

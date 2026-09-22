@@ -13,6 +13,14 @@
  * vérifie qu'elle correspond aux constantes de `geo.ts`, qui pilotent l'URL du
  * miroir CDN de secours — un écart les ferait diverger en silence.
  *
+ * Le dossier de destination porte la version (`vendor/leaflet-1.9.4/`) : c'est
+ * ce qui autorise `public/_headers` à servir ces fichiers en `immutable`. Sans
+ * version dans l'URL, l'hébergeur ne peut que les donner en `must-revalidate`,
+ * et chaque visite repaie un aller-retour par fichier avant de pouvoir toucher
+ * à son propre cache — 325 ms mesurés sur la prod, là où le CDN qu'on a quitté
+ * servait un cache d'un an. Une montée de version change l'URL, donc personne
+ * ne reste collé à l'ancienne.
+ *
  * Lancé par `predev` et `prebuild`, donc jamais à lancer à la main.
  */
 import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
@@ -32,6 +40,7 @@ function versionAttendue(constante) {
 const LIBS = [
   {
     nom: 'leaflet',
+    dest: 'leaflet',
     constante: 'LEAFLET_VER',
     fichiers: ['leaflet.js', 'leaflet.css'],
     dossiers: ['images'], // référencées par leaflet.css
@@ -45,6 +54,10 @@ const LIBS = [
   },
 ];
 
+// Table rase : sans ça les dossiers des versions précédentes s'empileraient
+// dans public/, et donc dans dist/.
+rmSync(new URL('public/vendor/', racine), { recursive: true, force: true });
+
 for (const lib of LIBS) {
   const pkg = require(`${lib.nom}/package.json`);
   const attendue = versionAttendue(lib.constante);
@@ -55,10 +68,10 @@ for (const lib of LIBS) {
     );
   }
   const src = new URL(`node_modules/${lib.nom}/dist/`, racine);
-  const dest = new URL(`public/vendor/${lib.dest ?? lib.nom}/`, racine);
-  rmSync(dest, { recursive: true, force: true });
+  const rel = `vendor/${lib.dest}-${pkg.version}/`;
+  const dest = new URL(`public/${rel}`, racine);
   mkdirSync(dest, { recursive: true });
   for (const f of lib.fichiers) copyFileSync(new URL(f, src), new URL(f, dest));
   for (const d of lib.dossiers) cpSync(new URL(`${d}/`, src), new URL(`${d}/`, dest), { recursive: true });
-  console.log(`✓ ${lib.nom}@${pkg.version} → public/vendor/${lib.dest ?? lib.nom}/`);
+  console.log(`✓ ${lib.nom}@${pkg.version} → public/${rel}`);
 }

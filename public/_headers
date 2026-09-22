@@ -1,0 +1,18 @@
+# En-têtes de cache des fichiers statiques non hashés (Cloudflare Workers et
+# Cloudflare Pages lisent ce fichier ; il n'est pas servi lui-même). Sans lui,
+# tout ce qui vient de public/ est servi en `max-age=0, must-revalidate` : le
+# navigateur doit revalider avant de pouvoir toucher à son propre cache, soit
+# cinq aller-retours par visite — 325 ms mesurés en prod pour 1,5 ko réellement
+# transféré. Les assets de Vite n'ont pas ce souci, leur nom porte un hash.
+
+# La version est dans le chemin (vendor/mapillary-4.1.2/…), donc le contenu
+# d'une URL donnée ne change jamais : `immutable` est exact, et une montée de
+# version change l'URL.
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# La table s'allonge quand on prolonge l'horizon, mais les entrées existantes ne
+# bougent pas : une heure de fraîcheur suffit largement, et `stale-while-
+# revalidate` fait que même la visite qui expire ne l'attend pas.
+/atlas.json
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

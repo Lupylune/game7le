@@ -354,16 +354,33 @@ a real failure surface. Three layers keep it from ever showing a black frame:
    `package.json`; the script **fails** if it disagrees with `LEAFLET_VER`/`MAPILLARY_VER` in
    `geo.ts`, which drive the CDN mirror URL — they would otherwise drift in silence. unpkg survives
    only as that mirror, used when the copy is missing (build served without the prebuild, partial
-   deploy).
+   deploy). The copy goes into a **version-stamped** folder (`vendor/mapillary-4.1.2/`) so
+   `public/_headers` can serve it `immutable`: Cloudflare gives unhashed assets
+   `max-age=0, must-revalidate`, which cost a measured 325 ms of revalidation per visit — worse
+   than the year-long cache unpkg was giving us. `vercel.json` carries the same policy.
 2. **Pre-resolved targets.** `scripts/build-atlas.mjs` (`npm run atlas`) resolves each day's
    Mapillary image id ahead of time into `public/atlas.json`, served from our own origin and read
    by `chargeTable()`. It does *not* consult the day's draw — `game7le:${date}:atlas` is defined
    for every date, and resolving all of them (rather than the ~44 % that draw Atlas) frees the
    script from having to import the game registry, at the cost of a file twice the size. It is
    resumable (known keys are skipped), so re-running it to extend the horizon is cheap, and it
-   imports `cibleDe`/`chercheImage` from `geo.ts` through rolldown rather than reimplementing
+   imports `cibleDe`/`chercheCandidats` from `geo.ts` through rolldown rather than reimplementing
    them — a reimplementation would drift from the real draw at the first adjustment. Targets with
-   no coverage are deliberately left out of the table.
+   no usable image are deliberately left out of the table.
+
+   **An image being in the bbox response does not mean it can be displayed.** The viewer requests
+   `mesh,sfm_cluster,atomic_scale,camera_parameters,camera_type,computed_rotation` in one call, and
+   a single field answering 500 fails the whole request, so the image never renders — the player
+   just waits out the 7 s fallback. About 2 % of Mapillary images are in that state
+   (`sfm_cluster` is the usual culprit), permanently. The script therefore *validates* each
+   candidate before keeping it, and walks the ranked candidate list until one passes. It walks it
+   **alternating panoramas and flat images**, because the breakage comes in clusters rather than at
+   random — in Dubaï every panorama in the neighbourhood is broken and every flat image is fine, so
+   going down the list in order burns fifty dead candidates before reaching a live one.
+
+   `--verifier` re-validates entries already in the table and replaces the dead ones; `--depuis
+   <date>` bounds that to days not yet played, since an entry is the scoring reference for archive
+   replays of that day. `--force` re-resolves everything, past included.
 3. **Graceful degradation at runtime.** `resoudreImage()` tries the table, then the localStorage
    cache (`game7le:atlas`, 30-day retention, successes only — memoizing a failure would freeze the
    épreuve on a transient outage), then the adaptive bbox search, whose two passes run in parallel
