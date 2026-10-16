@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { seededRng, pick } from '../lib/rng';
 import { JEU_PAR_ID } from '../games';
 import { SOL5, SOL6, DICO6, SOL8, DICO8 } from '../data/lexique';
@@ -12,6 +12,7 @@ import { cibleDe } from '../lib/geo';
 import { genRicochet } from '../lib/ricochet';
 import { POKEMONS } from '../data/pokemon';
 import GameIcon, { SymCouronne } from './GameIcon';
+import HauteurFluide from './HauteurFluide';
 import { RelectureEchecs, RelectureRicochet } from './Relectures';
 
 /**
@@ -20,6 +21,9 @@ import { RelectureEchecs, RelectureRicochet } from './Relectures';
  * Chromal/Tracé/Ratiole/Dactylo/Tempo (rien à révéler) et Démineur (la grille
  * dépend du premier clic du joueur).
  */
+
+/** Jeux sans solution affichable (voir ci-dessus) — en phase avec `solutionDe`. */
+const SANS_SOLUTION = new Set(['chromal', 'trace', 'ratiole', 'dactylo', 'tempo', 'demineur']);
 
 const norm = (w: string) => w.split('').sort().join('');
 
@@ -143,30 +147,99 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
   }
 }
 
+function Carte({ id, date, defi }: { id: string; date: string; defi: boolean }) {
+  const contenu = solutionDe(id, date, defi);
+  const jeu = JEU_PAR_ID.get(id);
+  if (!jeu || !contenu) return null;
+  return (
+    <div className="solution-card">
+      <h4>
+        <GameIcon id={id} size={16} /> {jeu.nom}
+      </h4>
+      {contenu}
+    </div>
+  );
+}
+
+/**
+ * Une solution à la fois, choisie par un onglet à pictogramme (la première
+ * épreuve par défaut) : seule la solution affichée est générée et montée.
+ */
+function SolutionsOnglets({ date, ids, defi }: { date: string; ids: string[]; defi: boolean }) {
+  const dispo = ids.filter((id) => JEU_PAR_ID.has(id) && !SANS_SOLUTION.has(id));
+  const [actif, setActif] = useState(0);
+  // La solution suivante glisse depuis le côté de l'onglet choisi
+  const [sens, setSens] = useState(1);
+  if (dispo.length === 0) return null;
+  const i = Math.min(actif, dispo.length - 1);
+  const choisir = (j: number) => {
+    setSens(j >= i ? 1 : -1);
+    setActif(j);
+  };
+
+  // ←/→ parcourent les onglets, comme une barre d'onglets native
+  const clavier = (e: KeyboardEvent) => {
+    const pas = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!pas) return;
+    e.preventDefault();
+    const j = (i + pas + dispo.length) % dispo.length;
+    choisir(j);
+    (e.currentTarget.children[j] as HTMLElement | undefined)?.focus();
+  };
+
+  return (
+    <div className="solutions solutions-a-onglets">
+      <div className="solutions-onglets" role="tablist" aria-label="Épreuves" onKeyDown={clavier}>
+        {dispo.map((id, j) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`onglet-solution-${id}`}
+            aria-selected={j === i}
+            aria-controls="solution-active"
+            aria-label={JEU_PAR_ID.get(id)!.nom}
+            title={JEU_PAR_ID.get(id)!.nom}
+            tabIndex={j === i ? 0 : -1}
+            className={`solutions-onglet${j === i ? ' actif' : ''}`}
+            onClick={() => choisir(j)}
+          >
+            <GameIcon id={id} size={22} />
+          </button>
+        ))}
+      </div>
+      <HauteurFluide className="solutions-panneau">
+        <div
+          id="solution-active"
+          role="tabpanel"
+          aria-labelledby={`onglet-solution-${dispo[i]}`}
+          style={{ '--sens': sens } as CSSProperties}
+        >
+          <Carte key={dispo[i]} id={dispo[i]} date={date} defi={defi} />
+        </div>
+      </HauteurFluide>
+    </div>
+  );
+}
+
 export default function Solutions({
   date,
   ids,
   defi = false,
+  onglets = false,
 }: {
   date: string;
   ids: string[];
   defi?: boolean;
+  /** Une solution à la fois, derrière des onglets à pictogramme. */
+  onglets?: boolean;
 }) {
+  if (onglets) return <SolutionsOnglets date={date} ids={ids} defi={defi} />;
   return (
     <div className="solutions">
-      {ids.map((id) => {
-        const contenu = solutionDe(id, date, defi);
-        const jeu = JEU_PAR_ID.get(id);
-        if (!jeu || !contenu) return null; // jeux sans solution affichable
-        return (
-          <div className="solution-card" key={id}>
-            <h4>
-              <GameIcon id={id} size={16} /> {jeu.nom}
-            </h4>
-            {contenu}
-          </div>
-        );
-      })}
+      {ids.map((id) => (
+        <Carte key={id} id={id} date={date} defi={defi} />
+      ))}
     </div>
   );
 }

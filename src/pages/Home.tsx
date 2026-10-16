@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
+import HauteurFluide from '../components/HauteurFluide';
 import { SymEtincelle, SymFlamme } from '../components/GameIcon';
 import BalleDeFoin from '../components/BalleDeFoin';
 import CompteARebours from '../components/CompteARebours';
@@ -64,8 +65,29 @@ export default function Home() {
   // Solutions dépliées depuis une carte « fini » : réservées à qui a terminé
   // son run en direct, comme à l'écran de résultats — les cartes n'existent pas
   // avant.
-  const [solutions, setSolutions] = useState<'jour' | 'defi' | null>(null);
-  const basculeSolutions = (quoi: 'jour' | 'defi') => setSolutions((s) => (s === quoi ? null : quoi));
+  const [solutions, setSolutionsBrut] = useState<'jour' | 'defi' | null>(null);
+  // Les solutions prennent la place de la carte qui les a ouvertes ; « Masquer »
+  // la fait revenir. La page ne bouge pas : sans ça, le navigateur compenserait
+  // le changement de hauteur en faisant défiler jusqu'au bloc suivant.
+  const defilementRef = useRef<number | null>(null);
+  // Fondu d'entrée sur ce qui remplace la carte — pas au chargement de la page
+  const [bascule, setBascule] = useState(false);
+  const setSolutions = (s: 'jour' | 'defi' | null) => {
+    defilementRef.current = window.scrollY;
+    setBascule(true);
+    setSolutionsBrut(s);
+  };
+  const entree = bascule ? ' fondu-entree' : '';
+  useLayoutEffect(() => {
+    if (defilementRef.current == null) return;
+    window.scrollTo(0, defilementRef.current);
+    defilementRef.current = null;
+  }, [solutions]);
+  const masquer = (
+    <button type="button" className="btn btn-sm" onClick={() => setSolutions(null)}>
+      Masquer les solutions
+    </button>
+  );
 
   return (
     <div>
@@ -73,21 +95,23 @@ export default function Home() {
         <Logo height={100} />
         <p className="tagline">{tagline}</p>
         <div className="hero-cta">
-          {myRun ? (
-            <div className="done-card">
+          <HauteurFluide className="hero-emplacement">
+          {solutions === 'jour' && myRun ? (
+            <section className={`solutions-accueil${entree}`} aria-label="Solutions du jour">
+              <h2>Les solutions du jour</h2>
+              {masquer}
+              <Solutions date={date} ids={jeuxDuJour(date).map((j) => j.id)} onglets />
+            </section>
+          ) : myRun ? (
+            <div className={`done-card${entree}`}>
               <span className="muted">Votre temps du jour</span>
               <span className="time">
                 {formatMs(myRun.totalMs)} {myRun.flawless && <SymEtincelle size={18} />}
               </span>
               <CompteARebours cible={prochainJour} libelle="Prochain dans" />
               <Link to="/classement">Voir le classement →</Link>
-              <button
-                type="button"
-                className="btn btn-sm"
-                aria-expanded={solutions === 'jour'}
-                onClick={() => basculeSolutions('jour')}
-              >
-                {solutions === 'jour' ? 'Masquer les solutions' : 'Voir les solutions'}
+              <button type="button" className="btn btn-sm" onClick={() => setSolutions('jour')}>
+                Voir les solutions
               </button>
             </div>
           ) : (
@@ -95,6 +119,7 @@ export default function Home() {
               {enCours ? 'Reprendre le Game7le du jour' : 'Lancer le Game7le du jour'}
             </Link>
           )}
+          </HauteurFluide>
           <span className="hero-date">
             {formatDateCourte(date)}
             {streak > 0 && (
@@ -104,21 +129,23 @@ export default function Home() {
               </>
             )}
           </span>
-          {myDefi ? (
-            <div className="done-card">
+          <HauteurFluide className="hero-emplacement">
+          {solutions === 'defi' && myDefi ? (
+            <section className={`solutions-accueil${entree}`} aria-label="Solutions du défi de la semaine">
+              <h2>Les solutions du défi de la semaine</h2>
+              {masquer}
+              <Solutions date={lundi} ids={jeuxDefiSemaine(lundi).map((j) => j.id)} defi onglets />
+            </section>
+          ) : myDefi ? (
+            <div className={`done-card${entree}`}>
               <span className="muted">Votre défi difficile de la semaine</span>
               <span className="time">
                 {formatMs(myDefi.totalMs)} {myDefi.flawless && <SymEtincelle size={18} />}
               </span>
               <CompteARebours cible={prochainDefi} libelle="Prochain dans" />
               <Link to="/classement?onglet=defi">Voir le classement →</Link>
-              <button
-                type="button"
-                className="btn btn-sm"
-                aria-expanded={solutions === 'defi'}
-                onClick={() => basculeSolutions('defi')}
-              >
-                {solutions === 'defi' ? 'Masquer les solutions' : 'Voir les solutions'}
+              <button type="button" className="btn btn-sm" onClick={() => setSolutions('defi')}>
+                Voir les solutions
               </button>
             </div>
           ) : (
@@ -127,21 +154,9 @@ export default function Home() {
               <SymFlamme size={18} />
             </Link>
           )}
+          </HauteurFluide>
         </div>
       </section>
-
-      {solutions === 'jour' && myRun && (
-        <section className="solutions-accueil" aria-label="Solutions du jour">
-          <h2>Les solutions du jour</h2>
-          <Solutions date={date} ids={jeuxDuJour(date).map((j) => j.id)} />
-        </section>
-      )}
-      {solutions === 'defi' && myDefi && (
-        <section className="solutions-accueil" aria-label="Solutions du défi de la semaine">
-          <h2>Les solutions du défi de la semaine</h2>
-          <Solutions date={lundi} ids={jeuxDefiSemaine(lundi).map((j) => j.id)} defi />
-        </section>
-      )}
 
       <section className="lb" aria-label="Top 5 du jour">
         <h2>Le top 5 du jour</h2>

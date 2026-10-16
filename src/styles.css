@@ -591,8 +591,15 @@ main.content > .page-entree > * {
 }
 /* Solutions dépliées depuis l'accueil : toute la largeur de la colonne, pas
    les 480px d'un classement — les cartes se rangent côte à côte. */
+/* Solutions dépliées à la place de la carte « fini » de l'accueil : pleine
+   largeur dans la colonne centrée du héros, texte rendu à son alignement. */
 .solutions-accueil {
-  margin: var(--sp-6) auto 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: start;
 }
 .solutions-accueil h2 {
   text-align: center;
@@ -1940,6 +1947,90 @@ main.content:has(.interstitial) {
   justify-content: center;
   align-items: flex-start; /* une carte courte ne s'étire pas à la hauteur d'un plateau */
   margin-top: var(--sp-5);
+}
+/* Conteneur à hauteur animée (composant HauteurFluide). La marge rentrée
+   laisse de l'air aux anneaux de focus que `overflow: hidden` rognerait. */
+.hauteur-fluide {
+  overflow: hidden;
+  padding: 4px;
+  margin: -4px;
+  box-sizing: content-box;
+  transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Emplacements du héros de l'accueil : carte « fini » ou solutions */
+.hero-emplacement {
+  align-self: stretch;
+}
+.hero-emplacement > .hauteur-fluide-interieur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.fondu-entree {
+  animation: fondu-entree 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes fondu-entree {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+.solutions-panneau > .hauteur-fluide-interieur > [role='tabpanel'] {
+  display: flex;
+  justify-content: center;
+}
+.solutions-a-onglets .solution-card {
+  animation: solution-glisse 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes solution-glisse {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--sens, 1) * 24px));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hauteur-fluide {
+    transition: none;
+  }
+  .fondu-entree,
+  .solutions-a-onglets .solution-card {
+    animation: none;
+  }
+}
+
+/* Solutions de l'accueil : une à la fois, choisie par onglet à pictogramme */
+.solutions-a-onglets {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  margin-top: 0;
+}
+.solutions-onglets {
+  display: flex;
+  align-self: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+.solutions-onglet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.solutions-onglet:hover {
+  color: var(--text);
+}
+.solutions-onglet.actif {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .solution-card {
   background: var(--surface);
