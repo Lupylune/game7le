@@ -13,8 +13,25 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
     [rng, difficile],
   );
   const solution = puzzle.grille;
+  // Première lettre de chaque mot, horizontal comme vertical : posée d'office
+  // et verrouillée. Calculée sur la grille seule, sans tirage supplémentaire —
+  // la séquence du `rng`, donc la grille du jour, ne change pas.
+  const donnees = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of puzzle.horizontaux) {
+      const c = solution[m.ligne].split('').findIndex((x) => x !== '#');
+      if (c >= 0) set.add(`${m.ligne},${c}`);
+    }
+    for (const m of puzzle.verticaux) {
+      const r = solution.findIndex((row) => row[m.col] !== '#');
+      if (r >= 0) set.add(`${r},${m.col}`);
+    }
+    return set;
+  }, [puzzle, solution]);
   const [cells, setCells] = useState<string[][]>(() =>
-    solution.map((row) => row.split('').map((ch) => (ch === '#' ? '#' : ''))),
+    solution.map((row, r) =>
+      row.split('').map((ch, c) => (ch === '#' ? '#' : donnees.has(`${r},${c}`) ? ch : '')),
+    ),
   );
   const [sel, setSel] = useState<{ r: number; c: number; dir: 'h' | 'v' }>(() => firstWhite());
   const [revealed, setRevealed] = useState(false);
@@ -61,6 +78,7 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
 
   const isWhite = (r: number, c: number) =>
     r >= 0 && r < N && c >= 0 && c < N && solution[r][c] !== '#';
+  const estDonnee = (r: number, c: number) => donnees.has(`${r},${c}`);
 
   // Cases du mot couramment sélectionné (pour le surlignage)
   const wordCells = useMemo(() => {
@@ -162,18 +180,32 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
   }
 
   function setLetter(ch: string) {
-    const { r, c, dir } = selRef.current;
+    let { r, c } = selRef.current;
+    const { dir } = selRef.current;
     if (!isWhite(r, c)) return;
+    // Sur une lettre donnée : taper cette même lettre la « valide » et avance
+    // (on peut recopier le mot entier sans y penser) ; toute autre lettre va
+    // dans la première case libre qui suit.
+    if (estDonnee(r, c) && solution[r][c] === ch) {
+      moveNext(r, c, dir, 1);
+      return;
+    }
+    while (estDonnee(r, c)) {
+      r += dir === 'v' ? 1 : 0;
+      c += dir === 'h' ? 1 : 0;
+      if (!isWhite(r, c)) return;
+    }
     ecrire(r, c, ch);
     moveNext(r, c, dir, 1);
   }
 
   // Retour arrière : la lettre de la case courante s'efface sur place ; si la
-  // case est déjà vide, on recule et on efface la lettre précédente.
+  // case est déjà vide, on recule et on efface la lettre précédente. Une
+  // lettre donnée ne s'efface jamais : on la franchit seulement.
   function effacer() {
     const { r, c, dir } = selRef.current;
     if (!isWhite(r, c)) return;
-    if (cellsRef.current[r][c]) {
+    if (cellsRef.current[r][c] && !estDonnee(r, c)) {
       ecrire(r, c, '');
       return;
     }
@@ -181,7 +213,7 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
     const pc = c - (dir === 'h' ? 1 : 0);
     if (!isWhite(pr, pc)) return;
     moveNext(r, c, dir, -1);
-    ecrire(pr, pc, '');
+    if (!estDonnee(pr, pc)) ecrire(pr, pc, '');
   }
 
   useEffect(() => {
@@ -292,7 +324,7 @@ export default function Croises({ rng, difficile, onAdjust, onDone }: GameProps)
               return (
                 <div
                   key={`${r}${c}`}
-                  className={`cell${isSel ? ' sel' : inWord ? ' word' : ''}${wrong.has(`${r},${c}`) ? ' error' : ''}${cellsSolues.has(`${r},${c}`) ? ' juste' : ''}${rang === undefined ? '' : ' vague'}`}
+                  className={`cell${isSel ? ' sel' : inWord ? ' word' : ''}${estDonnee(r, c) ? ' given' : ''}${wrong.has(`${r},${c}`) ? ' error' : ''}${cellsSolues.has(`${r},${c}`) ? ' juste' : ''}${rang === undefined ? '' : ' vague'}`}
                   style={rang === undefined ? undefined : { animationDelay: `${rang * 70}ms` }}
                   onClick={() => {
                     setSel((s) =>

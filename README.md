@@ -70,7 +70,7 @@ Pokédle toutes générations en 12 essais, Ricochet en solutions de 8 à 9 coup
 | # | Jeu | Type | Génération / source | Défi difficile |
 |---|-----|------|---------------------|----------------|
 | 1 | Le Mot | Wordle FR, 5 lettres en 6 essais | Lexique 3.83 : 5 036 formes de validation, 1 097 solutions courantes | 8 lettres |
-| 2 | Mini Croisés | mots croisés 5×5 | grilles assemblées à la volée depuis 655 lemmes indicés + 1 142 définitions Wiktionnaire | vocabulaire rare (534 lemmes) |
+| 2 | Mini Croisés | mots croisés 5×5, première lettre de chaque mot donnée | grilles assemblées à la volée depuis 655 lemmes indicés + 1 142 définitions Wiktionnaire | vocabulaire rare (534 lemmes) |
 | 3 | Paire | type « Tango » 6×6 (★/●, `=`, `×`) | générateur + solveur, solution unique | — |
 | 4 | Mini Sudoku | 6×6, blocs 2×3 | générateur + solveur, solution unique | 9×9, 28 indices |
 | 5 | Reines | type « Queens » 6×6, régions colorées | générateur + solveur, solution unique | 8×8 |

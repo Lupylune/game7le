@@ -2158,6 +2158,12 @@ main.content:has(.interstitial) {
 .cw-clues li.active {
   background: var(--surface-elevated);
 }
+/* Première lettre donnée (verrouillée) : texte atténué par `.cell.given` et
+   fond légèrement grisé, comme les cases imposées de Paire — le surlignage du
+   mot ou de la sélection reste prioritaire. */
+.cw-grid .cell.given {
+  background: color-mix(in srgb, var(--text) 8%, var(--bg));
+}
 .cw-grid .cell.word {
   background: var(--surface-elevated);
 }

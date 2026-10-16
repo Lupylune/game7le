@@ -415,7 +415,10 @@ lexique` / `npm run echecs` / `npm run pokemon` rather than editing directly:
   to pick the shortest self-contained wording of the word's *main* sense (homograph entries are
   ranked by translation count, since the dump's own order is not by prominence), then masks the
   answer inside its own clue. `src/lib/croisesgen.ts` assembles actual 5×5 grids from that
-  word+clue pool at runtime (via the seeded RNG), not from a fixed grid set.
+  word+clue pool at runtime (via the seeded RNG), not from a fixed grid set. The first letter of
+  every word (across and down) is pre-filled and locked in `Croises.tsx` — derived from the grid
+  alone, with no extra `rng` call, so it doesn't change any day's grid; typing on a locked cell
+  skips to the next free one and backspace steps over it.
   **The set of keys in `DEFS5` is frozen**: `croisesgen.ts` builds its grids from
   `CROISES5 ∩ DEFS5`, so adding or removing a word would reshuffle every past day's grid. The
   script therefore keeps exactly the previously published key set (a word whose senses are all

@@ -54,8 +54,9 @@ export const JEUX: GameDef[] = [
   {
     id: 'croises',
     nom: 'Mini Croisés',
-    regles: 'Remplissez la mini-grille de mots croisés.',
-    reglesDifficile: 'Remplissez la mini-grille de mots croisés — vocabulaire plus rare.',
+    regles: 'Remplissez la mini-grille de mots croisés — la première lettre de chaque mot est donnée.',
+    reglesDifficile:
+      'Remplissez la mini-grille de mots croisés — vocabulaire plus rare, première lettre de chaque mot donnée.',
     scoring: 'Résolu sans aide : −10 s · lettre révélée : +8 s · vérification : +20 s',
     skip: { apresS: 45, penaliteS: 90 },
     tirage: { depuis: LANCEMENT },
