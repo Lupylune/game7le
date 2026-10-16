@@ -479,12 +479,16 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
         ))}
       </svg>
 
-      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
-        Un robot glisse jusqu’à un mur, le bloc central ou un autre robot · cliquez un robot puis sa
-        case d’arrivée (ou les flèches du clavier)
-        {manches.length > 1 && ' · les robots restent où vous les laissez d’une cible à la suivante'}{' '}
-        · résoudre à l’optimum vaut −{bareme.bonus / 1000} s, et chaque tranche de {bareme.tranche}{' '}
-        coups au-delà retire 10 s de ce bonus, jusqu’à +10 s au pire
+      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+        {/* Seule la règle est masquable : l'indice et l'alerte « trop loin »
+            qui suivent sont des informations payées ou d'état. */}
+        <span className="game-aide">
+          Un robot glisse jusqu’à un mur, le bloc central ou un autre robot · cliquez un robot puis
+          sa case d’arrivée (ou les flèches du clavier)
+          {manches.length > 1 && ' · les robots restent où vous les laissez d’une cible à la suivante'}{' '}
+          · résoudre à l’optimum vaut −{bareme.bonus / 1000} s, et chaque tranche de {bareme.tranche}{' '}
+          coups au-delà retire 10 s de ce bonus, jusqu’à +10 s au pire
+        </span>
         {indice && (
           <>
             {' '}

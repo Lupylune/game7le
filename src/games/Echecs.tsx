@@ -275,7 +275,7 @@ export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) 
         <button className="btn btn-sm" disabled={!ready} onClick={reinitialiser}>
           Réinitialiser
         </button>
-        <span className="muted" style={{ fontSize: 'var(--text-sm)', alignSelf: 'center' }}>
+        <span className="muted game-aide" style={{ fontSize: 'var(--text-sm)', alignSelf: 'center' }}>
           Glissez la pièce (ou cliquez départ puis arrivée) · mauvais coup : +10 s
         </span>
       </div>
