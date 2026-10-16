@@ -5,6 +5,8 @@ import { SymEtincelle, SymFlamme } from '../components/GameIcon';
 import BalleDeFoin from '../components/BalleDeFoin';
 import CompteARebours from '../components/CompteARebours';
 import LigneClassement from '../components/LigneClassement';
+import Solutions from '../components/Solutions';
+import { jeuxDefiSemaine, jeuxDuJour } from '../games';
 import { classementJour, classementSemaine, type Board, type Entry } from '../lib/classement';
 import { ajouteJours, lundiStr, minuitParis, prochainTirage, seededRng, pick } from '../lib/rng';
 import { formatDateCourte, formatLong, formatMs } from '../lib/time';
@@ -59,6 +61,11 @@ export default function Home() {
   // Prochaines échéances : minuit pour le tirage du jour, lundi prochain pour le défi
   const prochainJour = prochainTirage(date);
   const prochainDefi = minuitParis(ajouteJours(lundi, 7));
+  // Solutions dépliées depuis une carte « fini » : réservées à qui a terminé
+  // son run en direct, comme à l'écran de résultats — les cartes n'existent pas
+  // avant.
+  const [solutions, setSolutions] = useState<'jour' | 'defi' | null>(null);
+  const basculeSolutions = (quoi: 'jour' | 'defi') => setSolutions((s) => (s === quoi ? null : quoi));
 
   return (
     <div>
@@ -74,6 +81,14 @@ export default function Home() {
               </span>
               <CompteARebours cible={prochainJour} libelle="Prochain dans" />
               <Link to="/classement">Voir le classement →</Link>
+              <button
+                type="button"
+                className="btn btn-sm"
+                aria-expanded={solutions === 'jour'}
+                onClick={() => basculeSolutions('jour')}
+              >
+                {solutions === 'jour' ? 'Masquer les solutions' : 'Voir les solutions'}
+              </button>
             </div>
           ) : (
             <Link to="/jouer" className="btn btn-primary btn-lg">
@@ -97,6 +112,14 @@ export default function Home() {
               </span>
               <CompteARebours cible={prochainDefi} libelle="Prochain dans" />
               <Link to="/classement?onglet=defi">Voir le classement →</Link>
+              <button
+                type="button"
+                className="btn btn-sm"
+                aria-expanded={solutions === 'defi'}
+                onClick={() => basculeSolutions('defi')}
+              >
+                {solutions === 'defi' ? 'Masquer les solutions' : 'Voir les solutions'}
+              </button>
             </div>
           ) : (
             <Link to="/defi" className="btn btn-defi">
@@ -106,6 +129,19 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {solutions === 'jour' && myRun && (
+        <section className="solutions-accueil" aria-label="Solutions du jour">
+          <h2>Les solutions du jour</h2>
+          <Solutions date={date} ids={jeuxDuJour(date).map((j) => j.id)} />
+        </section>
+      )}
+      {solutions === 'defi' && myDefi && (
+        <section className="solutions-accueil" aria-label="Solutions du défi de la semaine">
+          <h2>Les solutions du défi de la semaine</h2>
+          <Solutions date={lundi} ids={jeuxDefiSemaine(lundi).map((j) => j.id)} defi />
+        </section>
+      )}
 
       <section className="lb" aria-label="Top 5 du jour">
         <h2>Le top 5 du jour</h2>

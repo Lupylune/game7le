@@ -589,6 +589,15 @@ main.content > .page-entree > * {
   max-width: 480px;
   margin: var(--sp-6) auto 0;
 }
+/* Solutions dépliées depuis l'accueil : toute la largeur de la colonne, pas
+   les 480px d'un classement — les cartes se rangent côte à côte. */
+.solutions-accueil {
+  margin: var(--sp-6) auto 0;
+}
+.solutions-accueil h2 {
+  text-align: center;
+  font-size: var(--text-h2);
+}
 .lb h2 {
   text-align: center;
   font-size: var(--text-h2);
@@ -1914,6 +1923,7 @@ main.content:has(.interstitial) {
   flex-wrap: wrap;
   gap: var(--sp-4);
   justify-content: center;
+  align-items: flex-start; /* une carte courte ne s'étire pas à la hauteur d'un plateau */
   margin-top: var(--sp-5);
 }
 .solution-card {
