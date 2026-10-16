@@ -234,7 +234,7 @@ export default function Pokedle({ rng, difficile = false, onDone }: GameProps) {
       )}
 
       {message && <p className="muted">{message}</p>}
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Vert = exact · orange (types) = ce type est dans l’autre emplacement · ↑/↓ = valeur cible
         plus haute / plus basse.{' '}
         {difficile ? 'Toutes générations.' : 'Génération 1 uniquement.'}

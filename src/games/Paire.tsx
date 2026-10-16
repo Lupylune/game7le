@@ -187,7 +187,7 @@ export default function Paire({ rng, onAdjust, onDone }: GameProps) {
           );
         })}
       </div>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Clic sur une case : vide → ★ → ● → vide
       </p>
       <div className="game-actions">

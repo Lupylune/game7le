@@ -290,7 +290,7 @@ export default function Ratiole({ rng, onAdjust, onDone }: GameProps) {
           />
         )}
       </svg>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Tracez une droite qui coupe la forme selon le ratio cible — {N_FORMES} formes à la suite,
         une seule tentative chacune !
       </p>

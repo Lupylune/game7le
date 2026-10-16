@@ -259,7 +259,7 @@ export default function Trace({ rng, onAdjust, onDone }: GameProps) {
           </button>
         </div>
       )}
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         {revealing
           ? 'Mémorisez la forme que dessine le segment…'
           : "Reproduisez la forme de mémoire, d'un seul trait. Une seule tentative !"}

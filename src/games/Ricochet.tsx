@@ -479,7 +479,7 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
         ))}
       </svg>
 
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Un robot glisse jusqu’à un mur, le bloc central ou un autre robot · cliquez un robot puis sa
         case d’arrivée (ou les flèches du clavier)
         {manches.length > 1 && ' · les robots restent où vous les laissez d’une cible à la suivante'}{' '}

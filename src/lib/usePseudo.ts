@@ -19,3 +19,8 @@ export function usePseudo(): string {
 export function useChronoVisible(): boolean {
   return useSyncExternalStore(abonne, () => loadSettings().chrono);
 }
+
+/** Les consignes des épreuves sont-elles affichées ? Réactif. */
+export function useConsignesVisibles(): boolean {
+  return useSyncExternalStore(abonne, () => loadSettings().consignes);
+}

@@ -63,6 +63,28 @@ export default function Parametres() {
         </button>
       </div>
       <div className="settings-row">
+        <label id="label-consignes">
+          Consignes des épreuves
+          <span className="hint">
+            Masquées, le plateau s'affiche sans la règle ni les rappels d'aide. Elles restent
+            consultables dans « Comment jouer » et la liste d'entraînement.
+          </span>
+        </label>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={settings.consignes}
+          aria-labelledby="label-consignes"
+          className={`switch${settings.consignes ? ' actif' : ''}`}
+          onClick={() => update({ consignes: !settings.consignes })}
+        >
+          <span className="switch-etat">{settings.consignes ? 'Affichées' : 'Masquées'}</span>
+          <span className="switch-piste" aria-hidden>
+            <span className="switch-pastille" />
+          </span>
+        </button>
+      </div>
+      <div className="settings-row">
         <label>
           Effacer mes données
           <span className="hint">Temps, historique et réglages (localStorage uniquement).</span>

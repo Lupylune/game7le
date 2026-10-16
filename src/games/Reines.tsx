@@ -207,7 +207,7 @@ export default function Reines({ rng, difficile, onAdjust, onDone }: GameProps) 
           </div>
         ))}
       </div>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Une reine par ligne, colonne et région colorée · jamais deux reines qui se touchent (même
         en diagonale) · clic : vide → reine → croix → vide
       </p>

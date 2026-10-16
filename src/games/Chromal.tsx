@@ -81,7 +81,7 @@ export default function Chromal({ rng, difficile, onDone }: GameProps) {
           />
         ))}
       </div>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Trouvez la case légèrement différente. Un mauvais clic et c'est terminé !
       </p>
     </div>

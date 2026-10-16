@@ -247,7 +247,7 @@ export default function Tempo({ rng, difficile, onDone }: GameProps) {
           );
         })}
       </div>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         {phase === 'attente' || phase === 'pulsation'
           ? 'Ressentez la durée de la pulsation — aucun décompte.'
           : phase === 'pret' || phase === 'appui'

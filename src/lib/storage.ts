@@ -31,6 +31,9 @@ export interface Settings {
   /** Afficher le chrono et les bonus/malus pendant un run. Masqué, on joue à
    *  l'aveugle : le temps n'est révélé qu'à l'écran de résultats. */
   chrono: boolean;
+  /** Afficher les consignes pendant un run et à l'entraînement : la ligne de
+   *  règles au-dessus du plateau et les rappels d'aide dans les épreuves. */
+  consignes: boolean;
 }
 
 const K_RUNS = 'game7le:runs';
@@ -202,6 +205,7 @@ export function loadSettings(): Settings {
     pseudo: s.pseudo ?? 'Vous',
     badge: s.badge ?? '',
     chrono: s.chrono ?? true,
+    consignes: s.consignes ?? true,
   };
 }
 

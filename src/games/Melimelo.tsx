@@ -113,7 +113,7 @@ export default function Melimelo({ rng, difficile, onAdjust, onDone }: GameProps
           </button>
         )}
       </div>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Les {difficile ? 'huit' : 'six'} lettres se révèlent une par une : mémorisez-les, puis
         reconstituez le mot qui les utilise toutes.
       </p>

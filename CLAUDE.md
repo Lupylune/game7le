@@ -181,6 +181,11 @@ Notable mechanics:
   reactive `useChronoVisible()` hook) only hides the display — stopwatch, adjustment toasts and the
   transition recap's figures. Timing, penalties and SANS-FAUTE are computed exactly the same, so a
   blind run is a normal run.
+- The `Settings.consignes` toggle (« Consignes des épreuves », default on, read via
+  `useConsignesVisibles()`) puts `.sans-consignes` on `Layout`'s `.page`, and CSS hides the
+  `.game-rules` line and every `.game-aide` element — in runs, the défi and practice. Tag a game's
+  explanatory reminders with `game-aide`, but never its state information (Dactylo's typo count,
+  Echecs' side to move, Démineur's mines left, Ricochet's target line), which must stay visible.
 - A run interrupted mid-way (tab closed, reload, navigation) is resumable: an effect snapshots
   progress every second — and on unmount/`pagehide` — into `game7le:encours` (`saveEnCours()`,
   one entry per `date`+`defi` so an archive replay or the weekly challenge never clobbers the day's

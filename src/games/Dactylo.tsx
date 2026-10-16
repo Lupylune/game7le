@@ -105,8 +105,11 @@ export default function Dactylo({ rng, difficile, onDone }: GameProps) {
         }}
       />
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-        Recopiez la phrase le plus vite possible — seule la bonne lettre fait avancer, chaque
-        erreur compte. {typos > 0 && `Fautes : ${typos}`}
+        <span className="game-aide">
+          Recopiez la phrase le plus vite possible — seule la bonne lettre fait avancer, chaque
+          erreur compte.{' '}
+        </span>
+        {typos > 0 && `Fautes : ${typos}`}
       </p>
     </div>
   );

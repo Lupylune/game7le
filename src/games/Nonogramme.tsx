@@ -246,7 +246,7 @@ export default function Nonogramme({ rng, difficile, onAdjust, onDone }: GamePro
           ))}
         </div>
       </div>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Clic = remplir · clic droit = croix · maintenez et glissez pour peindre plusieurs cases
       </p>
       <div className="game-actions">

@@ -953,6 +953,12 @@ main.content > .page-entree > * {
   font-size: var(--text-sm);
   margin-bottom: var(--sp-4);
 }
+/* Réglage « Consignes des épreuves » : seules les explications disparaissent,
+   les informations d'état (fautes, trait aux Blancs, mines restantes) restent. */
+.sans-consignes .game-rules,
+.sans-consignes .game-aide {
+  display: none;
+}
 /* Contrôle de passe */
 .skip-pill {
   display: inline-flex;

@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { loadSettings, saveSettings } from '../lib/storage';
-import { usePseudo } from '../lib/usePseudo';
+import { useConsignesVisibles, usePseudo } from '../lib/usePseudo';
 import { useBadgeEpingle } from '../lib/useBadges';
 import Braises from './Braises';
 import Nouveautes from './Nouveautes';
@@ -22,8 +22,11 @@ export default function Layout() {
   // query (?onglet=…) est volontairement exclue, changer d'onglet dans une même
   // page ne doit pas la faire réapparaître.
   const { pathname } = useLocation();
+  // Posé sur la racine plutôt que dans chaque épreuve : le CSS masque d'un coup
+  // la ligne de règles et les rappels `.game-aide`, sans toucher aux jeux.
+  const consignes = useConsignesVisibles();
   return (
-    <div className="page">
+    <div className={consignes ? 'page' : 'page sans-consignes'}>
       <Braises />
       <PseudoModal />
       <header className="top-bar">

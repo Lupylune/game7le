@@ -406,7 +406,7 @@ export default function Atlas({ rng, onDone }: GameProps) {
           </div>
         )}
       </div>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+      <p className="muted game-aide" style={{ fontSize: 'var(--text-sm)' }}>
         Explorez le panorama, puis cliquez sur la carte pour situer le lieu et validez avec
         « Deviner ».
       </p>
