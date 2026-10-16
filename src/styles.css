@@ -736,6 +736,11 @@ main.content > .page-entree > * {
 .lb .row .run-splits {
   padding: 0 var(--sp-4) var(--sp-2);
 }
+.lb .row .row-revoir {
+  display: block;
+  width: max-content;
+  margin: 0 var(--sp-4) var(--sp-3) auto;
+}
 .lb .rank {
   font-family: var(--font-mono);
   color: var(--text-muted);
@@ -3841,4 +3846,107 @@ input[type='text'] {
   .relecture-robot {
     transition: none;
   }
+}
+
+/* ===== Revoir un run (lecteur d'enregistrement) ===== */
+/* Enveloppe des épreuves, en jeu comme en relecture : sans boîte, elle ne
+   change rien à la mise en page (le plateau sort toujours de la colonne via
+   `.game-area`) mais sert de racine aux chemins enregistrés. */
+.zone-epreuve {
+  display: contents;
+}
+.lecteur {
+  margin-top: var(--sp-5);
+}
+.results .lecteur {
+  text-align: initial;
+}
+.lecteur-commandes {
+  display: flex;
+  gap: var(--sp-1);
+}
+/* L'épreuve ne répond qu'aux gestes enregistrés : rien ne doit avoir l'air cliquable. */
+.lecteur .zone-epreuve * {
+  cursor: default !important;
+}
+.lecteur-avancement {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: var(--sp-3);
+}
+.lecteur-avancement > div {
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transform: scaleX(var(--p));
+}
+.lecteur-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+.lecteur-epreuves {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+}
+.lecteur-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: 3px solid var(--c);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.lecteur-puce.actif {
+  background: var(--surface-elevated);
+  border-color: var(--accent);
+  border-bottom-color: var(--c);
+}
+.lecteur-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.lecteur-fin {
+  text-align: center;
+  margin-top: var(--sp-4);
+}
+/* Atlas : la carte de devine s'agrandit au survol pendant le jeu ; en
+   relecture il n'y a pas de survol, elle reste donc ouverte — c'est à cette
+   taille que le joueur a cliqué. */
+.lecteur .atlas-guess {
+  width: 75%;
+}
+.lecteur .atlas-guess-map {
+  height: calc(0.7 * var(--stage-h));
+}
+@media (max-width: 640px) {
+  .lecteur .atlas-guess {
+    width: calc(100% - 2 * var(--sp-3));
+  }
+}
+.revoir-titre h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+}
+.revoir-etat {
+  margin-top: var(--sp-5);
 }

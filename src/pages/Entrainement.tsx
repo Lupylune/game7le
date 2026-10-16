@@ -5,7 +5,7 @@ import { todayStr } from '../lib/rng';
 import type { GameDef, GameResult } from '../games/types';
 import { seededRng } from '../lib/rng';
 import { formatAdjust, formatMs } from '../lib/time';
-import { VERDICTS } from './RunPage';
+import { VERDICTS } from '../lib/verdicts';
 import GameIcon from '../components/GameIcon';
 
 /**

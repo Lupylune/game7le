@@ -286,3 +286,82 @@ $$;
 
 revoke all on function set_badge(text, text) from public;
 grant execute on function set_badge(text, text) to anon, authenticated;
+
+-- Enregistrements des runs (src/lib/enregistrement.ts) : les gestes du joueur
+-- épreuve par épreuve, pour revoir un run depuis le classement. Seuls les runs
+-- en direct sont gardés — ceux que le classement affiche. Pas de clé étrangère
+-- vers runs : elle bloquerait la migration de PK ci-dessus, rejouée à chaque
+-- passage du script ; les orphelins sont purgés par supabase/cleanup.sql.
+create table if not exists replays (
+  pseudo text not null,
+  date date not null,
+  defi boolean not null default false,
+  total_ms integer not null,
+  data jsonb not null,
+  created_at timestamptz not null default now(),
+  primary key (pseudo, date, defi)
+);
+alter table replays enable row level security;
+drop policy if exists "replays: lecture publique" on replays;
+create policy "replays: lecture publique" on replays for select using (true);
+
+create or replace function submit_replay(
+  p_pseudo text,
+  p_date date,
+  p_defi boolean,
+  p_total_ms integer,
+  p_data jsonb
+) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_aujourdhui date := (now() at time zone 'Europe/Paris')::date;
+begin
+  p_pseudo := trim(p_pseudo);
+  p_defi := coalesce(p_defi, false);
+
+  -- Forme minimale et taille bornée. En jsonb, la taille brute vaut environ
+  -- le double du JSON que le client plafonne à 250 000 caractères (TAILLE_MAX) ;
+  -- le stockage, lui, est compressé par TOAST. Le contenu n'est jamais
+  -- interprété côté serveur, et le lecteur revalide tout ce qu'il lit.
+  if p_data is null or jsonb_typeof(p_data) <> 'object'
+     or (p_data->>'v') is distinct from '1'
+     or jsonb_typeof(p_data->'epreuves') <> 'array'
+     or jsonb_array_length(p_data->'epreuves') <> 7
+     or pg_column_size(p_data) > 1048576 then
+    raise exception 'enregistrement invalide';
+  end if;
+
+  -- Seul un run en direct déjà enregistré, au même temps, reçoit son
+  -- enregistrement : pas de quota à tenir, chaque run en direct n'en ouvre
+  -- qu'un, et le premier envoyé reste.
+  if not exists (
+    select 1 from runs
+    where pseudo = p_pseudo and date = p_date and defi = p_defi
+      and en_direct and total_ms = p_total_ms
+  ) then
+    raise exception 'run introuvable';
+  end if;
+
+  insert into replays (pseudo, date, defi, total_ms, data)
+    values (p_pseudo, p_date, p_defi, p_total_ms, p_data)
+  on conflict (pseudo, date, defi) do nothing;
+
+  -- Rétention : passé 30 jours, seuls les 10 meilleurs runs d'un jour gardent
+  -- leur enregistrement. Purge opportuniste sur une fenêtre glissante (un mois
+  -- sans aucun envoi laisserait des restes : cleanup.sql les reprend).
+  delete from replays r
+  where r.date between v_aujourdhui - 60 and v_aujourdhui - 31
+    and r.pseudo not in (
+      select t.pseudo from runs t
+      where t.date = r.date and t.defi = r.defi and t.en_direct
+      order by t.total_ms
+      limit 10
+    );
+end;
+$$;
+
+revoke all on function submit_replay(text, date, boolean, integer, jsonb) from public;
+grant execute on function submit_replay(text, date, boolean, integer, jsonb) to anon, authenticated;

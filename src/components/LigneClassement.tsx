@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { Link } from 'react-router-dom';
 import type { Entry } from '../lib/classement';
 import { formatMs } from '../lib/time';
 import { SymEtincelle, SymEtoile } from './GameIcon';
@@ -24,6 +25,7 @@ export default function LigneClassement({
   deverrouille = true,
   messageVerrou,
   podium,
+  revoir,
 }: {
   e: Entry;
   rank: number;
@@ -31,6 +33,8 @@ export default function LigneClassement({
   messageVerrou?: string;
   /** Podium de la semaine passée : effet spécial (or/argent/bronze) sur ces pseudos. */
   podium?: string[];
+  /** Lien vers la relecture du run (classements d'un jour ou d'un défi). */
+  revoir?: string;
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [verrouAffiche, setVerrouAffiche] = useState(false);
@@ -125,6 +129,11 @@ export default function LigneClassement({
         <SplitsPeriode jours={e.periode} total={e.jours} />
       ) : null}
       {ouvert && !verrouille && e.lines && <SplitsRun lines={e.lines} />}
+      {ouvert && !verrouille && e.lines && revoir && (
+        <Link className="btn btn-sm row-revoir" to={revoir}>
+          Revoir le run
+        </Link>
+      )}
     </li>
   );
 }

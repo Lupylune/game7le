@@ -5,6 +5,7 @@ import { meilleurParDate } from '../lib/stats';
 import { useHistorique } from '../lib/useHistorique';
 import { usePseudo } from '../lib/usePseudo';
 import { SymEtincelle } from '../components/GameIcon';
+import { joursEnregistres } from '../lib/enregistrement';
 
 function listDates(): string[] {
   const out: string[] = [];
@@ -23,6 +24,7 @@ export default function Archives() {
   // Meilleur temps par jour, direct ou archive confondus.
   const runs = meilleurParDate(useHistorique(usePseudo()));
   const today = todayStr();
+  const enregistres = joursEnregistres();
 
   return (
     <div className="prose" style={{ maxWidth: 560 }}>
@@ -46,6 +48,11 @@ export default function Archives() {
                   <span className="time">
                     {formatMs(run.totalMs)} {run.flawless && <SymEtincelle size={14} />}
                   </span>
+                  {enregistres.has(date) && (
+                    <Link className="btn btn-sm" to={`/revoir/${date}`}>
+                      Revoir
+                    </Link>
+                  )}
                   <Link className="btn btn-sm" to={`/jouer/${date}`}>
                     Rejouer
                   </Link>

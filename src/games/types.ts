@@ -41,5 +41,8 @@ export interface GameDef {
   tirage: Fenetre;
   /** Présence dans le pool du défi hebdo (comparée au lundi de la semaine) ; absent = jamais. */
   defi?: Fenetre;
+  /** Revoir un run : ne jamais raccourcir les temps morts de cette épreuve, qui
+   *  attend la fin d'animations chronométrées avant d'accepter un geste. */
+  tempsReel?: boolean;
   Component: ComponentType<GameProps>;
 }

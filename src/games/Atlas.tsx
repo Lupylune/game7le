@@ -348,7 +348,9 @@ export default function Atlas({ rng, onDone }: GameProps) {
   return (
     <div className="game-area atlas-area">
       <div className="atlas-stage">
-        <div ref={panoRef} className="atlas-pano" />
+        {/* Widgets tiers au DOM interne changeant : adressés par position à la
+            relecture d'un run (voir lib/enregistrement) */}
+        <div ref={panoRef} className="atlas-pano" data-enregistrement="zone" />
         {photo && (
           <img
             className="atlas-pano-img"
@@ -399,7 +401,7 @@ export default function Atlas({ rng, onDone }: GameProps) {
           </div>
         ) : (
           <div className="atlas-guess" onMouseEnter={recaler} onFocus={recaler} tabIndex={-1}>
-            <div ref={guessMapRef} className="atlas-guess-map" />
+            <div ref={guessMapRef} className="atlas-guess-map" data-enregistrement="zone" />
             <button className="btn btn-primary btn-sm atlas-guess-btn" disabled={!guess} onClick={deviner}>
               {guess ? 'Deviner' : 'Placez un marqueur'}
             </button>

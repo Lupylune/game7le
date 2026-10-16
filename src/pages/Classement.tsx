@@ -206,6 +206,11 @@ export default function Classement() {
             rank={i + 1}
             deverrouille={aCouru}
             podium={podium}
+            revoir={
+              onglet === 'jour' || onglet === 'defi'
+                ? `/revoir/${onglet === 'defi' ? lundi : date}?pseudo=${encodeURIComponent(e.pseudo)}${onglet === 'defi' ? '&defi=1' : ''}`
+                : undefined
+            }
             messageVerrou={
               onglet === 'defi'
                 ? 'Terminez le défi difficile pour voir le détail des temps.'

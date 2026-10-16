@@ -9,6 +9,7 @@ import Archives from './pages/Archives';
 import Parametres from './pages/Parametres';
 import Profil from './pages/Profil';
 import Statistiques from './pages/Statistiques';
+import Revoir from './pages/Revoir';
 import { EntrainementListe, EntrainementJeu } from './pages/Entrainement';
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/parametres" element={<Parametres />} />
           <Route path="/profil" element={<Profil />} />
           <Route path="/statistiques" element={<Statistiques />} />
+          <Route path="/revoir/:date" element={<Revoir />} />
           <Route path="*" element={<Home />} />
         </Route>
       </Routes>

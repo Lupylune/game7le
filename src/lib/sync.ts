@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { RunRecord } from './storage';
 import type { RunPourStats } from './stats';
+import type { Enregistrement } from './enregistrement';
 
 /**
  * Envoie un run au classement global Supabase (best-effort, non-bloquant).
@@ -21,6 +22,53 @@ export async function syncRun(pseudo: string, run: RunRecord, defi = false): Pro
     });
   } catch {
     // silencieux : pas de retry, le run est déjà enregistré en local
+  }
+}
+
+/**
+ * Envoie l'enregistrement d'un run en direct, pour que les autres joueurs
+ * puissent le revoir depuis le classement. À appeler **après** `syncRun` : le
+ * serveur ne l'accepte que si le run en direct correspondant (même pseudo,
+ * même jour, même temps) est déjà enregistré. Best-effort, comme le reste.
+ */
+export async function syncEnregistrement(pseudo: string, enr: Enregistrement): Promise<void> {
+  if (!supabase) return;
+  try {
+    await supabase.rpc('submit_replay', {
+      p_pseudo: pseudo,
+      p_date: enr.date,
+      p_defi: enr.defi,
+      p_total_ms: Math.round(enr.totalMs),
+      p_data: enr,
+    });
+  } catch {
+    // silencieux : l'enregistrement reste revoyable en local
+  }
+}
+
+/**
+ * Enregistrement du run en direct d'un pseudo pour un jour (ou un lundi de
+ * défi). `null` si le backend est absent, si la table n'existe pas encore ou
+ * si ce run n'a pas d'enregistrement (ancien run, purge, envoi échoué).
+ */
+export async function fetchEnregistrement(
+  pseudo: string,
+  date: string,
+  defi: boolean,
+): Promise<Enregistrement | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('replays')
+      .select('data')
+      .eq('pseudo', pseudo)
+      .eq('date', date)
+      .eq('defi', defi)
+      .maybeSingle();
+    if (error || !data) return null;
+    return data.data as Enregistrement;
+  } catch {
+    return null;
   }
 }
 

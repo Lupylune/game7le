@@ -69,12 +69,31 @@ where flawless
     )
   );
 
--- 5. Comptes orphelins (créés par le spam, plus aucun run).
+-- 5. Enregistrements sans leur run en direct (run supprimé ci-dessus), puis
+-- rétention : passé 30 jours, seuls les 10 meilleurs runs d'un jour gardent le
+-- leur (submit_replay ne purge qu'une fenêtre glissante).
+delete from replays p
+where not exists (
+  select 1 from runs r
+  where r.pseudo = p.pseudo and r.date = p.date and r.defi = p.defi
+    and r.en_direct and r.total_ms = p.total_ms
+);
+delete from replays p
+where p.date < (now() at time zone 'Europe/Paris')::date - 30
+  and p.pseudo not in (
+    select t.pseudo from runs t
+    where t.date = p.date and t.defi = p.defi and t.en_direct
+    order by t.total_ms
+    limit 10
+  );
+
+-- 6. Comptes orphelins (créés par le spam, plus aucun run).
 delete from comptes c
 where not exists (select 1 from runs r where r.pseudo = c.pseudo);
 
 select
   (select count(*) from runs) as runs_restants,
-  (select count(*) from comptes) as comptes_restants;
+  (select count(*) from comptes) as comptes_restants,
+  (select count(*) from replays) as enregistrements_restants;
 
 commit;

@@ -68,6 +68,8 @@ await check(
   '.stats-table.par-jeu, .hay-scene',
   'Statistiques — défi difficile',
 );
+// Sans enregistrement local ni backend joignable : l'état « pas d'enregistrement »
+await check('/revoir/2026-08-01', '.revoir-etat, .lecteur', 'Revoir un run');
 await check('/entrainement', '.game-card', 'Entraînement (liste)');
 await check('/entrainement?mode=difficile', '.game-card', 'Entraînement (liste) — difficile');
 

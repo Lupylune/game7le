@@ -202,6 +202,38 @@ Notable mechanics:
   overwrites the live run, so the daily leaderboard, streak and profile stats (live-only) reflect
   first attempts.
 
+### Revoir un run (`src/lib/enregistrement.ts`, `src/components/LecteurRun.tsx`)
+
+A finished run can be watched again — from the results screen (« Revoir mon run »), from
+`/revoir/:date?pseudo=…&defi=1` (linked from the day's and the challenge's leaderboard rows once
+unlocked, and from `/archives` for local recordings). Nothing of a game's state is stored: the
+puzzle regenerates from the same seed, so a recording is only **the player's gestures**, timestamped
+from the épreuve's mount. `RunPage` wraps the game in `.zone-epreuve` (`display: contents`) and
+`enregistre()` listens in capture on `window` to trusted pointer/mouse/key/input events; at replay,
+`LecteurRun` remounts the game with the same seed inside the same wrapper and `rejoue()` dispatches
+each gesture back as a synthetic DOM event, on the element found by its child-index path from the
+wrapper, at a position stored in thousandths of that element's box (boards resize with `--case`, the
+relative position doesn't). No game exposes anything — which is why the contract below matters:
+
+- a game must be a pure function of its `rng` **and the DOM events it receives** — no
+  `Math.random()`, no state read from outside;
+- third-party widgets whose internal DOM changes with the network (Atlas' Leaflet map and Mapillary
+  viewer) carry `data-enregistrement="zone"`: they are addressed by a point of the zone, resolved with
+  `elementFromPoint` at replay — approximate by nature, as is anything depending on the network;
+- the player « shortens dead time » (gaps > 5 s with nothing held become 2.5 s) — a game that waits
+  on timed animations before accepting a gesture sets `GameDef.tempsReel` (Tempo, Tracé).
+
+During playback, `modeLecture()` stops trusted pointer and keyboard events in capture on `window`
+(games listen there too) and neutralises `setPointerCapture`, which throws on a synthetic pointer.
+Drags are sampled every 30 ms, except a move that changes the element under the pointer (so a fast
+Nonogramme stroke skips no cell) and the last move before a release (Ratiole cuts where the pointer
+last was). At the end of an épreuve that finished by itself, the player gives the game a 2 s grace
+for its own `onDone` (the original ended *on* it), and flags « relecture approximative » if the
+result differs from the recorded line. A run resumed after an interruption keeps the journals of the
+épreuves already closed (`game7le:enregistrements-encours`); the current one restarts, marked
+`reprise`. Local recordings: `game7le:enregistrements`, 30 most recent, saved only when the run is
+the one kept for its slot (`saveRun`/`saveDefi` now return whether they stored it).
+
 ### Optional Supabase backend (`src/lib/supabase.ts`, `src/lib/sync.ts`, `supabase/schema.sql`)
 
 Two tables, `comptes(pseudo)` and `runs(pseudo, date, en_direct, defi, total_ms, lines)`, defined
@@ -234,6 +266,15 @@ Supabase-set `x-forwarded-for` header, tracked in the RLS-private `quota_ip` tab
 legitimate players never hits it (a real run takes minutes) while making scripted spam floods
 ineffective. `supabase/cleanup.sql` is the rerunnable purge script (same criteria as the
 validation) used after the 2026-07-18 pollution incidents.
+
+Recordings go to a third table, `replays(pseudo, date, defi, total_ms, data)`, through the
+`submit_replay()` RPC, called by `syncEnregistrement()` **after** `syncRun()`: only a live run
+already stored with the same `total_ms` gets one (so no quota of its own, one per live run, first
+one kept), payload capped at 1 MB of jsonb. Retention: past 30 days only a day's top 10 keep theirs
+(opportunistic purge on a sliding window in the RPC, full purge in `cleanup.sql`). No foreign key to
+`runs`: it would block the PK migration that `schema.sql` replays on every run. `data` is never
+interpreted server-side; `estEnregistrement()` revalidates what the client reads, and `rejoue()`
+never follows a link.
 
 `src/lib/supabase.ts` builds the client from `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (see
 `.env.example`); both are `undefined` unless set locally, so `supabase` is `null` and every

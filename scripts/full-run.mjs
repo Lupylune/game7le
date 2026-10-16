@@ -115,12 +115,18 @@ await page.waitForSelector('.results', { timeout: 8000 });
 const total = await page.textContent('.results .total');
 const lignes = await page.locator('.results tbody tr').count();
 const saved = await page.evaluate(() => localStorage.getItem('game7le:runs'));
+const enregistre = await page.evaluate(() => localStorage.getItem('game7le:enregistrements'));
+// Revoir le run : le lecteur remonte la première épreuve
+await page.click('button:has-text("Revoir mon run")');
+await page.waitForSelector('.lecteur .zone-epreuve', { timeout: 4000 });
+console.log('Relecture du run : lecteur affiché ✓');
+await page.click('button:has-text("Fermer la relecture")');
 await page.click('button:has-text("Voir les solutions")');
 await page.waitForSelector('.solution-card', { timeout: 4000 });
 const nbSolutions = await page.locator('.solution-card').count();
 console.log(`Solutions affichées : ${nbSolutions} carte(s)`);
 await page.screenshot({ path: '/tmp/results-solutions.png', fullPage: true });
-console.log(`\nRésultats affichés : total ${total?.trim()}, ${lignes} lignes, sauvegarde ${saved ? 'OK' : 'ABSENTE'}`);
+console.log(`\nRésultats affichés : total ${total?.trim()}, ${lignes} lignes, sauvegarde ${saved ? 'OK' : 'ABSENTE'}, enregistrement ${enregistre ? 'OK' : 'ABSENT'}`);
 if (errors.length) console.log('Erreurs page :', errors.join(' | '));
 
 // Le profil doit afficher les stats du run
@@ -136,6 +142,6 @@ await page.waitForSelector('.done-card .time', { timeout: 5000 });
 console.log('Accueil : carte « votre temps du jour » visible ✓');
 
 await browser.close();
-const ok = lignes === 7 && saved && errors.length === 0;
+const ok = lignes === 7 && saved && enregistre && errors.length === 0;
 console.log(ok ? 'PARCOURS COMPLET OK' : 'ÉCHEC');
 process.exit(ok ? 0 : 1);

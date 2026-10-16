@@ -161,6 +161,7 @@ export const JEUX: GameDef[] = [
     scoring: 'De −40 s (100 % de précision) à +90 s (0 %) · une seule tentative · revoir +10 s',
     skip: null,
     tirage: { depuis: LANCEMENT },
+    tempsReel: true,
     Component: Trace,
   },
   {
@@ -231,6 +232,7 @@ export const JEUX: GameDef[] = [
     // Sorti du pool du défi à partir du lundi 2026-09-14 : la semaine en cours
     // (lundi 2026-09-07) était déjà jouée, son tirage ne devait pas bouger.
     defi: { depuis: '2026-08-10', retire: '2026-09-14' },
+    tempsReel: true,
     Component: Tempo,
   },
   {

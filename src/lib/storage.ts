@@ -1,3 +1,4 @@
+import { resetEnregistrements } from './enregistrement';
 import { todayStr } from './rng';
 
 export interface GameLine {
@@ -81,15 +82,16 @@ export function aRunEnDirect(date: string): boolean {
   return chargeRuns()[date] != null;
 }
 
-export function saveRun(run: RunRecord): void {
+/** Renvoie `true` si le run a été gardé (premier ou meilleur temps de son créneau). */
+export function saveRun(run: RunRecord): boolean {
   const runs = chargeRuns();
   // On garde le meilleur temps par jour et par type (direct / archive).
   const key = cleRun(run);
   const prev = runs[key];
-  if (!prev || run.totalMs < prev.totalMs) {
-    runs[key] = run;
-    localStorage.setItem(K_RUNS, JSON.stringify(runs));
-  }
+  if (prev && run.totalMs >= prev.totalMs) return false;
+  runs[key] = run;
+  localStorage.setItem(K_RUNS, JSON.stringify(runs));
+  return true;
 }
 
 /* ===== Défi hebdomadaire difficile — stockage séparé des runs quotidiens.
@@ -112,14 +114,14 @@ export function aDefiEnDirect(lundi: string): boolean {
   return chargeDefis()[lundi] != null;
 }
 
-export function saveDefi(run: RunRecord): void {
+export function saveDefi(run: RunRecord): boolean {
   const defis = chargeDefis();
   const key = cleRun(run);
   const prev = defis[key];
-  if (!prev || run.totalMs < prev.totalMs) {
-    defis[key] = run;
-    localStorage.setItem(K_DEFIS, JSON.stringify(defis));
-  }
+  if (prev && run.totalMs >= prev.totalMs) return false;
+  defis[key] = run;
+  localStorage.setItem(K_DEFIS, JSON.stringify(defis));
+  return true;
 }
 
 /* ===== Run interrompu — reprise là où le joueur en était ===== */
@@ -232,4 +234,5 @@ export function resetAll(): void {
   localStorage.removeItem(K_ENCOURS);
   localStorage.removeItem(K_SETTINGS);
   localStorage.removeItem('game7le:theme');
+  resetEnregistrements();
 }

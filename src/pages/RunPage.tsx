@@ -16,13 +16,27 @@ import {
   type GameLine,
   type RunEnCours,
 } from '../lib/storage';
-import { syncRun } from '../lib/sync';
+import { syncEnregistrement, syncRun } from '../lib/sync';
+import {
+  clearJournauxEnCours,
+  enregistre,
+  loadJournauxEnCours,
+  saveEnregistrement,
+  saveJournauxEnCours,
+  tailleEnregistrement,
+  TAILLE_MAX,
+  type Enregistrement,
+  type Enregistreur,
+  type JournalEpreuve,
+} from '../lib/enregistrement';
+import { VERDICTS, type Verdict } from '../lib/verdicts';
 import { useChronoVisible } from '../lib/usePseudo';
 import GameIcon, { SymEtincelle } from '../components/GameIcon';
 import { prewarmAtlas } from '../games/Atlas';
 import { preconnecteAtlas } from '../lib/geo';
 import Solutions from '../components/Solutions';
 import SplitsRun from '../components/SplitsRun';
+import LecteurRun from '../components/LecteurRun';
 
 const FLAWLESS_MS = 5 * 60 * 1000;
 // Épreuves corsées : le sans-faute du défi difficile laisse 8 minutes
@@ -43,8 +57,6 @@ interface Toast {
   label: string;
 }
 
-type Verdict = 'success' | 'skip' | 'fail';
-
 /**
  * Transition entre épreuves, en deux temps :
  * `recap` — verdict de l'épreuve précédente (temps passé, gagné/perdu), puis
@@ -59,12 +71,6 @@ interface Transition {
   count: number;
   final: boolean; // dernière épreuve : le récap débouche sur les résultats
 }
-
-export const VERDICTS: Record<Verdict, { label: string; color: string }> = {
-  success: { label: 'Victoire !', color: 'var(--success)' },
-  skip: { label: 'Passé', color: 'var(--warning)' },
-  fail: { label: 'Défaite', color: 'var(--error)' },
-};
 
 function IconeAvance({ barre = false }: { barre?: boolean }) {
   return (
@@ -213,6 +219,8 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [trans, setTrans] = useState<Transition | null>(null);
   const [voirSolutions, setVoirSolutions] = useState(false);
+  const [enregistrement, setEnregistrement] = useState<Enregistrement | null>(null);
+  const [voirRelecture, setVoirRelecture] = useState(false);
   // Progression (0→1) du versement des ajustements dans le total, à l'écran final
   const [animP, setAnimP] = useState(0);
   const startRef = useRef(0);
@@ -232,6 +240,11 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   // Promesse d'upload Supabase du run : on la garde pour laisser la sync se
   // terminer avant de quitter l'écran de résultats (voir `quitterVers`).
   const syncRef = useRef<Promise<void> | null>(null);
+  // Gestes du joueur, épreuve par épreuve, pour revoir le run (`lib/enregistrement`).
+  // `null` : enregistrement abandonné (reprise sans les journaux des épreuves bouclées).
+  const journauxRef = useRef<JournalEpreuve[] | null>([]);
+  const enregRef = useRef<Enregistreur | null>(null);
+  const zoneRef = useRef<HTMLDivElement>(null);
 
   const jeu = jeux[index];
   // Barème de passe effectif : 3 min fixes au défi difficile, sinon celui du jeu.
@@ -323,6 +336,8 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     // Aucune reprise en attente ici (sinon l'intro propose de reprendre), mais on
     // repart d'une ardoise propre par sécurité.
     clearEnCours(date, defi);
+    clearJournauxEnCours(date, defi);
+    journauxRef.current = [];
     startRef.current = performance.now();
     gameStartRef.current = performance.now();
     setPhase('playing');
@@ -339,6 +354,8 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     if (!c) return;
     setLines(c.lines);
     setIndex(Math.min(c.index, jeux.length - 1));
+    const journaux = loadJournauxEnCours(date, defi);
+    journauxRef.current = journaux.length === c.lines.length ? journaux : null;
     adjustRef.current = c.adjustMs;
     setAdjustMs(c.adjustMs);
     gameAdjustRef.current = c.gameAdjustMs;
@@ -366,6 +383,14 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
       // signalés en cours de jeu (indice, vérification, erreur…) et le final.
       // La somme des lignes égale ainsi la réserve affichée près du chrono.
       const ligne: GameLine = { ...line, ms: Math.round(dureeMs), adjustMs: gameAdjustRef.current };
+      const journal = enregRef.current?.arrete();
+      if (journauxRef.current) {
+        journauxRef.current = [
+          ...journauxRef.current,
+          journal ?? { id: line.id, ms: Math.round(dureeMs), ev: [], tronque: true },
+        ];
+        saveJournauxEnCours(date, defi, journauxRef.current);
+      }
       gameAdjustRef.current = 0;
       gameOffsetRef.current = 0;
       setRawMs(now - startRef.current - pausedRef.current);
@@ -375,7 +400,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
       // Même récap pour la dernière épreuve : les résultats suivent au lieu du décompte
       beginTransition(ligne.status, ligne, dureeMs, finished);
     },
-    [jeux, lines],
+    [jeux, lines, date, defi],
   );
 
   const onDone = useCallback(
@@ -398,6 +423,20 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     () => seededRng(`game7le:${defi ? 'defi:' : ''}${date}:${jeu.id}`),
     [date, jeu.id, defi],
   );
+
+  // Enregistrement des gestes pendant que l'épreuve est à l'écran (pas pendant
+  // les transitions). Une épreuve reprise après interruption repart de zéro :
+  // son journal aussi, marqué comme tel.
+  const enJeu = phase === 'playing' && !trans;
+  useEffect(() => {
+    if (!enJeu || !zoneRef.current) return;
+    const e = enregistre(zoneRef.current, jeu.id, gameOffsetRef.current > 0);
+    enregRef.current = e;
+    return () => {
+      e.arrete();
+      if (enregRef.current === e) enregRef.current = null;
+    };
+  }, [enJeu, index, jeu.id]);
 
   // Atlas dépend de trois hôtes tiers (CDN des libs, API d'imagerie, tuiles
   // OSM) : on ouvre les connexions dès l'écran d'intro, donc avant même le
@@ -475,9 +514,22 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
           ? lundiStr() === date && !aDefiEnDirect(date)
           : date === todayStr() && !aRunEnDirect(date),
       };
-      if (defi) saveDefi(run);
-      else saveRun(run);
-      syncRef.current = syncRun(loadSettings().pseudo, run, defi);
+      const garde = defi ? saveDefi(run) : saveRun(run);
+      const journaux = journauxRef.current;
+      clearJournauxEnCours(date, defi);
+      let enr: Enregistrement | null =
+        journaux && journaux.length === jeux.length
+          ? { v: 1, date, defi, totalMs, lines, epreuves: journaux }
+          : null;
+      if (enr && tailleEnregistrement(enr) > TAILLE_MAX) enr = null;
+      setEnregistrement(enr);
+      // Gardé en local avec le run qu'il illustre (meilleur temps du créneau) ;
+      // envoyé au serveur pour les seuls runs en direct, ceux du classement.
+      if (enr && garde) saveEnregistrement(enr, run.enDirect);
+      const pseudo = loadSettings().pseudo;
+      syncRef.current = syncRun(pseudo, run, defi).then(() =>
+        enr && run.enDirect ? syncEnregistrement(pseudo, enr) : undefined,
+      );
     }
   }, [phase, lines, jeux, date, totalMs, rawMs, flawless, defi]);
 
@@ -603,6 +655,11 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
           <button className="btn btn-primary" onClick={() => navigator.clipboard?.writeText(partage)}>
             Copier le résultat
           </button>
+          {enregistrement && (
+            <button className="btn" onClick={() => setVoirRelecture((v) => !v)}>
+              {voirRelecture ? 'Fermer la relecture' : 'Revoir mon run'}
+            </button>
+          )}
           <button className="btn" onClick={() => setVoirSolutions((v) => !v)}>
             {voirSolutions ? 'Masquer les solutions' : 'Voir les solutions'}
           </button>
@@ -616,6 +673,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
             Accueil
           </button>
         </div>
+        {voirRelecture && enregistrement && <LecteurRun enr={enregistrement} />}
         {voirSolutions && <Solutions date={date} ids={lines.map((l) => l.id)} defi={defi} />}
       </div>
     );
@@ -704,13 +762,16 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
       ) : (
         <>
           <p className="game-rules">{(defi && jeu.reglesDifficile) || jeu.regles}</p>
-          <jeu.Component
-            key={`${date}-${jeu.id}`}
-            rng={rng}
-            difficile={defi}
-            onAdjust={addAdjust}
-            onDone={onDone}
-          />
+          {/* Enveloppe neutre (display: contents) : racine des chemins enregistrés */}
+          <div ref={zoneRef} className="zone-epreuve">
+            <jeu.Component
+              key={`${date}-${jeu.id}`}
+              rng={rng}
+              difficile={defi}
+              onAdjust={addAdjust}
+              onDone={onDone}
+            />
+          </div>
         </>
       )}
     </div>
