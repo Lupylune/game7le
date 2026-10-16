@@ -109,7 +109,6 @@ export default function Home() {
                 {formatMs(myRun.totalMs)} {myRun.flawless && <SymEtincelle size={18} />}
               </span>
               <CompteARebours cible={prochainJour} libelle="Prochain dans" />
-              <Link to="/classement">Voir le classement →</Link>
               <button type="button" className="btn btn-sm" onClick={() => setSolutions('jour')}>
                 Voir les solutions
               </button>
@@ -143,7 +142,6 @@ export default function Home() {
                 {formatMs(myDefi.totalMs)} {myDefi.flawless && <SymEtincelle size={18} />}
               </span>
               <CompteARebours cible={prochainDefi} libelle="Prochain dans" />
-              <Link to="/classement?onglet=defi">Voir le classement →</Link>
               <button type="button" className="btn btn-sm" onClick={() => setSolutions('defi')}>
                 Voir les solutions
               </button>
