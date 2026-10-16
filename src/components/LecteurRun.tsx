@@ -339,7 +339,7 @@ export default function LecteurRun({ enr }: { enr: Enregistrement }) {
           </button>
         </div>
       </div>
-      <Avancement key={`${i}-${essai}`} oRef={oRef} finMs={Math.max(journal.ms, 1)} />
+      <Avancement key={`avancement-${i}-${essai}`} oRef={oRef} finMs={Math.max(journal.ms, 1)} />
       {bilan ? (
         <>
           <Bilan line={line} ecart={bilan.ecart} journal={journal} />
