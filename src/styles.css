@@ -927,6 +927,7 @@ main.content > .page-entree > * {
   border-color: var(--accent);
 }
 .lb .row-main {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
@@ -938,8 +939,34 @@ main.content > .page-entree > * {
   font: inherit;
   text-align: left;
 }
-.lb button.row-main {
+/* Bouton de dépliage tendu sous toute la ligne ; le contenu laisse passer
+   les clics jusqu'à lui, sauf le lien du pseudo. */
+.lb .row-toggle {
+  position: absolute;
+  inset: 0;
+  background: none;
+  border: 0;
+  border-radius: inherit;
   cursor: pointer;
+}
+.lb .row-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.lb .row-toggle ~ * {
+  position: relative;
+  pointer-events: none;
+}
+.lb .row-pseudo {
+  position: relative;
+  pointer-events: auto;
+  color: inherit;
+  text-decoration: none;
+}
+.lb .row-pseudo:hover,
+.lb .row-pseudo:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .lb .chev {
   color: var(--text-muted);

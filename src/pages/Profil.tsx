@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { calculeStats, estEnDirect, statsParJeu, formatHeures, formatDateCourte } from '../lib/stats';
 import { rangsReels } from '../lib/classement';
-import { useHistorique } from '../lib/useHistorique';
+import { useHistoriqueEtat } from '../lib/useHistorique';
 import { classePodium, usePodiumSemaine } from '../lib/useChampion';
 import { usePseudo } from '../lib/usePseudo';
-import { useBadgeEpingle } from '../lib/useBadges';
+import { useBadgeEpingle, useBadgesJoueurs } from '../lib/useBadges';
+import { supabase } from '../lib/supabase';
 import GameIcon, { SymFlamme } from '../components/GameIcon';
 import { BadgePicto } from '../components/BadgeIcon';
 import BadgesGrille from '../components/BadgesGrille';
@@ -22,12 +23,26 @@ function Tuile({ label, valeur, sous }: { label: string; valeur: React.ReactNode
   );
 }
 
+/** `/profil` : son propre profil. `/joueur/:pseudo` : celui d'un autre joueur. */
 export default function Profil() {
-  const pseudo = usePseudo();
-  const badge = useBadgeEpingle(pseudo);
+  const moi = usePseudo();
+  const param = useParams().pseudo;
+  if (param === moi) return <Navigate to="/profil" replace />;
+  return <ProfilDe key={param ?? moi} pseudo={param ?? moi} autre={param != null} />;
+}
+
+function ProfilDe({ pseudo, autre }: { pseudo: string; autre: boolean }) {
+  // Badge épinglé : le store du joueur courant pour soi, une lecture publique
+  // pour un autre (interroger le store avec son pseudo le réinitialiserait).
+  const monBadge = useBadgeEpingle(usePseudo());
+  const badgesAutres = useBadgesJoueurs(autre ? [pseudo] : []);
+  const badge = autre ? badgesAutres[pseudo] ?? '' : monBadge;
   const podium = usePodiumSemaine();
+  // L'historique d'un autre ne vient que du serveur : sans repli local, qui
+  // montrerait nos propres runs sous son nom.
+  const historique = useHistoriqueEtat(pseudo, !autre);
   // Seuls les runs joués le jour même comptent — pas les archives rejouées.
-  const runsLive = useHistorique(pseudo).filter(estEnDirect);
+  const runsLive = historique.runs.filter(estEnDirect);
   const s = calculeStats(runsLive, todayStr());
   const parJeu = statsParJeu(runsLive);
 
@@ -63,15 +78,26 @@ export default function Profil() {
         <span className={classePodium(podium, pseudo)}>{pseudo}</span>
       </h1>
       <p className="muted">
-        Compte sans mot de passe, identifié par pseudo — les stats sont synchronisées depuis vos
-        runs enregistrés sous ce pseudo.
+        {autre
+          ? 'Profil public : les stats viennent des runs du jour enregistrés sous ce pseudo.'
+          : 'Compte sans mot de passe, identifié par pseudo — les stats sont synchronisées depuis vos runs enregistrés sous ce pseudo.'}
       </p>
-      {s.runs === 0 ? (
+      {autre && !supabase ? (
         <div className="etat-vide">
-          <p className="muted">Aucun run pour l'instant.</p>
-          <Link className="btn btn-primary" to="/jouer">
-            Lancer le Game7le du jour
-          </Link>
+          <p className="muted">Le profil des autres joueurs n'est disponible qu'en ligne.</p>
+        </div>
+      ) : autre && historique.charge ? (
+        <p className="muted">Chargement du profil…</p>
+      ) : s.runs === 0 ? (
+        <div className="etat-vide">
+          <p className="muted">
+            {autre ? 'Aucun run enregistré sous ce pseudo.' : "Aucun run pour l'instant."}
+          </p>
+          {!autre && (
+            <Link className="btn btn-primary" to="/jouer">
+              Lancer le Game7le du jour
+            </Link>
+          )}
         </div>
       ) : (
         <>
@@ -94,7 +120,7 @@ export default function Profil() {
             <Tuile label="Temps total" valeur={formatHeures(s.totalMs)} />
           </div>
 
-          <BadgesGrille pseudo={pseudo} />
+          <BadgesGrille pseudo={pseudo} epingleAutre={autre ? badge : undefined} />
 
           <h2>Temps moyen par épreuve</h2>
           <ul className="stats-jeux">
@@ -121,20 +147,32 @@ export default function Profil() {
                 <span className="date">{formatDateCourte(r.date)}</span>
                 <span className="time">{formatMs(r.totalMs)}</span>
                 <span className="rang">{rangs?.[r.date] ? `#${rangs[r.date].rang}` : ''}</span>
-                <Link to={`/jouer/${r.date}`} aria-label={`Rejouer le ${formatDateCourte(r.date)}`}>
-                  →
-                </Link>
+                {autre ? (
+                  <Link
+                    to={`/revoir/${r.date}?pseudo=${encodeURIComponent(pseudo)}`}
+                    aria-label={`Revoir le run du ${formatDateCourte(r.date)}`}
+                    title="Revoir le run"
+                  >
+                    ▶
+                  </Link>
+                ) : (
+                  <Link to={`/jouer/${r.date}`} aria-label={`Rejouer le ${formatDateCourte(r.date)}`}>
+                    →
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
         </>
       )}
 
-      <p className="muted mt-6" style={{ fontSize: 'var(--text-sm)' }}>
-        Comment vous situez-vous ? Les <Link to="/statistiques">statistiques globales</Link>{' '}
-        comparent chaque épreuve à celles de tous les joueurs. Changer de pseudo ? Direction les{' '}
-        <Link to="/parametres">paramètres</Link>.
-      </p>
+      {!autre && (
+        <p className="muted mt-6" style={{ fontSize: 'var(--text-sm)' }}>
+          Comment vous situez-vous ? Les <Link to="/statistiques">statistiques globales</Link>{' '}
+          comparent chaque épreuve à celles de tous les joueurs. Changer de pseudo ? Direction les{' '}
+          <Link to="/parametres">paramètres</Link>.
+        </p>
+      )}
     </div>
   );
 }

@@ -279,6 +279,7 @@ export default function Home() {
                   rank={i + 1}
                   deverrouille={!!myRun}
                   podium={podium}
+                  profil={board.reel || e.pseudo === pseudo}
                   messageVerrou="Terminez le défi du jour pour voir le détail des temps."
                 />
               ))}
@@ -314,6 +315,7 @@ export default function Home() {
                   rank={i + 1}
                   deverrouille={!!myRun}
                   podium={podium}
+                  profil={semaine.reel || e.pseudo === pseudo}
                   messageVerrou="Terminez le défi du jour pour voir le détail des temps."
                 />
               ))}

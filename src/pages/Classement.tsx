@@ -206,6 +206,7 @@ export default function Classement() {
             rank={i + 1}
             deverrouille={aCouru}
             podium={podium}
+            profil={board.reel || !!e.me}
             revoir={
               onglet === 'jour' || onglet === 'defi'
                 ? `/revoir/${onglet === 'defi' ? lundi : date}?pseudo=${encodeURIComponent(e.pseudo)}${onglet === 'defi' ? '&defi=1' : ''}`

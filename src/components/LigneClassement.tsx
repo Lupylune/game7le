@@ -26,6 +26,7 @@ export default function LigneClassement({
   messageVerrou,
   podium,
   revoir,
+  profil = false,
 }: {
   e: Entry;
   rank: number;
@@ -35,6 +36,9 @@ export default function LigneClassement({
   podium?: string[];
   /** Lien vers la relecture du run (classements d'un jour ou d'un défi). */
   revoir?: string;
+  /** Pseudo cliquable vers le profil du joueur (vrais joueurs uniquement, pas
+   *  le peloton simulé). */
+  profil?: boolean;
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [verrouAffiche, setVerrouAffiche] = useState(false);
@@ -66,7 +70,16 @@ export default function LigneClassement({
         ) : (
           e.badge && <SymEtoile />
         )}{' '}
-        <span className={classePodium(podium ?? [], e.pseudo)}>{e.pseudo}</span>
+        {profil ? (
+          <Link
+            className={`row-pseudo ${classePodium(podium ?? [], e.pseudo)}`}
+            to={e.me ? '/profil' : `/joueur/${encodeURIComponent(e.pseudo)}`}
+          >
+            {e.pseudo}
+          </Link>
+        ) : (
+          <span className={classePodium(podium ?? [], e.pseudo)}>{e.pseudo}</span>
+        )}
         {e.me && ' (vous)'}
       </span>
       {e.jours != null && (
@@ -107,18 +120,21 @@ export default function LigneClassement({
       className={`row${e.me ? ' me' : ''}${ouvert ? ' open' : ''}`}
       style={{ '--i': rank - 1 } as CSSProperties}
     >
-      {depliable ? (
-        <button
-          type="button"
-          className="row-main"
-          aria-expanded={verrouille ? undefined : ouvert}
-          onClick={onClic}
-        >
-          {contenu}
-        </button>
-      ) : (
-        <div className="row-main">{contenu}</div>
-      )}
+      {/* Toute la ligne déplie le détail, mais le pseudo est un lien : un lien
+          ne pouvant pas vivre dans un bouton, le bouton est tendu sous la ligne
+          (position absolue) et le lien posé par-dessus. */}
+      <div className="row-main">
+        {depliable && (
+          <button
+            type="button"
+            className="row-toggle"
+            aria-expanded={verrouille ? undefined : ouvert}
+            aria-label={`Détail des temps de ${e.pseudo}`}
+            onClick={onClic}
+          />
+        )}
+        {contenu}
+      </div>
       {verrouAffiche && (
         <div className="row-verrou" role="status">
           {messageVerrou ?? 'Terminez le défi pour voir le détail des temps.'}

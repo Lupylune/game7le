@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { choisisBadge, useBadgeEpingle, useBadges } from '../lib/useBadges';
+import { usePseudo } from '../lib/usePseudo';
 import { NIVEAUX, tokenBadge, type EtatBadge, type Niveau } from '../lib/badges';
 import BadgeIcon, { couleurNiveau } from './BadgeIcon';
 
@@ -33,16 +34,28 @@ function progression(e: EtatBadge): string {
 
 /**
  * Grille des badges (achievements) d'un pseudo : débloqués/verrouillés, avec
- * progression. Cliquer un badge débloqué l'épingle comme picto affiché à
- * gauche du pseudo (re-clic pour le retirer).
+ * progression. Sur son propre profil, cliquer un badge débloqué l'épingle
+ * comme picto affiché à gauche du pseudo (re-clic pour le retirer) ; sur celui
+ * d'un autre joueur (`epingleAutre` fourni), la grille est en lecture seule.
  */
-export default function BadgesGrille({ pseudo }: { pseudo: string }) {
-  const etats = useBadges(pseudo);
-  const choix = useBadgeEpingle(pseudo);
+export default function BadgesGrille({
+  pseudo,
+  epingleAutre,
+}: {
+  pseudo: string;
+  /** Badge épinglé par un autre joueur : grille en lecture seule. */
+  epingleAutre?: string;
+}) {
+  const autre = epingleAutre !== undefined;
+  const etats = useBadges(pseudo, !autre);
+  // Le store du badge épinglé est celui du joueur courant : on ne l'interroge
+  // jamais avec le pseudo d'un autre, ce qui le réinitialiserait.
+  const monChoix = useBadgeEpingle(usePseudo());
+  const choix = autre ? epingleAutre : monChoix;
   const nbDebloques = etats.filter((e) => e.debloque).length;
 
   function choisir(e: EtatBadge) {
-    if (!e.debloque) return;
+    if (!e.debloque || autre) return;
     const token = tokenBadge(e.def.id, e.niveau);
     choisisBadge(pseudo, choix === token ? '' : token); // re-clic = retirer le picto
   }
@@ -50,9 +63,11 @@ export default function BadgesGrille({ pseudo }: { pseudo: string }) {
   return (
     <>
       <h2>Badges ({nbDebloques}/{etats.length})</h2>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-        Cliquez un badge débloqué pour l'épingler à gauche de votre pseudo dans le classement.
-      </p>
+      {!autre && (
+        <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+          Cliquez un badge débloqué pour l'épingler à gauche de votre pseudo dans le classement.
+        </p>
+      )}
       <ul className="badges-grid">
         {etats.map((e) => {
           const token = tokenBadge(e.def.id, e.niveau);
@@ -66,9 +81,17 @@ export default function BadgesGrille({ pseudo }: { pseudo: string }) {
                 type="button"
                 className="badge-carte-btn"
                 onClick={() => choisir(e)}
-                disabled={!e.debloque}
-                aria-pressed={epingle}
-                title={e.debloque ? (epingle ? 'Retirer le picto' : 'Épingler ce picto') : 'Verrouillé'}
+                disabled={!e.debloque || autre}
+                aria-pressed={autre ? undefined : epingle}
+                title={
+                  !e.debloque
+                    ? 'Verrouillé'
+                    : autre
+                      ? undefined
+                      : epingle
+                        ? 'Retirer le picto'
+                        : 'Épingler ce picto'
+                }
               >
                 <span className="badge-vignette">
                   <BadgeIcon id={e.def.id} niveau={e.niveau as Niveau | null} size={40} />

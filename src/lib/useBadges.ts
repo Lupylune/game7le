@@ -13,10 +13,10 @@ import { calculeBadges, type CtxBadges, type EtatBadge } from './badges';
  * depuis Supabase quand il est disponible ; sinon le badge Numéro 1 reste
  * verrouillé (rangs réels inconnus).
  */
-export function useBadges(pseudo: string): EtatBadge[] {
-  const runs = useHistorique(pseudo);
+export function useBadges(pseudo: string, repliLocal = true): EtatBadge[] {
+  const runs = useHistorique(pseudo, repliLocal);
   const runsLive = runs.filter(estEnDirect);
-  const defis = useHistoriqueDefis(pseudo);
+  const defis = useHistoriqueDefis(pseudo, repliLocal);
   const [nbNumeroUn, setNbNumeroUn] = useState(0);
 
   const datesKey = runsLive

@@ -30,6 +30,7 @@ export default function App() {
           <Route path="/entrainement/:id" element={<EntrainementJeu />} />
           <Route path="/parametres" element={<Parametres />} />
           <Route path="/profil" element={<Profil />} />
+          <Route path="/joueur/:pseudo" element={<Profil />} />
           <Route path="/statistiques" element={<Statistiques />} />
           <Route path="/revoir/:date" element={<Revoir />} />
           <Route path="*" element={<Home />} />
