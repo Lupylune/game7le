@@ -14,6 +14,7 @@ import type { GameLine } from '../lib/storage';
 import { formatAdjust, formatMs } from '../lib/time';
 import { VERDICTS } from '../lib/verdicts';
 import GameIcon from './GameIcon';
+import Reserve from './Reserve';
 
 /**
  * Lecteur d'un run enregistré (voir `lib/enregistrement`) : les sept épreuves
@@ -34,12 +35,6 @@ const GRACE_FIN_MS = 2000;
 /** Plafond d'avance par frame : un onglet en arrière-plan met la lecture en pause. */
 const FRAME_MAX_MS = 250;
 
-interface Toast {
-  id: number;
-  ms: number;
-  label: string;
-}
-
 /** Valeur lue sur une ref à chaque frame, sans re-rendre l'épreuve. */
 function useFrame<T>(lit: () => T): T {
   const [v, setV] = useState(lit);
@@ -57,14 +52,22 @@ function useFrame<T>(lit: () => T): T {
   return v;
 }
 
-function Horloge({ oRef, baseMs, adjustMs }: { oRef: { current: number }; baseMs: number; adjustMs: number }) {
+function Horloge({
+  oRef,
+  baseMs,
+  adjustMs,
+  motif,
+}: {
+  oRef: { current: number };
+  baseMs: number;
+  adjustMs: number;
+  motif: string;
+}) {
   const ms = useFrame(() => baseMs + oRef.current);
   return (
     <div className="timer">
       {formatMs(ms)}
-      {adjustMs !== 0 && (
-        <span className={`adj ${adjustMs < 0 ? 'bonus' : 'malus'}`}>{formatAdjust(adjustMs)}</span>
-      )}
+      <Reserve ms={adjustMs} motif={motif} />
     </div>
   );
 }
@@ -232,8 +235,9 @@ export default function LecteurRun({ enr }: { enr: Enregistrement }) {
   const [enLecture, setEnLecture] = useState(true);
   const [accelere, setAccelere] = useState(true);
   const [bilan, setBilan] = useState<{ ecart: boolean } | null>(null);
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const toastId = useRef(0);
+  // Ajustements rejoués dans l'épreuve en cours, et motif du dernier
+  const [adjustEpreuve, setAdjustEpreuve] = useState(0);
+  const [motif, setMotif] = useState('');
   const oRef = useRef(0);
 
   const n = enr.epreuves.length;
@@ -252,14 +256,13 @@ export default function LecteurRun({ enr }: { enr: Enregistrement }) {
     setI(Math.max(0, Math.min(n - 1, j)));
     setEssai((e) => e + 1);
     setBilan(null);
-    setToasts([]);
+    setAdjustEpreuve(0);
     oRef.current = 0;
   };
 
   const onAdjust = useCallback((ms: number, label: string) => {
-    const id = ++toastId.current;
-    setToasts((ts) => [...ts, { id, ms, label }]);
-    setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 1400);
+    setAdjustEpreuve((a) => a + ms);
+    setMotif(label);
   }, []);
 
   const onFin = useCallback(
@@ -282,15 +285,6 @@ export default function LecteurRun({ enr }: { enr: Enregistrement }) {
 
   return (
     <div className="lecteur">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className="toast-adjust"
-          style={{ color: t.ms < 0 ? 'var(--success)' : 'var(--error)' }}
-        >
-          {formatAdjust(t.ms)} · {t.label}
-        </div>
-      ))}
       <div className="run-header">
         <div>
           <div className="game-name">
@@ -301,7 +295,7 @@ export default function LecteurRun({ enr }: { enr: Enregistrement }) {
             {journal.reprise && ' · reprise après interruption'}
           </div>
         </div>
-        <Horloge oRef={oRef} baseMs={baseMs} adjustMs={adjustAvant} />
+        <Horloge oRef={oRef} baseMs={baseMs} adjustMs={adjustAvant + adjustEpreuve} motif={motif} />
         <div className="lecteur-commandes">
           <button
             type="button"

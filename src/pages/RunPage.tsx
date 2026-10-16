@@ -37,6 +37,7 @@ import { preconnecteAtlas } from '../lib/geo';
 import Solutions from '../components/Solutions';
 import SplitsRun from '../components/SplitsRun';
 import LecteurRun from '../components/LecteurRun';
+import Reserve from '../components/Reserve';
 
 const FLAWLESS_MS = 5 * 60 * 1000;
 // Épreuves corsées : le sans-faute du défi difficile laisse 8 minutes
@@ -50,12 +51,6 @@ const PENALITE_SKIP_DEFI_LONG_S = 480;
 const SKIP_DEFI_LONG = new Set(['sudoku', 'croises', 'nonogramme']);
 const COUNTDOWN_S = 3;
 const RECAP_MS = 2400; // durée de l'écran récap avant le compte à rebours
-
-interface Toast {
-  id: number;
-  ms: number;
-  label: string;
-}
 
 /**
  * Transition entre épreuves, en deux temps :
@@ -95,12 +90,15 @@ function Chrono({
   pauseStartRef,
   paused,
   adjustMs,
+  motif,
 }: {
   startRef: { current: number };
   pausedRef: { current: number };
   pauseStartRef: { current: number };
   paused: boolean;
   adjustMs: number;
+  /** Motif du dernier ajustement, affiché au-dessus de la réserve */
+  motif: string;
 }) {
   const [ms, setMs] = useState(0);
   useEffect(() => {
@@ -117,9 +115,7 @@ function Chrono({
   return (
     <div className="timer">
       {formatMs(ms)}
-      {adjustMs !== 0 && (
-        <span className={`adj ${adjustMs < 0 ? 'bonus' : 'malus'}`}>{formatAdjust(adjustMs)}</span>
-      )}
+      <Reserve ms={adjustMs} motif={motif} />
     </div>
   );
 }
@@ -194,7 +190,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   const date = defi ? lundiStr() : params.date ?? todayStr();
   const isToday = date === todayStr();
   // Réglage « Chrono pendant le run » : masqué, on joue à l'aveugle (pas de
-  // chrono, pas de toasts d'ajustement, pas de bilan chiffré aux transitions).
+  // chrono, pas de réserve de bonus/malus, pas de bilan chiffré aux transitions).
   // Le décompte tourne toujours : seul l'affichage change.
   const chronoVisible = useChronoVisible();
 
@@ -216,7 +212,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   const [adjustMs, setAdjustMs] = useState(0);
   const [rawMs, setRawMs] = useState(0);
   const [gameElapsedS, setGameElapsedS] = useState(0);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [motif, setMotif] = useState('');
   const [trans, setTrans] = useState<Transition | null>(null);
   const [voirSolutions, setVoirSolutions] = useState(false);
   const [enregistrement, setEnregistrement] = useState<Enregistrement | null>(null);
@@ -235,7 +231,6 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
   // Le chrono est en pause pendant les transitions : temps de pause cumulé
   const pausedRef = useRef(0);
   const pauseStartRef = useRef(0);
-  const toastId = useRef(0);
   const savedRef = useRef(false);
   // Promesse d'upload Supabase du run : on la garde pour laisser la sync se
   // terminer avant de quitter l'écran de résultats (voir `quitterVers`).
@@ -316,21 +311,12 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
     setTrans({ verdict, line, dureeMs, phase: verdict ? 'recap' : 'countdown', count: COUNTDOWN_S, final });
   };
 
-  const pushToast = useCallback((ms: number, label: string) => {
-    const id = ++toastId.current;
-    setToasts((ts) => [...ts, { id, ms, label }]);
-    setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 1400);
+  const addAdjust = useCallback((ms: number, label: string) => {
+    adjustRef.current += ms;
+    gameAdjustRef.current += ms;
+    setAdjustMs(adjustRef.current);
+    setMotif(label);
   }, []);
-
-  const addAdjust = useCallback(
-    (ms: number, label: string) => {
-      adjustRef.current += ms;
-      gameAdjustRef.current += ms;
-      setAdjustMs(adjustRef.current);
-      pushToast(ms, label);
-    },
-    [pushToast],
-  );
 
   const start = () => {
     // Aucune reprise en attente ici (sinon l'intro propose de reprendre), mais on
@@ -681,16 +667,6 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
 
   return (
     <div>
-      {chronoVisible &&
-        toasts.map((t) => (
-          <div
-            key={t.id}
-            className="toast-adjust"
-            style={{ color: t.ms < 0 ? 'var(--success)' : 'var(--error)' }}
-          >
-            {formatAdjust(t.ms)} · {t.label}
-          </div>
-        ))}
       <div className="run-header">
         <div>
           <div className="game-name">
@@ -709,6 +685,7 @@ export default function RunPage({ defi = false }: { defi?: boolean }) {
             pauseStartRef={pauseStartRef}
             paused={!!trans}
             adjustMs={adjustMs}
+            motif={motif}
           />
         ) : (
           <div />

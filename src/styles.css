@@ -1066,37 +1066,47 @@ button.skip-pill.skip-ready:active {
   justify-content: center;
   margin-top: var(--sp-2);
 }
-.toast-adjust {
-  position: fixed;
-  top: 70px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 1.3rem;
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--radius-md);
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
-  z-index: 50;
-  animation: pop 1.4s ease forwards;
+/* Réserve de bonus/malus à droite du chrono (composant Reserve) : le nouvel
+   ajustement apparaît au-dessus d'elle, puis s'y verse. */
+.timer .reserve {
+  position: relative;
+  display: inline-block;
+  /* vide, elle garde une hauteur de ligne : l'apport se pose au-dessus */
+  min-height: 1.2em;
+  font-size: 0.9rem;
+}
+.timer .reserve .adj {
+  margin-left: var(--sp-2);
+}
+.reserve-apport {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+  white-space: nowrap;
+  /* s'efface à mesure qu'il se vide dans la réserve */
+  opacity: calc(0.35 + 0.65 * var(--reste, 1));
+  animation: apport-entree 0.25s ease-out;
   pointer-events: none;
 }
-@keyframes pop {
-  0% {
+.reserve-apport small {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+@keyframes apport-entree {
+  from {
     opacity: 0;
-    transform: translate(-50%, 8px);
+    transform: translateY(6px);
   }
-  15% {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -10px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reserve-apport {
+    animation: none;
   }
 }
 /* Les écrans d'attente d'un run (intro, reprise) prennent la hauteur libre et
