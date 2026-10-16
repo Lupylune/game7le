@@ -79,6 +79,12 @@ export function formatCompteARebours(ms: number): string {
   return `${s}\u00a0s`;
 }
 
+/** Jour et mois : « 30 septembre ». */
+export function formatDateJourMois(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+}
+
 /** Date française sans l'année : « jeudi 27 août ». */
 export function formatDateCourte(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);

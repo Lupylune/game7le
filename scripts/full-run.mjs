@@ -138,7 +138,7 @@ console.log(`Profil : ${tuiles} tuiles de stats, Runs = ${runsVal?.trim()}`);
 
 // L'accueil doit maintenant afficher le temps du jour
 await page.goto(BASE + '/');
-await page.waitForSelector('.done-card .time', { timeout: 5000 });
+await page.waitForSelector('.accueil-fait .time', { timeout: 5000 });
 console.log('Accueil : carte « votre temps du jour » visible ✓');
 
 await browser.close();

@@ -1,16 +1,18 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import Logo from '../components/Logo';
 import HauteurFluide from '../components/HauteurFluide';
-import { SymEtincelle, SymFlamme } from '../components/GameIcon';
+import GameIcon, { SymChrono, SymEtincelle, SymFlamme } from '../components/GameIcon';
 import BalleDeFoin from '../components/BalleDeFoin';
 import CompteARebours from '../components/CompteARebours';
+import CompteurMs from '../components/CompteurMs';
 import LigneClassement from '../components/LigneClassement';
 import Solutions from '../components/Solutions';
-import { jeuxDefiSemaine, jeuxDuJour } from '../games';
+import { jeuxDefiSemaine, jeuxDuJour, jeuxDuPool, JEUX_PAR_JOUR } from '../games';
 import { classementJour, classementSemaine, type Board, type Entry } from '../lib/classement';
 import { ajouteJours, lundiStr, minuitParis, prochainTirage, seededRng, pick } from '../lib/rng';
-import { formatDateCourte, formatLong, formatMs } from '../lib/time';
+import { formatAdjust, formatDateCourte, formatDateJourMois, formatLong, formatMs } from '../lib/time';
+import { VERDICTS } from '../lib/verdicts';
 import { calculeStreak, estEnDirect, joursEnDirect } from '../lib/stats';
 import { loadEnCours } from '../lib/storage';
 import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
@@ -18,6 +20,9 @@ import { useBadgeEpingle, useBadgesJoueurs } from '../lib/useBadges';
 import { usePodiumSemaine } from '../lib/useChampion';
 import { useJourCourant } from '../lib/useJour';
 import { usePseudo } from '../lib/usePseudo';
+
+/** Décalage entre deux cases du tirage dans leur apparition en cascade (cf. CSS). */
+const CASCADE_MS = 70;
 
 const TAGLINES = [
   'ゲーム、セット、スタート。',
@@ -62,64 +67,65 @@ export default function Home() {
   // Prochaines échéances : minuit pour le tirage du jour, lundi prochain pour le défi
   const prochainJour = prochainTirage(date);
   const prochainDefi = minuitParis(ajouteJours(lundi, 7));
-  // Solutions dépliées depuis une carte « fini » : réservées à qui a terminé
-  // son run en direct, comme à l'écran de résultats — les cartes n'existent pas
-  // avant.
-  const [solutions, setSolutionsBrut] = useState<'jour' | 'defi' | null>(null);
-  // Les solutions prennent la place de la carte qui les a ouvertes ; « Masquer »
-  // la fait revenir. La page ne bouge pas : sans ça, le navigateur compenserait
-  // le changement de hauteur en faisant défiler jusqu'au bloc suivant.
+  // Solutions, réservées à qui a terminé son run en direct (comme à l'écran de
+  // résultats) : celles du jour prennent la place du tirage dans sa carte,
+  // celles du défi se déplient dans son bandeau. La page ne bouge pas : sans
+  // ça, le navigateur compenserait le changement de hauteur en faisant
+  // défiler jusqu'au bloc suivant.
+  const [solJour, setSolJour] = useState(false);
+  const [solDefi, setSolDefi] = useState(false);
   const defilementRef = useRef<number | null>(null);
-  // Fondu d'entrée sur ce qui remplace la carte — pas au chargement de la page
+  // Fondu d'entrée sur ce qui vient d'apparaître — pas au chargement de la page
   const [bascule, setBascule] = useState(false);
-  const setSolutions = (s: 'jour' | 'defi' | null) => {
+  const garde = (f: () => void) => () => {
     defilementRef.current = window.scrollY;
     setBascule(true);
-    setSolutionsBrut(s);
+    f();
   };
   const entree = bascule ? ' fondu-entree' : '';
   useLayoutEffect(() => {
     if (defilementRef.current == null) return;
     window.scrollTo(0, defilementRef.current);
     defilementRef.current = null;
-  }, [solutions]);
-  const masquer = (
-    <button type="button" className="btn btn-sm" onClick={() => setSolutions(null)}>
-      Masquer les solutions
-    </button>
-  );
+  }, [solJour, solDefi]);
+
+  // Tirage du jour : les cases se dévoilent une fois les épreuves jouées
+  // (run fini, ou run en cours pour celles déjà bouclées) — jamais avant.
+  const tailleTirage = jeuxDuPool(date).length;
+  const jouees = myRun?.lines ?? enCours?.lines ?? [];
 
   return (
     <div>
-      <section className="hero">
-        <Logo height={100} />
-        <p className="tagline">{tagline}</p>
-        <div className="hero-cta">
-          <HauteurFluide className="hero-emplacement">
-          {solutions === 'jour' && myRun ? (
-            <section className={`solutions-accueil${entree}`} aria-label="Solutions du jour">
-              <h2>Les solutions du jour</h2>
-              {masquer}
-              <Solutions date={date} ids={jeuxDuJour(date).map((j) => j.id)} onglets />
-            </section>
-          ) : myRun ? (
-            <div className={`done-card${entree}`}>
+      <section className="accueil-hero">
+        <div className="accueil-intro">
+          <Logo height={56} centre={false} />
+          <p className="tagline">{tagline}</p>
+          {myRun ? (
+            <div className="accueil-fait">
               <span className="muted">Votre temps du jour</span>
               <span className="time">
-                {formatMs(myRun.totalMs)} {myRun.flawless && <SymEtincelle size={18} />}
+                {formatMs(myRun.totalMs)} {myRun.flawless && <SymEtincelle size={22} />}
               </span>
-              <CompteARebours cible={prochainJour} libelle="Prochain dans" />
-              <button type="button" className="btn btn-sm" onClick={() => setSolutions('jour')}>
-                Voir les solutions
+              <button
+                type="button"
+                className="btn btn-primary btn-accueil"
+                aria-expanded={solJour}
+                onClick={garde(() => setSolJour((v) => !v))}
+              >
+                {solJour ? 'Revoir le tirage' : 'Voir les solutions'}
               </button>
             </div>
           ) : (
-            <Link to="/jouer" className="btn btn-primary btn-lg">
-              {enCours ? 'Reprendre le Game7le du jour' : 'Lancer le Game7le du jour'}
-            </Link>
+            <div className="accueil-actions">
+              <Link to="/jouer" className="btn btn-primary btn-accueil">
+                {enCours ? 'Reprendre le Game7le du jour' : 'Lancer le Game7le du jour'}
+              </Link>
+              <Link to="/comment-jouer" className="btn btn-contour btn-accueil">
+                Comment jouer
+              </Link>
+            </div>
           )}
-          </HauteurFluide>
-          <span className="hero-date">
+          <p className="hero-date">
             {formatDateCourte(date)}
             {streak > 0 && (
               <>
@@ -127,33 +133,136 @@ export default function Home() {
                 <SymFlamme /> série de {streak} jour{streak > 1 ? 's' : ''}
               </>
             )}
-          </span>
-          <HauteurFluide className="hero-emplacement">
-          {solutions === 'defi' && myDefi ? (
-            <section className={`solutions-accueil${entree}`} aria-label="Solutions du défi de la semaine">
-              <h2>Les solutions du défi de la semaine</h2>
-              {masquer}
-              <Solutions date={lundi} ids={jeuxDefiSemaine(lundi).map((j) => j.id)} defi onglets />
-            </section>
-          ) : myDefi ? (
-            <div className={`done-card${entree}`}>
-              <span className="muted">Votre défi difficile de la semaine</span>
-              <span className="time">
-                {formatMs(myDefi.totalMs)} {myDefi.flawless && <SymEtincelle size={18} />}
-              </span>
-              <CompteARebours cible={prochainDefi} libelle="Prochain dans" />
-              <button type="button" className="btn btn-sm" onClick={() => setSolutions('defi')}>
-                Voir les solutions
-              </button>
+            {myRun && (
+              <>
+                {' · '}
+                <CompteARebours cible={prochainJour} libelle="prochain dans" />
+              </>
+            )}
+          </p>
+        </div>
+
+        <HauteurFluide className="accueil-tirage">
+          {solJour && myRun ? (
+            <div className={`tirage-carte${entree}`}>
+              <div className="tirage-entete">
+                <span>Solutions du {formatDateJourMois(date)}</span>
+              </div>
+              <Solutions date={date} ids={jeuxDuJour(date).map((j) => j.id)} onglets />
             </div>
           ) : (
-            <Link to="/defi" className="btn btn-defi">
-              <SymFlamme size={18} /> {enCoursDefi ? 'Reprendre le défi' : 'Défi difficile'}{' '}
-              <SymFlamme size={18} />
+            <div className={`tirage-carte${entree}`}>
+              <div className="tirage-entete">
+                <span>Tirage du {formatDateJourMois(date)}</span>
+                <span>
+                  {JEUX_PAR_JOUR} / {tailleTirage}
+                </span>
+              </div>
+              <ol className="tirage-grille">
+                {Array.from({ length: JEUX_PAR_JOUR }, (_, i) => {
+                  const l = jouees[i];
+                  return (
+                    <li
+                      key={i}
+                      className={`tirage-case${l ? ` jouee ${l.status}` : ''}`}
+                      style={{ '--i': i } as CSSProperties}
+                      title={l ? `${l.nom} — ${VERDICTS[l.status].label}` : undefined}
+                    >
+                      {l ? (
+                        <>
+                          <GameIcon id={l.id} size={20} />
+                          {l.ms != null && (
+                            <span className="tirage-temps">
+                              <CompteurMs ms={l.ms} delaiMs={CASCADE_MS * i + 200} dureeMs={800} />
+                            </span>
+                          )}
+                          <span className="tirage-ajust">
+                            {l.adjustMs === 0 ? '—' : formatAdjust(l.adjustMs)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="tirage-mystere" aria-hidden>
+                            ?
+                          </span>
+                          <span className="tirage-num">{i + 1}</span>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+                <li
+                  className={`tirage-case tirage-chrono${myRun ? ' fini' : ''}`}
+                  style={{ '--i': JEUX_PAR_JOUR } as CSSProperties}
+                >
+                  <SymChrono size={18} />
+                  <span>
+                    <CompteurMs
+                      ms={myRun?.totalMs ?? 0}
+                      delaiMs={CASCADE_MS * JEUX_PAR_JOUR + 200}
+                      dureeMs={1100}
+                    />
+                  </span>
+                </li>
+              </ol>
+              {!myRun && (
+                <p className="tirage-legende">
+                  Les épreuves se révèlent une à une, chrono lancé. Bonus et pénalités s’ajoutent au
+                  temps total.
+                </p>
+              )}
+            </div>
+          )}
+        </HauteurFluide>
+      </section>
+
+      <section className="accueil-defi" aria-label="Défi difficile de la semaine">
+        <div className="accueil-defi-ligne">
+          <SymFlamme size={26} />
+          <div className="accueil-defi-texte">
+            <h2>Défi difficile de la semaine</h2>
+            <p>
+              {myDefi ? (
+                <>
+                  Votre temps :{' '}
+                  <strong className="accueil-defi-temps">
+                    {formatMs(myDefi.totalMs)} {myDefi.flawless && <SymEtincelle size={14} />}
+                  </strong>
+                </>
+              ) : (
+                <>
+                  {JEUX_PAR_JOUR} épreuves en variante corsée, même tirage jusqu'à lundi. Seuil
+                  SANS-FAUTE à 8 min.
+                </>
+              )}
+            </p>
+          </div>
+          <div className="accueil-defi-echeance">
+            <span>Nouveau défi dans</span>
+            <CompteARebours cible={prochainDefi} libelle="" court />
+          </div>
+          {myDefi ? (
+            <button
+              type="button"
+              className="btn btn-defi-contour"
+              aria-expanded={solDefi}
+              onClick={garde(() => setSolDefi((v) => !v))}
+            >
+              {solDefi ? 'Masquer les solutions' : 'Solutions'}
+            </button>
+          ) : (
+            <Link to="/defi" className="btn btn-defi-contour">
+              {enCoursDefi ? 'Reprendre le défi' : 'Relever le défi'}
             </Link>
           )}
-          </HauteurFluide>
         </div>
+        <HauteurFluide>
+          {solDefi && myDefi && (
+            <div className={`accueil-defi-solutions${entree}`}>
+              <Solutions date={lundi} ids={jeuxDefiSemaine(lundi).map((j) => j.id)} defi onglets />
+            </div>
+          )}
+        </HauteurFluide>
       </section>
 
       <section className="lb" aria-label="Top 5 du jour">

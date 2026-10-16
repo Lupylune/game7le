@@ -436,50 +436,310 @@ main.content > .page-entree > * {
   cursor: not-allowed;
 }
 
-/* ===== Hero / accueil ===== */
-.hero {
-  text-align: center;
-  padding: var(--sp-6) 0 var(--sp-5);
+/* ===== Accueil : héros en deux colonnes, puis bandeau du défi difficile =====
+   Les deux blocs sortent un peu de la colonne de lecture (860 px), par marges
+   négatives symétriques : la carte du tirage a besoin de la place. */
+.accueil-hero,
+.accueil-defi {
+  --accueil-l: min(1000px, 100vw - 2 * var(--sp-4));
+  width: var(--accueil-l);
+  margin-inline: calc((100% - var(--accueil-l)) / 2);
+}
+.accueil-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 470px);
+  gap: var(--sp-6);
+  align-items: center;
+  padding: var(--sp-7) 0 var(--sp-6);
+}
+.accueil-intro > svg {
+  display: block;
 }
 .tagline {
   color: var(--text-muted);
   font-style: italic;
-  margin-top: var(--sp-2);
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  margin: var(--sp-4) 0 var(--sp-6);
 }
-.hero-cta {
-  margin-top: var(--sp-6);
+.accueil-actions {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-3);
+}
+.btn-accueil {
+  padding: var(--sp-4) var(--sp-5);
+}
+.btn-contour {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+.btn-contour:hover {
+  background: var(--surface-elevated);
+}
+.accueil-intro .btn-primary {
+  box-shadow: 0 6px 22px -8px color-mix(in srgb, var(--button) 70%, transparent);
+}
+.accueil-fait {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+.accueil-fait .time {
+  font-family: var(--font-mono);
+  font-size: clamp(2.25rem, 5vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: var(--sp-4);
 }
 .hero-date {
   color: var(--text-muted);
   font-size: var(--text-sm);
+  margin-top: var(--sp-4);
 }
-.done-card {
-  display: inline-flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--sp-5) var(--sp-6);
-}
-.done-card .time {
-  font-family: var(--font-mono);
-  font-size: var(--text-timer);
-  font-weight: 700;
-}
-.done-card .compte-a-rebours {
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-.done-card .compte-a-rebours strong {
+.compte-a-rebours strong {
   color: var(--text);
   font-weight: 600;
-  /* Chiffres de largeur fixe : la seconde qui défile ne fait pas danser la carte. */
+  /* Chiffres de largeur fixe : la seconde qui défile ne fait pas danser le texte. */
   font-variant-numeric: tabular-nums;
+}
+
+/* Carte du tirage : sept cases encore secrètes, puis la case du chrono */
+.tirage-carte {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+}
+.tirage-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tirage-entete > :last-child {
+  font-family: var(--font-mono);
+}
+.tirage-grille {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+}
+.tirage-case {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+.tirage-mystere {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.tirage-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+/* Épreuve jouée : pictogramme, temps passé, et en pied un bandeau à la
+   couleur du verdict qui porte le bonus/malus de l'épreuve */
+.tirage-case.jouee {
+  position: relative;
+  overflow: hidden;
+  gap: var(--sp-1);
+  padding-bottom: 20px;
+  color: var(--text);
+}
+.tirage-temps {
+  font-family: var(--font-mono);
+  font-size: clamp(0.72rem, 3.4vw, 0.95rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tirage-ajust {
+  position: absolute;
+  inset: auto 0 0;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--verdict) 80%, transparent);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  word-spacing: -0.2em;
+}
+.tirage-case.success {
+  --verdict: var(--success);
+}
+.tirage-case.skip {
+  --verdict: var(--warning);
+}
+.tirage-case.fail {
+  --verdict: var(--error);
+}
+.tirage-chrono {
+  color: var(--text);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-elevated));
+}
+.tirage-chrono .sym {
+  color: var(--accent);
+}
+.tirage-chrono span {
+  font-family: var(--font-mono);
+  font-size: clamp(0.72rem, 3.4vw, 0.95rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* Apparition en cascade : chaque case bascule en place (70 ms de décalage,
+   CASCADE_MS dans Home.tsx), le bandeau du verdict se déploie depuis le pied
+   une fois la case posée, et la case du chrono s'allume en dernier. */
+.tirage-grille {
+  perspective: 700px;
+}
+.tirage-case {
+  animation: tirage-entree 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes tirage-entree {
+  from {
+    opacity: 0;
+    transform: translateY(14px) rotateX(-35deg) scale(0.9);
+  }
+}
+.tirage-ajust {
+  transform-origin: bottom;
+  animation: tirage-bandeau 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms + 300ms);
+}
+@keyframes tirage-bandeau {
+  from {
+    transform: scaleY(0);
+    color: transparent;
+  }
+}
+.tirage-chrono.fini {
+  animation:
+    tirage-entree 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards,
+    tirage-halo 1.4s ease-out 1;
+  animation-delay: calc(var(--i, 0) * 70ms), calc(var(--i, 0) * 70ms + 900ms);
+}
+@keyframes tirage-halo {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 14px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tirage-case,
+  .tirage-ajust,
+  .tirage-chrono.fini {
+    animation: none;
+  }
+}
+.tirage-legende {
+  margin-top: var(--sp-4);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* Bandeau du défi difficile de la semaine */
+.accueil-defi {
+  margin-bottom: var(--sp-7);
+  padding: var(--sp-5) var(--sp-6);
+  background: color-mix(in srgb, var(--error) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--error) 35%, transparent);
+  border-radius: var(--radius-lg);
+}
+.accueil-defi-ligne {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+}
+.accueil-defi-texte {
+  flex: 1;
+  min-width: 0;
+}
+.accueil-defi-texte h2 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+.accueil-defi-texte p {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.accueil-defi-temps {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+.accueil-defi-echeance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.accueil-defi-echeance strong {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+}
+.btn-defi-contour {
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--error) 50%, transparent);
+  color: var(--text);
+}
+.btn-defi-contour:hover {
+  background: color-mix(in srgb, var(--error) 20%, transparent);
+  border-color: var(--error);
+}
+.accueil-defi-solutions {
+  padding-top: var(--sp-5);
+}
+
+@media (max-width: 800px) {
+  .accueil-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-6);
+    padding-top: var(--sp-5);
+  }
+  .accueil-defi {
+    padding: var(--sp-4);
+  }
+  .accueil-defi-ligne {
+    flex-wrap: wrap;
+    gap: var(--sp-3) var(--sp-4);
+  }
+  .accueil-defi-texte {
+    flex-basis: calc(100% - 26px - var(--sp-4));
+  }
+  .accueil-defi-echeance {
+    align-items: flex-start;
+    margin-right: auto;
+  }
 }
 
 /* ===== Nouveautés (icône barre du haut + popin) ===== */
@@ -591,20 +851,6 @@ main.content > .page-entree > * {
 }
 /* Solutions dépliées depuis l'accueil : toute la largeur de la colonne, pas
    les 480px d'un classement — les cartes se rangent côte à côte. */
-/* Solutions dépliées à la place de la carte « fini » de l'accueil : pleine
-   largeur dans la colonne centrée du héros, texte rendu à son alignement. */
-.solutions-accueil {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-3);
-  text-align: start;
-}
-.solutions-accueil h2 {
-  text-align: center;
-  font-size: var(--text-h2);
-}
 .lb h2 {
   text-align: center;
   font-size: var(--text-h2);
@@ -1692,7 +1938,7 @@ main.content:has(.interstitial) {
 .stats-table td,
 .stats-jeux .temps,
 .recap-val,
-.done-card .compte-a-rebours strong {
+.accueil-defi-echeance strong {
   word-spacing: -0.2em;
 }
 /* Répartition réussies / passées / ratées. Une légende accompagne le tableau,
@@ -1956,15 +2202,6 @@ main.content:has(.interstitial) {
   margin: -4px;
   box-sizing: content-box;
   transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-/* Emplacements du héros de l'accueil : carte « fini » ou solutions */
-.hero-emplacement {
-  align-self: stretch;
-}
-.hero-emplacement > .hauteur-fluide-interieur {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 .fondu-entree {
   animation: fondu-entree 0.4s cubic-bezier(0.22, 1, 0.36, 1);

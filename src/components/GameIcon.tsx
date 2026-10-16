@@ -52,6 +52,18 @@ export function SymFlamme({ size = 16 }: { size?: number }) {
   );
 }
 
+/** Chronomètre (case « temps » du tirage, à l'accueil). */
+export function SymChrono({ size = 16 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden className="sym">
+      <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="13.5" r="7" />
+        <path d="M10 3 H14 M12 3 V6.5 M12 13.5 L15 10.5 M18.5 6.5 L19.8 5.2" />
+      </g>
+    </svg>
+  );
+}
+
 /** Étincelles (sans-faute). */
 export function SymEtincelle({ size = 16 }: { size?: number }) {
   return (

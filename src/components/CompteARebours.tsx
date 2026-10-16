@@ -11,9 +11,12 @@ import { formatCompteARebours } from '../lib/time';
 export default function CompteARebours({
   cible,
   libelle,
+  court = false,
 }: {
   cible: number;
   libelle: string;
+  /** Les deux plus grandes unités seulement (« 4 j 13 h ») : affichage d'appoint. */
+  court?: boolean;
 }) {
   const [reste, setReste] = useState(() => Math.max(0, cible - Date.now()));
 
@@ -31,9 +34,11 @@ export default function CompteARebours({
     return () => clearTimeout(id);
   }, [cible]);
 
+  const texte = formatCompteARebours(reste);
   return (
     <span className="compte-a-rebours">
-      {libelle} <strong>{formatCompteARebours(reste)}</strong>
+      {libelle && `${libelle} `}
+      <strong>{court ? texte.split(' ').slice(0, 2).join(' ') : texte}</strong>
     </span>
   );
 }
