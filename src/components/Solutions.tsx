@@ -8,11 +8,11 @@ import { generate as genPaire } from '../games/Paire';
 import { generate as genSudoku } from '../games/Sudoku';
 import { generate as genReines } from '../games/Reines';
 import { generate as genNono } from '../games/Nonogramme';
-import { solutionEchecs } from '../games/Echecs';
 import { cibleDe } from '../lib/geo';
-import { genRicochet, COULEURS, TEINTES } from '../lib/ricochet';
+import { genRicochet } from '../lib/ricochet';
 import { POKEMONS } from '../data/pokemon';
 import GameIcon, { SymCouronne } from './GameIcon';
+import { RelectureEchecs, RelectureRicochet } from './Relectures';
 
 /**
  * Solutions des épreuves du jour, régénérées depuis le même seed que le run —
@@ -110,7 +110,7 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
       return <p className="solution-mot">{mots.join(' / ')}</p>;
     }
     case 'echecs':
-      return <p className="solution-mot">{solutionEchecs(rng, defi)}</p>;
+      return <RelectureEchecs rng={rng} defi={defi} />;
     case 'atlas': {
       const { ville } = cibleDe(rng);
       return (
@@ -132,32 +132,12 @@ function solutionDe(id: string, date: string, defi: boolean): ReactNode | null {
         </p>
       );
     }
-    case 'ricochet': {
-      // Une des lignes optimales, robot par robot — une par manche, le défi en
-      // enchaînant cinq sur le même plateau. Les manches suivantes partent des
-      // positions laissées par cette ligne-là : c'est la référence, pas
-      // forcément le chemin qu'a pris le joueur.
-      const { manches } = genRicochet(rng, defi);
-      const fleches = { haut: '↑', droite: '→', bas: '↓', gauche: '←' } as const;
-      return (
-        <>
-          {manches.map((manche, m) => (
-            <p className="solution-coups" key={m}>
-              {manches.length > 1 && (
-                <span className="solution-coup muted">
-                  {manche.cible.symbole} {m + 1}/{manches.length}
-                </span>
-              )}
-              {manche.solution.map((c, i) => (
-                <span key={i} className="solution-coup" style={{ color: TEINTES[COULEURS[c.robot]] }}>
-                  {COULEURS[c.robot]} {fleches[c.dir]}
-                </span>
-              ))}
-            </p>
-          ))}
-        </>
-      );
-    }
+    case 'ricochet':
+      // Une des lignes optimales, rejouée sur le plateau — au défi, les cinq
+      // cibles enchaînées. Les manches suivantes partent des positions laissées
+      // par cette ligne-là : c'est la référence, pas forcément le chemin qu'a
+      // pris le joueur.
+      return <RelectureRicochet enigme={genRicochet(rng, defi)} />;
     default:
       return null;
   }

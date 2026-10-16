@@ -96,6 +96,101 @@ function segments(plateau: Plateau): Array<[number, number, number, number]> {
   return out;
 }
 
+/**
+ * Fond du plateau, sans robots ni interaction : cases, grille, bloc central,
+ * cibles et murs. Partagé par l'épreuve et la relecture de la solution, pour
+ * qu'elles dessinent exactement le même plateau.
+ */
+export function DecorPlateau({
+  plateau,
+  cible,
+  onCase,
+}: {
+  plateau: Plateau;
+  cible: Cible;
+  onCase?: () => void;
+}) {
+  const taille = plateau.taille;
+  const murs = useMemo(() => segments(plateau), [plateau]);
+  return (
+    <>
+      {Array.from({ length: taille * taille }, (_, pos) => (
+        <rect
+          key={pos}
+          className={`ric-case${(ligneDe(pos, taille) + colDe(pos, taille)) % 2 === 0 ? ' pair' : ''}`}
+          x={colDe(pos, taille)}
+          y={ligneDe(pos, taille)}
+          width={1}
+          height={1}
+          onClick={onCase}
+        />
+      ))}
+
+      <g className="ric-grille">
+        {Array.from({ length: taille - 1 }, (_, i) => (
+          <line key={`h${i}`} x1={0} y1={i + 1} x2={taille} y2={i + 1} />
+        ))}
+        {Array.from({ length: taille - 1 }, (_, i) => (
+          <line key={`v${i}`} x1={i + 1} y1={0} x2={i + 1} y2={taille} />
+        ))}
+      </g>
+
+      {/* Bloc central infranchissable */}
+      <rect
+        className="ric-centre"
+        x={taille / 2 - 1}
+        y={taille / 2 - 1}
+        width={2}
+        height={2}
+        rx={0.18}
+      />
+
+      {/* Les seize autres cibles restent visibles mais en retrait, comme sur
+          le plateau physique : elles font partie du décor, pas de l'énigme. */}
+      {plateau.cibles.map((c) => {
+        const active = c.pos === cible.pos && c.robot === cible.robot;
+        const teinte = teinteCible(c);
+        const x = colDe(c.pos, taille);
+        const y = ligneDe(c.pos, taille);
+        return (
+          <g key={`${c.pos}-${c.symbole}`} className={`ric-cible${active ? ' active' : ''}`}>
+            {active && (
+              <rect
+                className="ric-vise"
+                x={x + 0.02}
+                y={y + 0.02}
+                width={0.96}
+                height={0.96}
+                rx={0.2}
+                stroke={teinte}
+              />
+            )}
+            <rect
+              x={x + 0.08}
+              y={y + 0.08}
+              width={0.84}
+              height={0.84}
+              rx={0.16}
+              fill={teinte}
+              stroke={teinte}
+            />
+            <text x={x + 0.5} y={y + 0.5} fill={teinte}>
+              {c.symbole}
+            </text>
+          </g>
+        );
+      })}
+
+      <g className="ric-murs">
+        {murs.map((s, i) => (
+          <line key={i} x1={s[0]} y1={s[1]} x2={s[2]} y2={s[3]} />
+        ))}
+      </g>
+      <rect className="ric-bord" x={0} y={0} width={taille} height={taille} rx={0.1} />
+    </>
+  );
+}
+
 export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps) {
   const enigme = useMemo(() => genRicochet(rng, difficile), [rng, difficile]);
   const { plateau, depart, manches } = enigme;
@@ -138,8 +233,6 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
   const coupsTotalRef = useRef(0);
   const optimalTotalRef = useRef(0);
   const chronoVisible = useChronoVisible();
-
-  const murs = useMemo(() => segments(plateau), [plateau]);
 
   /** Cases d'arrivée du robot sélectionné, une par direction où il n'est pas bloqué. */
   const arrivees = useMemo(() => {
@@ -329,79 +422,7 @@ export default function Ricochet({ rng, difficile, onAdjust, onDone }: GameProps
         role="img"
         aria-label={`Plateau de ricochet ${taille}×${taille}`}
       >
-        {Array.from({ length: taille * taille }, (_, pos) => (
-          <rect
-            key={pos}
-            className={`ric-case${(ligneDe(pos, taille) + colDe(pos, taille)) % 2 === 0 ? ' pair' : ''}`}
-            x={colDe(pos, taille)}
-            y={ligneDe(pos, taille)}
-            width={1}
-            height={1}
-            onClick={() => setSel(null)}
-          />
-        ))}
-
-        <g className="ric-grille">
-          {Array.from({ length: taille - 1 }, (_, i) => (
-            <line key={`h${i}`} x1={0} y1={i + 1} x2={taille} y2={i + 1} />
-          ))}
-          {Array.from({ length: taille - 1 }, (_, i) => (
-            <line key={`v${i}`} x1={i + 1} y1={0} x2={i + 1} y2={taille} />
-          ))}
-        </g>
-
-        {/* Bloc central infranchissable */}
-        <rect
-          className="ric-centre"
-          x={taille / 2 - 1}
-          y={taille / 2 - 1}
-          width={2}
-          height={2}
-          rx={0.18}
-        />
-
-        {/* Les seize autres cibles restent visibles mais en retrait, comme sur
-            le plateau physique : elles font partie du décor, pas de l'énigme. */}
-        {plateau.cibles.map((c) => {
-          const active = c.pos === cible.pos && c.robot === cible.robot;
-          const teinte = teinteCible(c);
-          const x = colDe(c.pos, taille);
-          const y = ligneDe(c.pos, taille);
-          return (
-            <g key={`${c.pos}-${c.symbole}`} className={`ric-cible${active ? ' active' : ''}`}>
-              {active && (
-                <rect
-                  className="ric-vise"
-                  x={x + 0.02}
-                  y={y + 0.02}
-                  width={0.96}
-                  height={0.96}
-                  rx={0.2}
-                  stroke={teinte}
-                />
-              )}
-              <rect
-                x={x + 0.08}
-                y={y + 0.08}
-                width={0.84}
-                height={0.84}
-                rx={0.16}
-                fill={teinte}
-                stroke={teinte}
-              />
-              <text x={x + 0.5} y={y + 0.5} fill={teinte}>
-                {c.symbole}
-              </text>
-            </g>
-          );
-        })}
-
-        <g className="ric-murs">
-          {murs.map((s, i) => (
-            <line key={i} x1={s[0]} y1={s[1]} x2={s[2]} y2={s[3]} />
-          ))}
-        </g>
-        <rect className="ric-bord" x={0} y={0} width={taille} height={taille} rx={0.1} />
+        <DecorPlateau plateau={plateau} cible={cible} onCase={() => setSel(null)} />
 
         {/* Trajectoires et cases d'arrivée du robot sélectionné : on clique la
             case visée, comme aux échecs. */}

@@ -327,6 +327,13 @@ worth more than finishing a lost line. `trouveSolution()`
 reconstructs the optimal line, used for the hint and the solutions screen — never to arbitrate a
 player's move, which is replayed by `deplace()`.
 
+On the results screen, the Echecs and Ricochet solutions are **animated replays** looping like a GIF
+(`src/components/Relectures.tsx`, driven by `useLecture()` — pause on manual stepping, no autoplay
+under `prefers-reduced-motion`), with the move list kept underneath. Ricochet's static board layers
+live in `DecorPlateau` (exported from `Ricochet.tsx`) so the épreuve and the replay draw the same
+board; Echecs' `lectureEchecs()` tracks each piece's identity across moves so it slides instead of
+blinking. Both consume the same single `rng` draw as the game.
+
 **The weekly challenge chains `MANCHES_DEFI` = 5 targets on a single board** (`genChaine()`), and
 the robots are **never re-scattered between them**: where you leave them winning one target is where
 the next one starts, which is the whole point — a target reached by parking robots badly makes the

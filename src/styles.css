@@ -3772,3 +3772,63 @@ input[type='text'] {
   border-radius: var(--radius-sm);
   padding: 1px var(--sp-2);
 }
+
+/* ===== Relectures animées des solutions (Échecs, Ricochet) ===== */
+.relecture {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.relecture-commandes {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.relecture-etape {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  /* « Trait aux Blancs » est le plus long libellé : les boutons ne bougent pas. */
+  min-width: 17ch;
+  margin-left: var(--sp-2);
+}
+/* Les pièces sont posées au-dessus de la grille et glissent de case en case :
+   elles gardent leur identité d'un coup à l'autre (cf. `lectureEchecs`). */
+.relecture-echiquier {
+  --case: 30px;
+  position: relative;
+  touch-action: auto;
+}
+.relecture-echiquier .chess-sq {
+  cursor: default;
+}
+.relecture-piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--case);
+  height: var(--case);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(calc(var(--col) * var(--case)), calc(var(--lig) * var(--case)));
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: none;
+}
+.relecture-ricochet {
+  width: min(100%, 20rem);
+}
+.relecture-robot {
+  cursor: default;
+  transition-duration: 0.45s;
+}
+.relecture-trajet {
+  stroke-width: 0.09;
+  opacity: 0.9;
+}
+@media (prefers-reduced-motion: reduce) {
+  .relecture-piece,
+  .relecture-robot {
+    transition: none;
+  }
+}

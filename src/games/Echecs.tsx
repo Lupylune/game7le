@@ -5,7 +5,7 @@ import type { GameProps } from './types';
 /** Échiquier en tableau de 64 cases, index 0 = a8 … 63 = h1. */
 type Board = string[];
 
-const GLYPHES: Record<string, string> = {
+export const GLYPHES: Record<string, string> = {
   k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟',
 };
 
@@ -51,24 +51,61 @@ function applyUci(board: Board, uci: string): Board {
   return b;
 }
 
-const estBlanche = (p: string) => p !== '' && p === p.toUpperCase();
+export const estBlanche = (p: string) => p !== '' && p === p.toUpperCase();
 
-/** Solution lisible du puzzle du jour (pour l'écran de résultats). */
-export function solutionEchecs(rng: () => number, difficile = false): string {
+/** Pièce suivie d'un coup à l'autre : `id` = sa case de départ, stable, pour
+ *  que la relecture la fasse glisser plutôt que disparaître et réapparaître. */
+export interface PieceSuivie {
+  id: number;
+  p: string;
+  sq: number;
+}
+
+export interface LectureEchecs {
+  joueurBlanc: boolean;
+  /** Position après chaque coup, à partir de la riposte d'ouverture de l'adversaire. */
+  etapes: Array<{ pieces: PieceSuivie[]; coup: [number, number] }>;
+  /** Coups du joueur, lisibles (« ♛ d1 → h5 »), un par coup à trouver. */
+  coups: string[];
+}
+
+/** Ligne de mat du puzzle du jour, rejouable coup par coup (écran de résultats). */
+export function lectureEchecs(rng: () => number, difficile = false): LectureEchecs {
   const pool = difficile ? PUZZLES_DIFFICILES : PUZZLES;
   const pz = pool[Math.floor(rng() * pool.length)];
-  let { board } = parseFen(pz.fen);
-  board = applyUci(board, pz.coups[0]);
-  const parts: string[] = [];
-  for (let s = 1; s < pz.coups.length; s++) {
-    const mv = pz.coups[s];
-    if (s % 2 === 1) {
-      const piece = board[idx(mv.slice(0, 2))];
-      parts.push(`${GLYPHES[piece?.toLowerCase()] ?? ''} ${mv.slice(0, 2)} → ${mv.slice(2, 4)}`);
+  const { board: initial, actif } = parseFen(pz.fen);
+  let board = initial;
+  // Case → identité de la pièce qui l'occupe, mise à jour en parallèle de
+  // `applyUci` (prise en passant et roque compris).
+  let ids: Array<number | null> = initial.map((p, i) => (p ? i : null));
+  const etapes: LectureEchecs['etapes'] = [];
+  const coups: string[] = [];
+  pz.coups.forEach((mv, s) => {
+    const from = idx(mv.slice(0, 2));
+    const to = idx(mv.slice(2, 4));
+    if (s % 2 === 1) coups.push(`${GLYPHES[board[from].toLowerCase()] ?? ''} ${mv.slice(0, 2)} → ${mv.slice(2, 4)}`);
+    const suite = applyUci(board, mv);
+    const nids = ids.slice();
+    // Les cases vidées par le coup perdent leur pièce (prise en passant
+    // comprise) ; celle qui bouge — et la tour d'un roque — est retrouvée par
+    // l'unique case de départ qui s'est vidée de la même pièce.
+    const parties = board.flatMap((p, i) => (p && suite[i] !== p ? [i] : []));
+    for (let i = 0; i < 64; i++) if (!suite[i]) nids[i] = null;
+    nids[to] = ids[from];
+    for (let i = 0; i < 64; i++) {
+      if (suite[i] && suite[i] !== board[i] && i !== to) {
+        const src = parties.find((j) => j !== from && board[j] === suite[i]);
+        if (src !== undefined) nids[i] = ids[src];
+      }
     }
-    board = applyUci(board, mv);
-  }
-  return `${parts.join(' · ')} (mat)`;
+    board = suite;
+    ids = nids;
+    etapes.push({
+      pieces: board.flatMap((p, sq) => (p && ids[sq] !== null ? [{ id: ids[sq]!, p, sq }] : [])),
+      coup: [from, to],
+    });
+  });
+  return { joueurBlanc: actif === 'b', etapes, coups };
 }
 
 export default function Echecs({ rng, difficile, onAdjust, onDone }: GameProps) {
