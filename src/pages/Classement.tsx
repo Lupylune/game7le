@@ -12,14 +12,13 @@ import {
   type Board,
   type Entry,
 } from '../lib/classement';
-import { loadEnregistrement } from '../lib/enregistrement';
 import { lundiStr, todayStr } from '../lib/rng';
-import { fetchPseudosRevoyables } from '../lib/sync';
 import { estEnDirect } from '../lib/stats';
 import { useHistorique, useHistoriqueDefis } from '../lib/useHistorique';
 import { useBadgeEpingle, useBadgesJoueurs } from '../lib/useBadges';
 import { usePodiumSemaine } from '../lib/useChampion';
 import { usePseudo } from '../lib/usePseudo';
+import { lienRevoir, useRevoyables } from '../lib/useRevoyables';
 import BalleDeFoin from '../components/BalleDeFoin';
 import LigneClassement from '../components/LigneClassement';
 
@@ -127,21 +126,8 @@ export default function Classement() {
 
   // Runs qui ont un enregistrement (jour ou défi seulement) : l'icône « revoir »
   // n'apparaît que sur eux, plutôt que de mener à « pas d'enregistrement ».
-  const [revoyables, setRevoyables] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    let vivant = true;
-    setRevoyables(new Set());
-    if (onglet !== 'jour' && onglet !== 'defi') return;
-    fetchPseudosRevoyables(onglet === 'defi' ? lundi : date, onglet === 'defi').then(
-      (s) => vivant && s && setRevoyables(s),
-    );
-    return () => {
-      vivant = false;
-    };
-  }, [date, lundi, onglet]);
-  const monEnregistrement =
-    (onglet === 'jour' || onglet === 'defi') &&
-    !!loadEnregistrement(onglet === 'defi' ? lundi : date, onglet === 'defi');
+  const dateRevoir = onglet === 'defi' ? lundi : onglet === 'jour' ? date : null;
+  const revoyables = useRevoyables(dateRevoir, onglet === 'defi', pseudo);
 
   const infos = ONGLETS.find((o) => o.id === onglet)!;
 
@@ -228,11 +214,9 @@ export default function Classement() {
             podium={podium}
             profil={board.reel || !!e.me}
             revoir={
-              onglet !== 'jour' && onglet !== 'defi'
+              dateRevoir === null
                 ? undefined
-                : revoyables.has(e.pseudo) || (e.me && monEnregistrement)
-                  ? `/revoir/${onglet === 'defi' ? lundi : date}?pseudo=${encodeURIComponent(e.pseudo)}${onglet === 'defi' ? '&defi=1' : ''}`
-                  : false
+                : revoyables.has(e.pseudo) && lienRevoir(dateRevoir, onglet === 'defi', e.pseudo)
             }
             messageVerrou={
               onglet === 'defi'

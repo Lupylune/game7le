@@ -20,6 +20,7 @@ import { useBadgeEpingle, useBadgesJoueurs } from '../lib/useBadges';
 import { usePodiumSemaine } from '../lib/useChampion';
 import { useJourCourant } from '../lib/useJour';
 import { usePseudo } from '../lib/usePseudo';
+import { lienRevoir, useRevoyables } from '../lib/useRevoyables';
 
 /** Décalage entre deux cases du tirage dans leur apparition en cascade (cf. CSS). */
 const CASCADE_MS = 70;
@@ -43,6 +44,7 @@ export default function Home() {
   }, [date]);
   const pseudo = usePseudo();
   const runs = useHistorique(pseudo);
+  const revoyables = useRevoyables(date, false, pseudo);
   const badges = useBadgesJoueurs([
     ...(board?.entries ?? []),
     ...(semaine?.entries ?? []),
@@ -280,6 +282,7 @@ export default function Home() {
                   deverrouille={!!myRun}
                   podium={podium}
                   profil={board.reel || e.pseudo === pseudo}
+                  revoir={revoyables.has(e.pseudo) ? lienRevoir(date, false, e.pseudo) : false}
                   messageVerrou="Terminez le défi du jour pour voir le détail des temps."
                 />
               ))}
