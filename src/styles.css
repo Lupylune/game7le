@@ -980,6 +980,38 @@ main.content > .page-entree > * {
   color: var(--text-muted);
   flex-shrink: 0;
 }
+/* Icône « revoir le run », posée par-dessus le bouton de dépliage comme le
+   lien du pseudo. Verrouillée (défi pas encore terminé), elle reste visible
+   mais estompée et n'affiche que le message de verrou. */
+.lb .row-revoir-icone {
+  pointer-events: auto;
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  margin: -2px;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.lb .row-revoir-icone:hover,
+.lb .row-revoir-icone:focus-visible {
+  color: var(--accent);
+}
+.lb .row-revoir-icone:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.lb .row-revoir-icone.verrou {
+  opacity: 0.45;
+}
+.lb .row-revoir-icone.vide {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
 .lb .row-verrou {
   position: absolute;
   top: calc(100% - var(--sp-2));

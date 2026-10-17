@@ -34,8 +34,10 @@ export default function LigneClassement({
   messageVerrou?: string;
   /** Podium de la semaine passée : effet spécial (or/argent/bronze) sur ces pseudos. */
   podium?: string[];
-  /** Lien vers la relecture du run (classements d'un jour ou d'un défi). */
-  revoir?: string;
+  /** Lien vers la relecture du run (classements d'un jour ou d'un défi) ;
+   *  `false` : pas d'enregistrement pour ce run, mais la colonne est gardée
+   *  pour que les temps restent alignés avec les lignes qui en ont un. */
+  revoir?: string | false;
   /** Pseudo cliquable vers le profil du joueur (vrais joueurs uniquement, pas
    *  le peloton simulé). */
   profil?: boolean;
@@ -89,6 +91,28 @@ export default function LigneClassement({
       )}
       <span className="time">{formatMs(e.ms)}</span>
       <span>{e.flawless && <SymEtincelle />}</span>
+      {revoir === false && <span className="row-revoir-icone vide" aria-hidden />}
+      {revoir &&
+        (verrouille ? (
+          <button
+            type="button"
+            className="row-revoir-icone verrou"
+            aria-label={`Revoir le run de ${e.pseudo} (verrouillé)`}
+            title="Revoir le run"
+            onClick={() => setVerrouAffiche(true)}
+          >
+            <IconeRevoir />
+          </button>
+        ) : (
+          <Link
+            className="row-revoir-icone"
+            to={revoir}
+            aria-label={`Revoir le run de ${e.pseudo}`}
+            title="Revoir le run"
+          >
+            <IconeRevoir />
+          </Link>
+        ))}
       {depliable &&
         (verrouille ? (
           <svg className="cadenas" width="12" height="12" viewBox="0 0 12 12" aria-hidden>
@@ -151,5 +175,29 @@ export default function LigneClassement({
         </Link>
       )}
     </li>
+  );
+}
+
+/** Flèche circulaire autour d'un triangle de lecture : « revoir le run ». */
+function IconeRevoir() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <path
+        d="M2.6 9.5A5.6 5.6 0 1 0 3.9 4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M3.9 1.4V4.3H6.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M6.6 5.6v4.8L10.6 8z" fill="currentColor" />
+    </svg>
   );
 }

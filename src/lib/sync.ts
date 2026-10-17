@@ -73,6 +73,30 @@ export async function fetchEnregistrement(
 }
 
 /**
+ * Pseudos dont le run en direct d'un jour (ou d'un lundi de défi) a un
+ * enregistrement côté serveur — pour n'afficher l'icône « revoir » du
+ * classement que là où elle mène quelque part. `null` si le backend est absent
+ * ou en erreur.
+ */
+export async function fetchPseudosRevoyables(
+  date: string,
+  defi: boolean,
+): Promise<Set<string> | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('replays')
+      .select('pseudo')
+      .eq('date', date)
+      .eq('defi', defi);
+    if (error || !data) return null;
+    return new Set((data as { pseudo: string }[]).map((r) => r.pseudo));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Enregistre le badge choisi par un pseudo (picto affiché à côté du nom dans
  * le classement global). Best-effort et totalement isolé de `submit_run` : si
  * le backend n'a pas encore la RPC `set_badge` (migration non appliquée),
