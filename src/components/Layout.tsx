@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useEnteteDefilee, useLueur, useRevelations } from '../lib/finitions';
 import { loadSettings, saveSettings } from '../lib/storage';
 import { useConsignesVisibles, usePseudo } from '../lib/usePseudo';
 import { useBadgeEpingle } from '../lib/useBadges';
@@ -25,12 +27,19 @@ export default function Layout() {
   // Posé sur la racine plutôt que dans chaque épreuve : le CSS masque d'un coup
   // la ligne de règles et les rappels `.game-aide`, sans toucher aux jeux.
   const consignes = useConsignesVisibles();
+  // Finitions : barre du haut en verre une fois la page défilée, blocs révélés
+  // à leur entrée dans la fenêtre, lueur au survol des cartes.
+  const enteteRef = useRef<HTMLElement>(null);
+  const contenuRef = useRef<HTMLElement>(null);
+  useEnteteDefilee(enteteRef);
+  useRevelations(contenuRef, pathname);
+  useLueur();
   return (
     <div className={consignes ? 'page' : 'page sans-consignes'}>
       <Braises />
       <PseudoModal />
-      <header className="top-bar">
-        <Link to="/" style={{ fontFamily: 'var(--font-display)', textDecoration: 'none', color: 'var(--accent)', fontSize: '1.1rem' }}>
+      <header className="top-bar" ref={enteteRef}>
+        <Link to="/" className="marque">
           G7
         </Link>
         <div className="top-right">
@@ -54,7 +63,7 @@ export default function Layout() {
           </Link>
         </div>
       </header>
-      <main className="content">
+      <main className="content" ref={contenuRef}>
         <div className="page-entree" key={pathname}>
           <Outlet />
         </div>

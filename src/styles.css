@@ -19,11 +19,29 @@
      JOUR », « PRÊT·E  ? »). On la resserre partout où la fonte porte plus d'un
      mot — appliqué par sélecteur, faute de pouvoir cibler une famille en CSS. */
   --display-mots: -0.34em;
+  --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-body: clamp(15px, 1rem, 17px);
+  --text-h3: clamp(1.15rem, 1.8vw, 1.4rem);
   --text-h2: clamp(1.5rem, 2.5vw, 2rem);
   --text-h1: clamp(2rem, 4vw, 3.5rem);
   --text-timer: clamp(1.5rem, 3vw, 2.25rem);
+  /* Mouvement : trois courbes, trois durées, et rien d'autre. Un `ease` nu
+     démarre et s'arrête mollement ; ces courbes partent vite et se posent en
+     douceur, comme un objet qui a de l'inertie.
+     - sortie : décélération longue (entrées, survols, révélations) ;
+     - ressort : léger dépassement puis retour (ce qui « pop » : pastilles, modales) ;
+     - fluide : symétrique (bascules d'état aller-retour, interrupteurs). */
+  --ease-sortie: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-ressort: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-fluide: cubic-bezier(0.65, 0, 0.35, 1);
+  --duree-1: 0.16s;
+  --duree-2: 0.28s;
+  --duree-3: 0.55s;
+  /* Verre dépoli (barre du haut, modales) : le fond du thème, à moitié
+     transparent, flouté par `backdrop-filter`. */
+  --verre: color-mix(in srgb, var(--bg) 72%, transparent);
+  --verre-flou: blur(16px) saturate(1.5);
 }
 :root,
 :root[data-theme='light'] {
@@ -42,6 +60,15 @@
   --warning: #b57a3b;
   --error: #c04040;
   --link-accent: #6b7f46;
+  /* Élévation : des ombres en couches (contact net + diffusion large), teintées
+     de l'encre brune plutôt que d'un noir qui salirait le beige. `--reflet` est
+     le liseré de lumière en haut d'une surface, ce qui la fait sortir du fond. */
+  --ombre-1: 0 1px 2px #3e332c0d, 0 2px 8px -2px #3e332c14;
+  --ombre-2: 0 2px 4px #3e332c0f, 0 12px 28px -8px #3e332c33;
+  --ombre-3: 0 4px 10px #3e332c14, 0 24px 56px -12px #3e332c4d;
+  --reflet: inset 0 1px 0 #fff8f04d;
+  --surface-lustre: linear-gradient(180deg, #fff8f01f, #fff8f000 70%);
+  --ambiance: 16%;
   /* Graphes (page Statistiques) : bleu = la communauté, terracotta = vous.
      Couple validé sur la surface des cartes (#e6d2c1) — bande de clarté,
      plancher de chroma, séparation protanope/deutéranope ΔE 15,1 (25,8 en vision
@@ -74,6 +101,12 @@
   --warning: #c8924b;
   --error: #d05858;
   --link-accent: #db886f;
+  --ombre-1: 0 1px 2px #0000002e, 0 2px 8px -2px #00000038;
+  --ombre-2: 0 2px 4px #00000033, 0 14px 30px -8px #00000073;
+  --ombre-3: 0 4px 12px #0000004d, 0 28px 60px -12px #0000008c;
+  --reflet: inset 0 1px 0 #ffffff0f;
+  --surface-lustre: linear-gradient(180deg, #ffffff08, #ffffff00 70%);
+  --ambiance: 10%;
   /* Graphes : mêmes teintes, remontées d'un cran pour le fond sombre (#1e2028) —
      ΔE 15,3 sous CVD, 21,3 en vision normale, contraste ≥ 3:1. */
   --chart-com: #4f9ecb;
@@ -161,15 +194,44 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
   line-height: 1.5;
-  transition: background-color 0.2s, color 0.2s;
+  text-rendering: optimizeLegibility;
+  transition:
+    background-color var(--duree-3) var(--ease-fluide),
+    color var(--duree-3) var(--ease-fluide);
 }
 a {
   color: var(--link-accent);
+  transition: color var(--duree-1) var(--ease-sortie);
 }
 h1,
 h2,
 h3 {
   line-height: 1.2;
+  letter-spacing: -0.012em;
+  /* titres équilibrés sur leurs lignes, paragraphes sans veuve : les navigateurs
+     qui ignorent la propriété gardent le retour à la ligne habituel */
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text);
+}
+html {
+  scrollbar-color: color-mix(in srgb, var(--text) 25%, transparent) transparent;
+}
+/* Anneau de focus clavier commun : net, à l'accent, détaché du bord. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* …sauf sur les plateaux, où les cases sont jointives : un anneau détaché
+   déborderait sur la voisine. Chaque jeu garde son propre marquage. */
+.game-area :focus-visible {
+  outline: revert;
+  outline-offset: revert;
 }
 
 /* ===== Layout ===== */
@@ -177,6 +239,29 @@ h3 {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+/* Ambiance : deux halos très larges aux coins opposés, l'accent en haut à
+   droite et la couleur des boutons en bas à gauche, sous les braises (-1) et
+   au-dessus du fond propagé au canvas. Fixe, pour que le décor ne défile pas
+   avec le contenu. L'intensité (`--ambiance`) est réglée par thème : le beige
+   clair supporte moins de teinte que le fond sombre. */
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      70rem 42rem at 92% -14%,
+      color-mix(in srgb, var(--accent) var(--ambiance), transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      60rem 40rem at -12% 112%,
+      color-mix(in srgb, var(--button) var(--ambiance), transparent),
+      transparent 70%
+    );
 }
 
 /* ===== Braises de fond (composant Braises, monté par le Layout) =====
@@ -291,12 +376,52 @@ h3 {
     display: none;
   }
 }
+/* Barre du haut collante, en verre dépoli dès qu'on a défilé (`data-defile`,
+   posé par Layout). Le verre est peint par un pseudo-élément et non par la
+   barre elle-même : un `backdrop-filter` sur la barre en ferait le bloc
+   englobant de ses descendants `position: fixed` — et le popin des nouveautés,
+   monté dedans, se retrouverait coincé dans ses 50 px de haut.
+   z-index 150 : au-dessus du contenu, sous les modales (200). */
 .top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 150;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: var(--sp-3) var(--sp-4);
   gap: var(--sp-3);
+}
+.top-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--verre);
+  -webkit-backdrop-filter: var(--verre-flou);
+  backdrop-filter: var(--verre-flou);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--ombre-1);
+  opacity: 0;
+  transition: opacity var(--duree-2) var(--ease-sortie);
+  pointer-events: none;
+}
+.top-bar[data-defile]::before {
+  opacity: 1;
+}
+.marque {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--accent);
+  text-decoration: none;
+  display: inline-block;
+  transition:
+    transform var(--duree-2) var(--ease-ressort),
+    text-shadow var(--duree-2) var(--ease-sortie);
+}
+.marque:hover {
+  transform: rotate(-4deg) scale(1.08);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .top-right {
   display: flex;
@@ -314,10 +439,19 @@ h3 {
   padding: var(--sp-1);
   border-radius: var(--radius-sm);
   text-decoration: none;
+  transition:
+    color var(--duree-1) var(--ease-sortie),
+    background-color var(--duree-1) var(--ease-sortie),
+    transform var(--duree-2) var(--ease-ressort);
 }
 .icon-btn:hover {
   color: var(--text);
   background: var(--surface-elevated);
+  transform: translateY(-1px);
+}
+.icon-btn:active {
+  transform: scale(0.92);
+  transition-duration: 0.06s;
 }
 main.content {
   flex: 1;
@@ -338,12 +472,12 @@ main.content {
   display: contents;
 }
 main.content > .page-entree > * {
-  animation: page-in 0.18s ease-out backwards;
+  animation: page-in 0.42s var(--ease-sortie) backwards;
 }
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -358,13 +492,21 @@ main.content > .page-entree > * {
   padding: var(--sp-5) var(--sp-4) var(--sp-6);
   font-size: var(--text-sm);
 }
+/* Soulignement qui se dessine de gauche à droite au survol : un dégradé plein
+   dont on fait varier la largeur, plutôt qu'un `text-decoration` qui apparaît
+   d'un coup. */
 .footer a {
   color: var(--text-muted);
   text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 1px;
+  padding-bottom: 1px;
+  transition:
+    color var(--duree-2) var(--ease-sortie),
+    background-size var(--duree-2) var(--ease-sortie);
 }
 .footer a:hover {
   color: var(--text);
-  text-decoration: underline;
+  background-size: 100% 1px;
 }
 .footer .made {
   width: 100%;
@@ -387,24 +529,73 @@ main.content > .page-entree > * {
   text-decoration: none;
   background: var(--surface-elevated);
   color: var(--text);
-  transition: transform 0.06s, background-color 0.15s;
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform var(--duree-2) var(--ease-ressort),
+    background-color var(--duree-2) var(--ease-sortie),
+    border-color var(--duree-2) var(--ease-sortie),
+    box-shadow var(--duree-2) var(--ease-sortie),
+    color var(--duree-2) var(--ease-sortie);
 }
-.btn:hover {
+.btn:hover:not(:disabled) {
   background: var(--border);
+  transform: translateY(-1px);
 }
-.btn:active {
-  transform: scale(0.98);
+/* L'enfoncement répond tout de suite (pas de ressort à l'aller), le retour
+   reprend la courbe normale. */
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 0.07s;
 }
 .btn-primary {
   background: var(--button);
   color: var(--button-text);
+  box-shadow: var(--reflet), 0 1px 2px color-mix(in srgb, var(--button) 40%, transparent);
 }
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--button-hover);
+  box-shadow:
+    var(--reflet),
+    0 8px 24px -8px color-mix(in srgb, var(--button) 75%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--button) 14%, transparent);
+}
+/* Reflet qui traverse le bouton principal au survol : une bande claire en
+   biais, deux fois et demie plus large que le bouton, dont on fait glisser la
+   position. Sous le libellé (z-index -1 dans le bouton isolé). */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+      115deg,
+      transparent 30%,
+      color-mix(in srgb, #fff 32%, transparent) 50%,
+      transparent 70%
+    )
+    no-repeat 140% 0 / 250% 100%;
+  opacity: 0;
+  transition:
+    background-position 0s linear var(--duree-3),
+    opacity var(--duree-2) var(--ease-sortie);
+  pointer-events: none;
+}
+.btn-primary:hover:not(:disabled)::after {
+  opacity: 1;
+  background-position: -40% 0;
+  transition:
+    background-position 0.8s var(--ease-sortie),
+    opacity var(--duree-1) var(--ease-sortie);
 }
 .btn-danger {
   background: var(--error);
   color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--error) 88%, #000);
+  box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--error) 70%, transparent);
 }
 /* Défi difficile : bouton « challenge » à l'accent chaud, encadré de flammes */
 .btn-defi {
@@ -415,12 +606,11 @@ main.content > .page-entree > * {
   letter-spacing: 0.06em;
   font-size: var(--text-sm);
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--error) 45%, transparent);
-  transition: transform 0.06s, background-color 0.15s, border-color 0.15s, box-shadow 0.2s;
 }
-.btn-defi:hover {
+.btn-defi:hover:not(:disabled) {
   background: color-mix(in srgb, var(--error) 24%, var(--surface-elevated));
   border-color: var(--error);
-  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--error) 55%, transparent);
+  box-shadow: 0 0 18px -2px color-mix(in srgb, var(--error) 55%, transparent);
 }
 
 .btn-sm {
@@ -434,6 +624,14 @@ main.content > .page-entree > * {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+/* « Voir le classement complet → » : lien discret qui prend l'accent au survol. */
+.see-more {
+  text-decoration: none;
+  transition: color var(--duree-2) var(--ease-sortie);
+}
+.see-more:hover {
+  color: var(--accent);
 }
 
 /* ===== Accueil : héros en deux colonnes, puis bandeau du défi difficile =====
@@ -760,7 +958,6 @@ main.content > .page-entree > * {
    disponible et c'est la liste qui défile, pour que l'entête et sa croix de
    fermeture restent toujours atteignables. */
 .nouveautes-modal {
-  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--sp-4) var(--sp-5) var(--sp-5);
@@ -769,7 +966,7 @@ main.content > .page-entree > * {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  box-shadow: 0 8px 32px var(--shadow);
+  box-shadow: var(--reflet), var(--ombre-3);
 }
 .nouveautes-head {
   display: flex;
@@ -816,10 +1013,15 @@ main.content > .page-entree > * {
   border-radius: var(--radius-md);
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.15s;
+  transition:
+    border-color var(--duree-2) var(--ease-sortie),
+    background-color var(--duree-2) var(--ease-sortie),
+    transform var(--duree-2) var(--ease-sortie);
 }
 .nouveaute-item:hover {
   border-color: var(--accent);
+  background: var(--surface-elevated);
+  transform: translateX(3px);
 }
 .nouveaute-ico {
   display: flex;
@@ -883,12 +1085,30 @@ main.content > .page-entree > * {
   padding: var(--sp-2) var(--sp-4);
   cursor: pointer;
   font-size: var(--text-sm);
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color var(--duree-2) var(--ease-sortie),
+    color var(--duree-2) var(--ease-sortie),
+    background-color var(--duree-2) var(--ease-sortie),
+    box-shadow var(--duree-2) var(--ease-sortie),
+    transform var(--duree-2) var(--ease-ressort);
+}
+.lb-tab:hover,
+.entr-mode:hover {
+  color: var(--text);
+  background: var(--surface-elevated);
+  transform: translateY(-1px);
+}
+.lb-tab:active,
+.entr-mode:active {
+  transform: scale(0.97);
+  transition-duration: 0.07s;
 }
 .lb-tab.actif,
 .entr-mode.actif {
   color: var(--text);
   border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: var(--reflet), 0 4px 16px -6px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 /* Entête de la liste d'entraînement : le texte d'accueil et le choix de la
    difficulté sur une ligne, empilés dès qu'ils n'y tiennent plus. */
@@ -970,8 +1190,21 @@ main.content > .page-entree > * {
 }
 .lb .chev {
   color: var(--text-muted);
-  transition: transform 0.2s ease;
+  transition: transform var(--duree-2) var(--ease-ressort);
   flex-shrink: 0;
+}
+/* Ligne de classement : on ne la soulève pas (son animation d'entrée garde la
+   main sur `transform`), elle s'éclaire. */
+.lb .row {
+  transition:
+    border-color var(--duree-2) var(--ease-sortie),
+    background-color var(--duree-2) var(--ease-sortie),
+    box-shadow var(--duree-2) var(--ease-sortie);
+}
+.lb ol:not(.lb-skeleton) > .row:hover {
+  background: var(--surface-elevated);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: var(--reflet), var(--ombre-2);
 }
 .lb .row.open .chev {
   transform: rotate(180deg);
@@ -1363,6 +1596,9 @@ button.skip-pill.skip-ready:active {
   flex-direction: column;
   align-items: center;
   gap: var(--sp-4);
+  /* Les z-index d'un jeu (couches Atlas à 500…) restent dans le plateau :
+     sans ça ils passeraient par-dessus la barre du haut, collante. */
+  isolation: isolate;
 }
 /* Consignes et rappels posés au fil du plateau. `:where()` annule la
    spécificité du sélecteur : n'importe quelle classe (.dactylo-phrase,
@@ -1457,16 +1693,20 @@ main.content:has(.interstitial) {
   font-family: var(--font-display);
   word-spacing: var(--display-mots);
   font-size: var(--text-h1);
-  animation: verdict-in 0.35s ease-out both;
+  animation: verdict-in 0.5s var(--ease-sortie) both;
 }
+/* Le verdict tombe sur l'écran : grand, flou de vitesse, puis net à sa taille.
+   `both` est sans risque ici (aucun descendant fixe dans un écran de transition). */
 @keyframes verdict-in {
   0% {
     transform: scale(1.6);
     opacity: 0;
+    filter: blur(6px);
   }
   100% {
     transform: scale(1);
     opacity: 1;
+    filter: blur(0);
   }
 }
 .transition .next-up {
@@ -1479,7 +1719,8 @@ main.content:has(.interstitial) {
   font-weight: 700;
   line-height: 1;
   color: var(--accent);
-  animation: count-pop 0.95s ease-out both;
+  text-shadow: 0 0 32px color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: count-pop 0.95s var(--ease-sortie) both;
 }
 @keyframes count-pop {
   0% {
@@ -1500,7 +1741,23 @@ main.content:has(.interstitial) {
 
 /* Écran récap de l'épreuve précédente (avant le compte à rebours) */
 .transition.recap {
-  animation: verdict-in 0.3s ease-out both;
+  animation: recap-in 0.45s var(--ease-sortie) both;
+}
+@keyframes recap-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+/* Les tuiles du récap montent l'une après l'autre sous le titre */
+.recap-stat {
+  animation: recap-in 0.5s var(--ease-sortie) backwards;
+}
+.recap-stat:nth-child(2) {
+  animation-delay: 80ms;
+}
+.recap-stat:nth-child(3) {
+  animation-delay: 160ms;
 }
 .transition .recap-jeu {
   font-family: var(--font-display);
@@ -1700,8 +1957,25 @@ main.content:has(.interstitial) {
 /* Squelette pendant le chargement du classement (évite le flash du peloton simulé) */
 .lb-skeleton .row {
   height: 2.75rem;
-  animation: none;
   opacity: 0.5;
+  /* lueur qui balaie le squelette : on lit « ça charge », pas « c'est vide » */
+  background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--text) 7%, transparent) 50%,
+      transparent 70%
+    )
+    0 0 / 250% 100%,
+    var(--surface);
+  animation: squelette 1.4s var(--ease-fluide) infinite;
+}
+@keyframes squelette {
+  from {
+    background-position: 150% 0, 0 0;
+  }
+  to {
+    background-position: -100% 0, 0 0;
+  }
 }
 
 /* Pictogrammes des jeux */
@@ -1777,23 +2051,169 @@ main.content:has(.interstitial) {
   }
 }
 
+/* ===== Finitions : surfaces, lueur au survol, révélation au défilement ===== */
+/* Toutes les cartes partagent la même matière : un lustre très léger en haut,
+   un liseré de lumière et une ombre de contact. `:where()` garde la
+   spécificité à zéro — chaque carte reste maîtresse de ses propres règles
+   (le podium épinglé d'un badge, le fond rougi du défi…), ceci ne fait que
+   remplir ce qu'elles ne déclarent pas. */
+:where(
+    .tirage-carte,
+    .accueil-defi,
+    .rule-card,
+    .stat-tile,
+    .game-card,
+    .badge-carte,
+    .solution-card,
+    .recap-stat,
+    .etat-vide,
+    .archive-list > li,
+    .stats-jeux > li,
+    .runs-liste > li,
+    .lb .row
+  ) {
+  background-image: var(--surface-lustre);
+  box-shadow: var(--reflet), var(--ombre-1);
+}
+/* La carte du tirage vit dans un HauteurFluide (overflow caché, 12 px de
+   débord) : une ombre plus longue y serait coupée net. */
+.accueil-defi {
+  box-shadow: var(--reflet), var(--ombre-2);
+}
+/* Lueur qui suit le pointeur sur les cartes : un halo à l'accent centré sur
+   `--mx`/`--my`, que `useLueur()` (src/lib/finitions.ts) met à jour au
+   mouvement de la souris. Garder cette liste et SELECTEUR_LUEUR alignés.
+   Peinte sous le contenu (z-index -1 dans la carte isolée). */
+:where(
+    .tirage-carte,
+    .accueil-defi,
+    .rule-card,
+    .stat-tile,
+    .game-card,
+    .badge-carte,
+    .nouveaute-item
+  ) {
+  position: relative;
+  isolation: isolate;
+}
+:where(
+    .tirage-carte,
+    .accueil-defi,
+    .rule-card,
+    .stat-tile,
+    .game-card,
+    .badge-carte,
+    .nouveaute-item
+  )::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    18rem circle at var(--mx, 50%) var(--my, 0%),
+    color-mix(in srgb, var(--accent) 14%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity var(--duree-3) var(--ease-sortie);
+  pointer-events: none;
+}
+:where(
+    .tirage-carte,
+    .accueil-defi,
+    .rule-card,
+    .stat-tile,
+    .game-card,
+    .badge-carte,
+    .nouveaute-item
+  ):hover::before {
+  opacity: 1;
+}
+/* Cartes cliquables sans transformation propre : elles s'éclairent et
+   gagnent un cran d'élévation. */
+.rule-card,
+.stat-tile,
+.badge-carte,
+.archive-list > li,
+.stats-jeux > li,
+.runs-liste > li {
+  transition:
+    border-color var(--duree-2) var(--ease-sortie),
+    box-shadow var(--duree-3) var(--ease-sortie),
+    transform var(--duree-3) var(--ease-sortie);
+}
+.badge-carte:has(> .badge-carte-btn:enabled):hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  box-shadow: var(--reflet), var(--ombre-2);
+  transform: translateY(-3px);
+}
+.badge-carte .badge-vignette {
+  transition: transform var(--duree-3) var(--ease-ressort);
+}
+.badge-carte:has(> .badge-carte-btn:enabled):hover .badge-vignette {
+  transform: scale(1.08) rotate(-4deg);
+}
+.stat-tile:hover,
+.rule-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: var(--reflet), var(--ombre-2);
+}
+.archive-list > li:hover,
+.stats-jeux > li:hover,
+.runs-liste > li:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+/* Révélation au défilement (`useRevelations()`, src/lib/finitions.ts) : un
+   bloc pas encore vu attend, transparent et un peu bas ; à son entrée dans la
+   fenêtre il monte en place, décalé de ses voisins entrés en même temps
+   (`--rv-i`). L'attribut est retiré une fois la transition finie, pour que la
+   carte retrouve ses propres transitions de survol. Jamais posé dans un
+   plateau ni sous `prefers-reduced-motion` (le hook s'abstient). `:root` en
+   tête pour passer devant la transition propre des cartes (.game-card…). */
+:root [data-rv] {
+  transition:
+    opacity 0.7s var(--ease-sortie),
+    transform 0.7s var(--ease-sortie);
+  transition-delay: calc(var(--rv-i, 0) * 70ms);
+}
+:root [data-rv='attente'] {
+  opacity: 0;
+  transform: translateY(22px) scale(0.985);
+}
+
 /* ===== Popup pseudo et profil ===== */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: #000000a0;
-  backdrop-filter: blur(3px);
+  background: #0000008a;
+  -webkit-backdrop-filter: blur(6px) saturate(1.2);
+  backdrop-filter: blur(6px) saturate(1.2);
   z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--sp-4);
+  animation: voile-in var(--duree-2) var(--ease-sortie);
+}
+@keyframes voile-in {
+  from {
+    opacity: 0;
+  }
+}
+/* Modales en verre : le fond du thème à peine translucide (le voile est déjà
+   sombre et flouté, il faut que le texte reste net), liseré de lumière en haut. */
+.pseudo-modal,
+.nouveautes-modal {
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  -webkit-backdrop-filter: var(--verre-flou);
+  backdrop-filter: var(--verre-flou);
 }
 .pseudo-modal {
-  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 12px 48px var(--shadow);
+  box-shadow: var(--reflet), var(--ombre-3);
   padding: var(--sp-6);
   max-width: 380px;
   width: 100%;
@@ -1801,7 +2221,10 @@ main.content:has(.interstitial) {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  animation: modal-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modal-in 0.4s var(--ease-ressort);
+}
+.nouveautes-modal {
+  animation: modal-in 0.4s var(--ease-ressort);
 }
 @keyframes modal-in {
   0% {
@@ -1827,6 +2250,21 @@ main.content:has(.interstitial) {
 .pseudo-modal input:focus {
   outline: none;
   border-color: var(--accent);
+}
+/* Champs : le focus s'annonce par un halo doux à l'accent plutôt que par le
+   seul changement de bordure. Hors plateaux : les champs d'un jeu (Pokédle,
+   Dactylo, cases des Croisés) gardent leur propre marquage. */
+select,
+input[type='text']:not(.game-area input) {
+  transition:
+    border-color var(--duree-2) var(--ease-sortie),
+    box-shadow var(--duree-2) var(--ease-sortie);
+}
+select:focus-visible,
+input[type='text']:not(.game-area input):focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .stats-grid {
@@ -1929,7 +2367,14 @@ main.content:has(.interstitial) {
   padding: 2px var(--sp-3);
   cursor: pointer;
   font-size: var(--text-sm);
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color var(--duree-2) var(--ease-sortie),
+    color var(--duree-2) var(--ease-sortie),
+    background-color var(--duree-2) var(--ease-sortie);
+}
+.tris .tri:hover {
+  color: var(--text);
+  background: var(--surface-elevated);
 }
 .tris .tri.actif {
   color: var(--text);
@@ -2257,8 +2702,9 @@ main.content:has(.interstitial) {
    laisse de l'air aux anneaux de focus que `overflow: hidden` rognerait. */
 .hauteur-fluide {
   overflow: hidden;
-  padding: 4px;
-  margin: -4px;
+  /* marge de débord : de quoi laisser passer l'ombre des cartes contenues */
+  padding: 12px;
+  margin: -12px;
   box-sizing: content-box;
   transition: height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -2319,14 +2765,23 @@ main.content:has(.interstitial) {
   border-radius: var(--radius-md);
   color: var(--text-muted);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition:
+    border-color var(--duree-2) var(--ease-sortie),
+    color var(--duree-2) var(--ease-sortie),
+    background-color var(--duree-2) var(--ease-sortie),
+    box-shadow var(--duree-2) var(--ease-sortie),
+    transform var(--duree-2) var(--ease-ressort);
 }
 .solutions-onglet:hover {
   color: var(--text);
+  background: var(--surface-elevated);
+  transform: translateY(-2px);
 }
 .solutions-onglet.actif {
   color: var(--accent);
   border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--accent) 65%, transparent);
 }
 .solution-card {
   background: var(--surface);
@@ -3350,10 +3805,32 @@ main.content:has(.interstitial) {
   padding: var(--sp-4);
   text-decoration: none;
   color: var(--text);
+  transition:
+    transform var(--duree-3) var(--ease-sortie),
+    box-shadow var(--duree-3) var(--ease-sortie),
+    border-color var(--duree-2) var(--ease-sortie),
+    background-color var(--duree-2) var(--ease-sortie);
 }
 .game-card:hover {
   background: var(--surface-elevated);
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  transform: translateY(-4px);
+  box-shadow:
+    var(--reflet),
+    var(--ombre-2),
+    0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent),
+    0 10px 36px -14px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.game-card:active {
+  transform: translateY(-1px) scale(0.99);
+  transition-duration: 0.08s;
+}
+/* Le pictogramme du jeu se redresse et grossit d'un cran au survol de sa carte */
+.game-card .gicon {
+  transition: transform var(--duree-3) var(--ease-ressort);
+}
+.game-card:hover .gicon {
+  transform: scale(1.18) rotate(-6deg);
 }
 .game-card .desc {
   display: block;
